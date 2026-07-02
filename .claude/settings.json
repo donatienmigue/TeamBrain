@@ -1,0 +1,10 @@
+{
+  "hooks": {
+    "Stop": [{
+      "hooks": [{
+        "type": "command",
+        "command": "INPUT=$(cat); [ \"$(echo \"$INPUT\" | jq -r '.stop_hook_active')\" = \"true\" ] && exit 0; cd \"$CLAUDE_PROJECT_DIR\" && pnpm -s test:changed || exit 2"
+      }]
+    }]
+  }
+}

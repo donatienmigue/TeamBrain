@@ -1,0 +1,12 @@
+{
+  "files": [],
+  "references": [
+    { "path": "packages/core" },
+    { "path": "packages/index" },
+    { "path": "packages/mcp" },
+    { "path": "packages/hooks" },
+    { "path": "packages/redact" },
+    { "path": "packages/distill" },
+    { "path": "packages/cli" }
+  ]
+}

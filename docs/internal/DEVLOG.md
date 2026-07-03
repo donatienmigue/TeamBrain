@@ -44,3 +44,12 @@ What: core/log — JSONL logger, one file per UTC day in ~/.teambrain/logs,
 notice on degradation); body|content|prompt redacted at info+ (debug only
 passes raw). core/errors — User/Environment/Validation errors → C6 exit
 codes 1/2/3 (unknown → 2); parse errors retrofitted onto ValidationError.
+
+## M2.1 — tb init scanner + importer
+What: cli/init/scan (CLAUDE.md, AGENTS.md, .cursorrules, .cursor/rules/*,
+docs/adr/*, README arch-sections; mdc frontmatter → title hint) and
+cli/init/convert (ADR→decision, rules→convention, README-arch→map; rule
+files split per ## section; >400-word units split at paragraph bounds into
+"(part n of m)" memories linked by a shared source: tag). Bodies keep
+source text verbatim → Jaccard ≥0.9 asserted per source; all candidates
+advisory (humans upgrade in the init PR); pure read, no repo writes.

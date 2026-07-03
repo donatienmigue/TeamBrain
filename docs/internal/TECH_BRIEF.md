@@ -4,7 +4,7 @@
 **Audience:** founding engineering team. Assumes familiarity with the Product Brief (R1–R6) and Market Analysis (kill criteria, competitive posture).
 **Scope:** V1 = the P0 requirement set (R1–R6): git-native brain, MCP server, Claude Code + Cursor capture, distillation-to-PR, memory lifecycle, weekly digest. FlightDeck analytics, cloud tier, and non-P0 adapters are **out of scope** but constrain interface design (noted inline).
 
-> Reference only — `docs/CONTRACTS.md` wins on any conflict (per `README.md`).
+> Reference only — `docs/internal/CONTRACTS.md` wins on any conflict (per `CONTRIBUTING.md`).
 
 ---
 

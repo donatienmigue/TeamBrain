@@ -5,9 +5,9 @@ a brain repo of markdown memories + a local daemon (MCP server + index) +
 capture hooks + a CI distiller that proposes new memories as pull requests.
 
 ## Read first
-- docs/CONTRACTS.md — frozen schemas & interfaces. NEVER change these without
-  being explicitly asked; if a task seems to require it, STOP and ask.
-- docs/BUILD_PLAN.md — the task you are on, with acceptance criteria.
+- docs/internal/CONTRACTS.md — frozen schemas & interfaces. NEVER change these
+  without being explicitly asked; if a task seems to require it, STOP and ask.
+- docs/internal/BUILD_PLAN.md — the task you are on, with acceptance criteria.
 
 ## Non-negotiable principles (tie-breakers for every decision)
 1. Git is the source of truth. SQLite index is a rebuildable cache — index
@@ -37,7 +37,7 @@ pnpm install · pnpm build · pnpm test · pnpm lint · pnpm bench
 pnpm test:integration (spins fixture repos under /tmp)
 
 ## Testing rules
-- Every package has unit tests; every schema in CONTRACTS.md has a zod schema
+- Every package has unit tests; every schema in docs/internal/CONTRACTS.md has a zod schema
   with fixture-based round-trip tests.
 - Tests never touch the network. LLM calls go through the Provider interface;
   tests use the FakeProvider with recorded fixtures in testdata/.
@@ -47,12 +47,12 @@ pnpm test:integration (spins fixture repos under /tmp)
   the 5k-memory fixture or hook handler > 20ms p95.
 
 ## Definition of done (per task)
-Code + tests + acceptance commands from BUILD_PLAN.md pass + short entry in
-docs/DEVLOG.md (what/why/tradeoffs, 5 lines max). If an acceptance criterion
-cannot be met, do not redefine it — report the blocker.
+Code + tests + acceptance commands from docs/internal/BUILD_PLAN.md pass + short
+entry in docs/internal/DEVLOG.md (what/why/tradeoffs, 5 lines max). If an
+acceptance criterion cannot be met, do not redefine it — report the blocker.
 
 ## Forbidden
-- Editing docs/CONTRACTS.md schemas (ask first).
+- Editing docs/internal/CONTRACTS.md schemas (ask first).
 - `any` types at package boundaries; skipping zod validation on external input.
 - Writing to the user's real ~/.claude or ~/.cursor in tests (use TMPDIR fakes).
 - console.log in library code (use the shared logger, packages/core/log).

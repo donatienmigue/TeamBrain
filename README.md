@@ -1,52 +1,81 @@
-# TeamBrain V1 — Repo Starter
+# TeamBrain
 
-This starter contains everything Claude Code needs to build TeamBrain V1.
+Git-native, cross-vendor shared memory for AI coding agents.
 
-## Contents
-- `CLAUDE.md` — project principles, stack, testing rules, definition of done (read by Claude Code automatically)
-- `.claude/settings.json` — Stop-gate hook: Claude Code cannot end a turn with failing tests (parses hook JSON with Node — no `jq` dependency)
-- `docs/CONTRACTS.md` — frozen v1 schemas and interfaces (authoritative)
-- `docs/BUILD_PLAN.md` — milestones M0–M8 with acceptance commands + standing guardrails
-- `docs/KICKOFF_PROMPTS.md` — the prompt to paste at the start of each milestone session
-- `docs/DEVLOG.md` — one entry per completed task
-- `packages/{core,index,mcp,hooks,redact,distill,cli}` — pnpm workspace packages (scaffolded in M0.1; real logic lands starting M1)
+> **Status: early-stage.** This repo currently contains the project scaffold
+> only — a pnpm monorepo with build/test/lint tooling and CI. The CLI, MCP
+> server, retrieval, capture hooks, and distiller described below are
+> designed but not yet implemented. Nothing here is installable or runnable
+> as a product yet. See [Roadmap](#roadmap) for where things stand.
 
-## Setup (5 minutes)
-1. `git init teambrain && cd teambrain` — copy these files in, commit as `chore: repo starter`.
-2. Optionally add the Technical Brief as `docs/TECH_BRIEF.md` (reference only; CONTRACTS.md wins on conflict).
-3. Requirements on your machine: Node >= 20, pnpm, gh CLI authenticated. (`jq` is **not** required — the Stop-gate hook parses its input with Node instead.)
-4. The Stop-gate references `pnpm test:changed` (`vitest run --changed`) — wired as part of M0.1.
-5. Start a Claude Code session in the repo, enter plan mode, paste the M0 prompt from `docs/KICKOFF_PROMPTS.md`.
+## What TeamBrain is
 
-## Monorepo layout
+Coding agents (Claude Code, Cursor, etc.) relearn the same lessons every
+session: a team's conventions, past decisions, and hard-won gotchas don't
+carry over between sessions or across tools. TeamBrain is a shared memory
+for those lessons that lives in your repo, not in a vendor's database:
+
+- **The brain is a git repo.** Memories are markdown files with YAML
+  front-matter, committed like any other file. Git history is the audit
+  trail; pull requests are the approval gate — nothing is written to the
+  shared brain without human review.
+- **A local daemon serves it to your agent.** A per-machine daemon indexes
+  the brain (SQLite with hybrid lexical + vector search) and exposes it to
+  coding agents over MCP.
+- **Capture is vendor-neutral and privacy-first.** Thin, fire-and-forget
+  hooks record the *shape* of a session (files touched, commands run,
+  outcomes) — never raw prompts or diffs — and redact secrets locally
+  before anything is written to disk.
+- **New memories are proposed, never auto-written.** A scheduled CI job
+  reads recorded sessions and drafts candidate memories as a pull request.
+  A human merges it.
+- **Nothing leaves your machine un-redacted**, and no TeamBrain server is
+  involved: sync happens through your own git remote, and distillation runs
+  in your own CI using your own LLM API key.
+
+## Repo layout
+
 ```
 packages/
-  core/      brain format: schemas, IDs, parse/serialize (M1)
-  index/     retrieval: sqlite + FTS5/vec0 hybrid search (M3)
-  mcp/       MCP server exposing the 4 tools from CONTRACTS.md §C3 (M4)
-  hooks/     Claude Code hook scripts: capture + redaction glue (M5)
-  redact/    redaction engine + detector corpus (M5)
-  distill/   CI distiller: cluster, draft, dedup, gate, PR (M6)
-  cli/       `tb` command surface (CONTRACTS.md §C6)
+  core/      brain format: schemas, IDs, parse/serialize
+  index/     retrieval: SQLite + FTS5/vector hybrid search
+  mcp/       MCP server exposing memory_context/memory_search/memory_propose/memory_feedback
+  hooks/     Claude Code (and later Cursor) capture hook scripts
+  redact/    redaction engine + detector corpus
+  distill/   CI distiller: cluster, draft, dedup, gate, open PR
+  cli/       `tb` command surface
 ```
-Every package builds via TypeScript project references (`tsc -b`) and is
-wired into the root `vitest`/`eslint` config. `cli` depends on `core` via
-`workspace:*` as a standing smoke test that inter-package linking works.
 
-## Commands
-- `pnpm install` — install workspace dependencies
-- `pnpm build` — `tsc -b` across all packages, respecting dependency order
-- `pnpm test` — run every package's vitest suite
-- `pnpm test:changed` — run only tests affected by uncommitted changes (what the Stop-gate hook runs)
-- `pnpm lint` — eslint + `prettier --check`
-- `pnpm bench` — runs each package's `bench` script if it defines one (no-op until M3.4)
+Every package builds via TypeScript project references (`tsc -b`) and shares
+one root `vitest`/`eslint` config.
 
-CI (`.github/workflows/ci.yml`) runs all four of `build`/`test`/`lint`/`bench` on Node 20 and 22.
+## Development
 
-## Status
-- **M0.1 done** — pnpm workspace skeleton, shared TS/vitest/eslint config, CI, `test:changed` wired. All of `pnpm build && pnpm test && pnpm lint && pnpm bench` pass locally.
-- **Known gap**: `gh` CLI is not installed/authenticated on this machine. Not needed until later milestones (M2.3, M6.4, M7 use it for PR automation), but install and run `gh auth login` before then.
-- **Next**: M1 (`packages/core` — brain format schemas), per `docs/BUILD_PLAN.md`.
+Requirements: Node >= 20, [pnpm](https://pnpm.io).
 
-## Operating rhythm
-One milestone per fresh session -> review the diff yourself -> run the hostile-review prompt in a separate session -> tag `m<N>` -> next milestone. Before M5, run the Cursor hook-parity spike (OQ-1 in the Technical Brief); its outcome shapes the M5 adapter interface.
+```
+pnpm install
+pnpm build   # tsc -b across all packages, respecting dependency order
+pnpm test    # every package's test suite
+pnpm lint    # eslint + prettier --check
+pnpm bench   # performance budgets (no-op until retrieval ships)
+```
+
+CI runs all four on Node 20 and 22 (`.github/workflows/ci.yml`).
+
+## Roadmap
+
+Currently at **M0.1 — monorepo scaffold**: packages, shared TypeScript/test/lint
+config, and CI are in place; no package has real functionality yet. The full
+milestone-by-milestone plan lives in `docs/internal/BUILD_PLAN.md` (see
+[Contributing](#contributing)).
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for local setup, project conventions,
+and where to find the engineering principles and architecture docs guiding
+this build.
+
+## License
+
+[Apache-2.0](LICENSE)

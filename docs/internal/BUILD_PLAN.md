@@ -3,7 +3,7 @@
 Conventions: every task lists **Deliverables**, **Notes**, and **Accept** (commands that must pass). Do tasks in order; do not start a task with a prior task's Accept red.
 
 ### M0 — Scaffold (½ day)
-**M0.1 Monorepo skeleton.** Deliverables: pnpm workspace with `packages/{core,index,mcp,hooks,redact,distill,cli}`, shared tsconfig (strict, ESM, NodeNext), vitest, eslint+prettier, `pnpm build|test|lint|bench` wired, GitHub Actions CI running all four on Node 20/22, empty `docs/DEVLOG.md`.
+**M0.1 Monorepo skeleton.** Deliverables: pnpm workspace with `packages/{core,index,mcp,hooks,redact,distill,cli}`, shared tsconfig (strict, ESM, NodeNext), vitest, eslint+prettier, `pnpm build|test|lint|bench` wired, GitHub Actions CI running all four on Node 20/22, empty `docs/internal/DEVLOG.md`.
 Accept: `pnpm build && pnpm test && pnpm lint` green in CI on both Node versions.
 
 ### M1 — packages/core: brain format (1–2 days)

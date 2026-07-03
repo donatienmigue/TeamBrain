@@ -1,0 +1,6 @@
+You are working on the Northwind storefront, a Next.js app with a Django
+API. Keep React components server-first; only add "use client" when an
+interaction genuinely needs it. All API calls go through lib/api-client;
+never call the Django endpoints directly from components. Money values
+are integers in cents end to end — never floats. When a task touches
+checkout, update the corresponding Playwright flow in e2e/checkout.

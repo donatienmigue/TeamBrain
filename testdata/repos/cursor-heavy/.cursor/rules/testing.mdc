@@ -1,0 +1,5 @@
+Component tests use Testing Library with the custom render in
+test/render.tsx, which wires the cart provider and router mocks. Do not
+mock lib/api-client in component tests — use MSW handlers from
+test/handlers instead so contract drift shows up. Playwright specs get a
+fresh seeded database per worker; never share state between specs.

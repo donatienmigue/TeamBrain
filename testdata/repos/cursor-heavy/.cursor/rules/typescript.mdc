@@ -1,0 +1,10 @@
+---
+description: TypeScript conventions for the storefront
+globs: "**/*.ts,**/*.tsx"
+---
+
+Use type-only imports for types. Zod schemas live next to the API route
+that owns them and infer their TypeScript types — never write a type by
+hand when a schema exists. Discriminated unions over boolean flags for
+component props. Barrel files are banned in app/ because they defeat
+tree-shaking.

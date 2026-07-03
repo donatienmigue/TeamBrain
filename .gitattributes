@@ -1,0 +1,2 @@
+# Fixture corpora are byte-exact test inputs — never CRLF-convert them.
+packages/**/testdata/** text eol=lf

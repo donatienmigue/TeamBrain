@@ -1,0 +1,7 @@
+this is not json {
+{"v":2,"sid":"s_01J8Y8Z1A2B3C4D5E6F7G8H9J0","t":"2026-07-02T09:14:03Z","tool":"claude-code","model":"claude-opus-4-8","repo":"acme/api","branch":"feat/webhooks","ev":"session_start","data":{}}
+{"v":1,"t":"2026-07-02T09:14:03Z","tool":"claude-code","model":"claude-opus-4-8","repo":"acme/api","branch":"feat/webhooks","ev":"session_start","data":{}}
+{"v":1,"sid":"s_01J8Y8Z1A2B3C4D5E6F7G8H9J0","t":"not-a-timestamp","tool":"claude-code","model":"claude-opus-4-8","repo":"acme/api","branch":"feat/webhooks","ev":"session_start","data":{}}
+{"v":1,"sid":"s_01J8Y8Z1A2B3C4D5E6F7G8H9J0","t":"2026-07-02T09:14:03Z","tool":"claude-code","model":"claude-opus-4-8","repo":"acme/api","branch":"feat/webhooks","ev":"telemetry","data":{}}
+{"v":1,"sid":"s_01J8Y8Z1A2B3C4D5E6F7G8H9J0","t":"2026-07-02T09:16:41Z","tool":"claude-code","model":"claude-opus-4-8","repo":"acme/api","branch":"feat/webhooks","ev":"tool_use","data":{"kind":"deploy","path":"src/jobs/webhook.ts"}}
+{"v":1,"sid":"s_01J8Y8Z1A2B3C4D5E6F7G8H9J0","t":"2026-07-02T09:45:01Z","tool":"claude-code","model":"claude-opus-4-8","repo":"acme/api","branch":"feat/webhooks","ev":"session_end","data":{"outcome":"maybe","duration_s":1858,"turns":22,"commit_shas":[]}}

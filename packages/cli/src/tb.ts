@@ -2,6 +2,7 @@
 import { Command } from 'commander';
 import { CORE_VERSION, exitCodeForError } from '@teambrain/core';
 import { runLintCommand } from './lint-command.js';
+import { runInitCommand } from './init/init-command.js';
 
 const program = new Command();
 
@@ -34,6 +35,24 @@ program
       process.stderr.write(`tb lint: ${(err as Error).message}\n`);
       process.exitCode = exitCodeForError(err);
     }
+  });
+
+program
+  .command('init')
+  .description(
+    'import existing agent knowledge (CLAUDE.md, cursor rules, ADRs) ' +
+      'into a PR-ready teambrain/init branch',
+  )
+  .argument('[path]', 'repository to initialize', '.')
+  .option('--yes', 'skip the interview (also skipped when not a TTY)', false)
+  .action(async (repoDir: string, opts: { yes: boolean }) => {
+    const interactive = !opts.yes && process.stdin.isTTY === true;
+    const { exitCode, output } = await runInitCommand(repoDir, {
+      interview: interactive,
+      io: { input: process.stdin, output: process.stdout },
+    });
+    process.stdout.write(output);
+    process.exitCode = exitCode;
   });
 
 program.parse();

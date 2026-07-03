@@ -62,3 +62,14 @@ gaps); runInterview on plain readline with injectable streams (persistent
 line buffer — rl.question drops piped lines), empty answer or EOF skips;
 answersToMemories reuses the shared candidate builder (tag `interview`).
 Also refreshed README status/roadmap (was stale at M0.1).
+
+## M2.3 — init output as PR-ready branch
+What: cli/init/branch — writeInitBranch builds teambrain/init via a temp
+git worktree (checkout never switched/dirtied; half-made branch deleted on
+failure); writes C7 layout + INDEX.md + .teambrain/.gitattributes forcing
+LF (autocrlf checkouts otherwise CRLF-break the byte-exact parser — found
+by the integration test on Windows). tb init wires import→interview (TTY
+only, --yes skips)→branch + next steps; preflight (git repo, has commits,
+no .teambrain, no branch) runs before import. M2 accept: integration test
+copies the 3 fixture repos into tmp git repos and asserts counts, class
+dirs, Jaccard ≥0.9 from written files, lint-clean brain, main untouched.

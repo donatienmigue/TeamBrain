@@ -12,6 +12,7 @@
     "build": "tsc -b tsconfig.json",
     "test": "vitest run",
     "test:changed": "vitest run --changed",
+    "test:integration": "vitest run integration",
     "lint": "eslint . && prettier --check .",
     "bench": "pnpm -r --if-present run bench"
   },

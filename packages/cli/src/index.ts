@@ -29,3 +29,10 @@ export type {
   InterviewAnswer,
   InterviewIo,
 } from './init/interview.js';
+export { INIT_BRANCH, writeInitBranch } from './init/branch.js';
+export type { InitBranchResult } from './init/branch.js';
+export { runInitCommand } from './init/init-command.js';
+export type {
+  InitCommandOptions,
+  InitCommandResult,
+} from './init/init-command.js';

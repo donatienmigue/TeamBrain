@@ -2,13 +2,14 @@
 
 Git-native, cross-vendor shared memory for AI coding agents.
 
-> **Status: early-stage.** The brain format is implemented: memory schemas
-> with byte-exact parse/serialize, `tb lint` (schema, size limits, and
-> prompt-injection heuristics), a structured logger, and the `tb init`
-> importer that converts CLAUDE.md / .cursorrules / AGENTS.md / ADRs into
-> candidate memories. The MCP server, retrieval index, capture hooks, and
-> distiller described below are designed but not yet implemented — nothing
-> here is installable as a product yet. See [Roadmap](#roadmap).
+> **Status: early-stage.** The brain format and the `tb init` importer are
+> implemented: memory schemas with byte-exact parse/serialize, `tb lint`
+> (schema, size limits, and prompt-injection heuristics), a structured
+> logger, and `tb init` — which converts CLAUDE.md / .cursorrules /
+> AGENTS.md / ADRs into a reviewable brain on a PR-ready `teambrain/init`
+> branch without ever touching your checkout. The MCP server, retrieval
+> index, capture hooks, and distiller described below are designed but not
+> yet implemented. See [Roadmap](#roadmap).
 
 ## What TeamBrain is
 
@@ -57,17 +58,18 @@ Requirements: Node >= 20, [pnpm](https://pnpm.io).
 
 ```
 pnpm install
-pnpm build   # tsc -b across all packages, respecting dependency order
-pnpm test    # every package's test suite
-pnpm lint    # eslint + prettier --check
-pnpm bench   # performance budgets (no-op until retrieval ships)
+pnpm build              # tsc -b across all packages, respecting dependency order
+pnpm test               # every package's test suite
+pnpm test:integration   # tb init end-to-end against fixture git repos
+pnpm lint               # eslint + prettier --check
+pnpm bench              # performance budgets (no-op until retrieval ships)
 ```
 
 CI runs all four on Node 20 and 22 (`.github/workflows/ci.yml`).
 
 ## Roadmap
 
-Currently at **M2 — the `tb init` importer**. Done so far:
+Currently heading into **M3 — the retrieval index**. Done so far:
 
 - **M0 — scaffold:** pnpm monorepo, shared strict TS config, vitest,
   eslint/prettier, CI on Node 20/22.
@@ -76,11 +78,12 @@ Currently at **M2 — the `tb init` importer**. Done so far:
   round-trip; `tb lint` with a prompt-injection heuristics table; structured
   logger with 7-day rotation and privacy redaction; typed errors mapped to
   CLI exit codes.
-- **M2 (in progress) — `tb init`:** the scanner/importer (CLAUDE.md,
-  .cursorrules, .cursor/rules, AGENTS.md, docs/adr, README architecture
-  sections → classed candidate memories, ≥90% text preservation) and the
-  gap-driven init interview are done; writing the PR-ready `teambrain/init`
-  branch is next.
+- **M2 — `tb init`:** scanner/importer (CLAUDE.md, .cursorrules,
+  .cursor/rules, AGENTS.md, docs/adr, README architecture sections →
+  classed candidate memories, ≥90% text preservation), a gap-driven
+  interview (≤10 skippable questions), and output as a PR-ready
+  `teambrain/init` branch written through a temporary git worktree — your
+  current branch and working tree are never touched.
 
 The full milestone-by-milestone plan lives in `docs/internal/BUILD_PLAN.md`
 (see [Contributing](#contributing)).

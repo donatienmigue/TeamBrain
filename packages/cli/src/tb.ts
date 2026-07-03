@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
-import { CORE_VERSION } from '@teambrain/core';
+import { CORE_VERSION, exitCodeForError } from '@teambrain/core';
 import { runLintCommand } from './lint-command.js';
 
 const program = new Command();
@@ -29,9 +29,10 @@ program
       process.stdout.write(output);
       process.exitCode = exitCode;
     } catch (err) {
-      // Unexpected filesystem failures are environment errors (C6 exit 2).
+      // Typed errors carry their C6 exit code; anything unexpected is
+      // an environment error (exit 2).
       process.stderr.write(`tb lint: ${(err as Error).message}\n`);
-      process.exitCode = 2;
+      process.exitCode = exitCodeForError(err);
     }
   });
 

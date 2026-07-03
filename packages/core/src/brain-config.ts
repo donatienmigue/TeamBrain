@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { parse as parseYaml } from 'yaml';
 import { formatZodIssues } from './zod-issues.js';
+import { ValidationError } from './errors.js';
 
 // brain.yaml (C7). Field set is not contract-frozen beyond what C7/the tech
 // brief name (scopes, required-tag rules, model pins, redaction level), so
@@ -27,7 +28,7 @@ export const brainConfigSchema = z.looseObject({
 });
 export type BrainConfig = z.infer<typeof brainConfigSchema>;
 
-export class BrainConfigParseError extends Error {
+export class BrainConfigParseError extends ValidationError {
   override readonly name = 'BrainConfigParseError';
 }
 

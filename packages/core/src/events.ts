@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { memoryClassSchema } from './memory.js';
 import { formatZodIssues } from './zod-issues.js';
+import { ValidationError } from './errors.js';
 
 // C2 join keys, present on every event (FlightDeck design-ahead). The
 // abbreviated field names (v, sid, t, ev) are the frozen C2 wire format —
@@ -74,7 +75,7 @@ export const sessionEventSchema = z.discriminatedUnion('ev', [
 ]);
 export type SessionEvent = z.infer<typeof sessionEventSchema>;
 
-export class SessionEventParseError extends Error {
+export class SessionEventParseError extends ValidationError {
   override readonly name = 'SessionEventParseError';
 }
 

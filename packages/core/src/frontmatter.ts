@@ -5,8 +5,9 @@ import {
   type MemoryFrontmatter,
 } from './memory.js';
 import { formatZodIssues } from './zod-issues.js';
+import { ValidationError } from './errors.js';
 
-export class FrontmatterParseError extends Error {
+export class FrontmatterParseError extends ValidationError {
   override readonly name = 'FrontmatterParseError';
 }
 

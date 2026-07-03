@@ -50,3 +50,18 @@ export type {
   LintOptions,
   BrainLintReport,
 } from './lint.js';
+export {
+  TeamBrainError,
+  UserError,
+  EnvironmentError,
+  ValidationError,
+  exitCodeForError,
+} from './errors.js';
+export type { ErrorExitCode } from './errors.js';
+export {
+  LOG_LEVELS,
+  LOG_RETENTION_DAYS,
+  createLogger,
+  defaultLogDir,
+} from './log.js';
+export type { LogLevel, LogFields, Logger, LoggerOptions } from './log.js';

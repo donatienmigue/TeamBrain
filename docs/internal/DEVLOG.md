@@ -37,3 +37,10 @@ so phrases split by hard-wrapping still match); core lint rules (schema,
 `tb` binary (commander) with C6 exit codes. Ambiguity: C1 has no proposer
 field, so default lint only rejects empty evidence blocks; the distill PR
 check opts into mandatory evidence via `--require-evidence`.
+
+## M1.3 — logger + typed errors
+What: core/log — JSONL logger, one file per UTC day in ~/.teambrain/logs,
+7-day retention, level from TEAMBRAIN_LOG_LEVEL, never throws (one stderr
+notice on degradation); body|content|prompt redacted at info+ (debug only
+passes raw). core/errors — User/Environment/Validation errors → C6 exit
+codes 1/2/3 (unknown → 2); parse errors retrofitted onto ValidationError.

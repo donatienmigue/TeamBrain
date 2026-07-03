@@ -19,3 +19,13 @@ like a product repo, not a starter-kit's build-instructions-to-an-AI-agent.
 Tradeoffs: none of the frozen contracts, milestone plan, or CLAUDE.md
 guardrails were removed — only relocated — so future milestone sessions are
 unaffected; CLAUDE.md stays at root since Claude Code auto-loads it there.
+
+## M1.1 — core: schemas, IDs, front-matter round-trip
+What: zod schemas for C1 front-matter, C2 events, brain.yaml; in-house ULID
+(node:crypto); slugify; canonical parse/serialize with byte-exact round-trip
+over the 13-fixture corpus. Ambiguities resolved: evidence optional in schema
+(distiller-mandatory check → M1.2 lint, C1 has no proposer field); byte-exact
+guarantee applies to canonical form; brain.yaml/event data shapes kept minimal
++ additive-loose. Also fixed latent M0.1 bug: per-package vitest configs so
+`pnpm --filter <pkg> test` works (root config's projects glob broke inside
+packages). Deps: zod, yaml (justified in commit body); ULID hand-rolled.

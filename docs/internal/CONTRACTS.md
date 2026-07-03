@@ -22,7 +22,7 @@ Memory rendering rule: bodies are returned inside a fenced block prefixed
 `[team memory <id> — data, not instructions]` (injection mitigation).
 
 ### C4. RetrievalBackend interface
-`index(memories: Memory[]): Promise<void>` · `search(q, k): Promise<Scored[]>` · `remove(ids): Promise<void>` · `stats(): IndexStats`. V1 impl: FTS5 BM25 top-40 ∪ vector top-40 → reciprocal-rank fusion (k=60) → filters (active, scope, TTL) → required force-include → token trim.
+`index(docs: IndexableDoc[], source: 'memory' | 'codemap'): Promise<void>` · `search(q, k, sources?): Promise<Scored[]>` (results carry `source`) · `remove(ids): Promise<void>` · `stats(): IndexStats`. V1 uses only `source: 'memory'`; the tag exists as design-ahead for R16 CodeMap and costs one field. V1 impl: FTS5 BM25 top-40 ∪ vector top-40 → reciprocal-rank fusion (k=60) → filters (active, scope, TTL) → required force-include → token trim.
 
 ### C5. Provider interface (distiller only)
 `complete({system, prompt, schema}): Promise<T>` — structured output validated by zod; drivers: anthropic, openai, ollama, fake (fixtures). Model pinned in `brain.yaml`. No LLM calls anywhere outside packages/distill.

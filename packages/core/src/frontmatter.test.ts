@@ -37,19 +37,24 @@ describe('fixture corpus round-trip', () => {
   );
 
   it('covers all classes, retired, TTL, supersedes, evidence, org scope, required priority', () => {
-    const parsed = corpusFiles.map((file) =>
+    const parsedFiles = corpusFiles.map((file) =>
       parseMemoryFile(readFileSync(file, 'utf8')),
     );
-    const classes = new Set(parsed.map((p) => p.frontmatter.class));
+    const classes = new Set(parsedFiles.map((file) => file.frontmatter.class));
     expect(classes).toEqual(
       new Set(['decision', 'convention', 'map', 'learning']),
     );
-    expect(parsed.some((p) => p.frontmatter.status === 'retired')).toBe(true);
-    expect(parsed.some((p) => p.frontmatter.ttl_days !== null)).toBe(true);
-    expect(parsed.some((p) => p.frontmatter.supersedes.length > 0)).toBe(true);
-    expect(parsed.some((p) => p.frontmatter.evidence !== undefined)).toBe(true);
-    expect(parsed.some((p) => p.frontmatter.scope === 'org')).toBe(true);
-    expect(parsed.some((p) => p.frontmatter.priority === 'required')).toBe(
+    const frontmatters = parsedFiles.map((file) => file.frontmatter);
+    expect(frontmatters.some((entry) => entry.status === 'retired')).toBe(true);
+    expect(frontmatters.some((entry) => entry.ttl_days !== null)).toBe(true);
+    expect(frontmatters.some((entry) => entry.supersedes.length > 0)).toBe(
+      true,
+    );
+    expect(frontmatters.some((entry) => entry.evidence !== undefined)).toBe(
+      true,
+    );
+    expect(frontmatters.some((entry) => entry.scope === 'org')).toBe(true);
+    expect(frontmatters.some((entry) => entry.priority === 'required')).toBe(
       true,
     );
   });

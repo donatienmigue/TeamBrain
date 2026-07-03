@@ -56,7 +56,7 @@ describe('session event fixtures', () => {
 });
 
 describe('event schema details', () => {
-  const base = {
+  const baseEnvelope = {
     v: 1,
     sid: 's_x',
     t: '2026-07-02T09:14:03Z',
@@ -67,10 +67,14 @@ describe('event schema details', () => {
   };
 
   it('caps intent summaries at 200 chars (never the raw prompt)', () => {
-    const ok = { ...base, ev: 'intent', data: { summary: 'x'.repeat(200) } };
+    const ok = {
+      ...baseEnvelope,
+      ev: 'intent',
+      data: { summary: 'x'.repeat(200) },
+    };
     expect(parseSessionEventLine(JSON.stringify(ok)).ev).toBe('intent');
     const tooLong = {
-      ...base,
+      ...baseEnvelope,
       ev: 'intent',
       data: { summary: 'x'.repeat(201) },
     };
@@ -81,7 +85,7 @@ describe('event schema details', () => {
 
   it('accepts timezone offsets in t', () => {
     const offset = {
-      ...base,
+      ...baseEnvelope,
       t: '2026-07-02T11:14:03+02:00',
       ev: 'plan_revision',
       data: {},
@@ -93,7 +97,7 @@ describe('event schema details', () => {
 
   it('passes through unknown data fields (additive evolution)', () => {
     const line = JSON.stringify({
-      ...base,
+      ...baseEnvelope,
       ev: 'tool_use',
       data: { kind: 'edit', path: 'a.ts', future_field: 42 },
     });
@@ -104,7 +108,7 @@ describe('event schema details', () => {
 
   it('validates candidate drafts inside candidate_proposed', () => {
     const bad = {
-      ...base,
+      ...baseEnvelope,
       ev: 'candidate_proposed',
       data: { draft: { class: 'learning', title: '', body: 'b' } },
     };

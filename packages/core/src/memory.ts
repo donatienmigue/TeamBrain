@@ -13,7 +13,7 @@ export const MEMORY_CLASSES = [
 export const memoryClassSchema = z.enum(MEMORY_CLASSES);
 export type MemoryClass = z.infer<typeof memoryClassSchema>;
 
-function isRealDate(value: string): boolean {
+function isValidCalendarDate(value: string): boolean {
   const date = new Date(`${value}T00:00:00Z`);
   return !Number.isNaN(date.getTime()) && date.toISOString().startsWith(value);
 }
@@ -21,7 +21,7 @@ function isRealDate(value: string): boolean {
 export const isoDateSchema = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, 'must be an ISO date (YYYY-MM-DD)')
-  .refine(isRealDate, 'must be a real calendar date');
+  .refine(isValidCalendarDate, 'must be a real calendar date');
 
 export const evidenceSchema = z.strictObject({
   sessions: z.array(z.string()),
@@ -50,7 +50,8 @@ export type MemoryFrontmatter = z.infer<typeof memoryFrontmatterSchema>;
 
 export type Memory = MemoryFrontmatter & { body: string };
 
-const CLASS_DIRS: Record<MemoryClass, string> = {
+// C1 path segment per memory class: memories/<directory>/<id>-<slug>.md
+const MEMORY_CLASS_DIRECTORIES: Record<MemoryClass, string> = {
   decision: 'decisions',
   convention: 'conventions',
   map: 'map',
@@ -60,5 +61,5 @@ const CLASS_DIRS: Record<MemoryClass, string> = {
 export function memoryPath(
   frontmatter: Pick<MemoryFrontmatter, 'id' | 'class' | 'title'>,
 ): string {
-  return `memories/${CLASS_DIRS[frontmatter.class]}/${frontmatter.id}-${slugify(frontmatter.title)}.md`;
+  return `memories/${MEMORY_CLASS_DIRECTORIES[frontmatter.class]}/${frontmatter.id}-${slugify(frontmatter.title)}.md`;
 }

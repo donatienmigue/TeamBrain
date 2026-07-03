@@ -1,46 +1,46 @@
 import { randomBytes } from 'node:crypto';
 
 // Crockford base32: excludes I, L, O, U.
-const ENCODING = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
-const TIME_CHARS = 10;
-const RANDOM_CHARS = 16;
-const MAX_TIMESTAMP = 2 ** 48 - 1;
+const CROCKFORD_BASE32_ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+const TIME_CHAR_COUNT = 10;
+const RANDOM_CHAR_COUNT = 16;
+const MAX_TIMESTAMP_MS = 2 ** 48 - 1;
 
 // First char is capped at 7: 10 base32 chars encode 50 bits but the
 // timestamp is only 48 bits wide.
 export const ULID_REGEX = /^[0-7][0-9A-HJKMNP-TV-Z]{25}$/;
 
-function encodeTime(timestamp: number): string {
+function encodeTimestamp(timestampMs: number): string {
   if (
-    !Number.isInteger(timestamp) ||
-    timestamp < 0 ||
-    timestamp > MAX_TIMESTAMP
+    !Number.isInteger(timestampMs) ||
+    timestampMs < 0 ||
+    timestampMs > MAX_TIMESTAMP_MS
   ) {
     throw new RangeError(
-      `ULID timestamp must be an integer in [0, 2^48): got ${timestamp}`,
+      `ULID timestamp must be an integer in [0, 2^48): got ${timestampMs}`,
     );
   }
-  let out = '';
-  let rest = timestamp;
-  for (let i = 0; i < TIME_CHARS; i++) {
-    out = ENCODING.charAt(rest % 32) + out;
-    rest = Math.floor(rest / 32);
+  let encoded = '';
+  let remaining = timestampMs;
+  for (let i = 0; i < TIME_CHAR_COUNT; i++) {
+    encoded = CROCKFORD_BASE32_ALPHABET.charAt(remaining % 32) + encoded;
+    remaining = Math.floor(remaining / 32);
   }
-  return out;
+  return encoded;
 }
 
-function encodeRandom(): string {
+function encodeRandomness(): string {
   // One random byte per char; & 0x1f is uniform because 256 is a multiple of 32.
-  const bytes = randomBytes(RANDOM_CHARS);
-  let out = '';
+  const bytes = randomBytes(RANDOM_CHAR_COUNT);
+  let encoded = '';
   for (const byte of bytes) {
-    out += ENCODING.charAt(byte & 0x1f);
+    encoded += CROCKFORD_BASE32_ALPHABET.charAt(byte & 0x1f);
   }
-  return out;
+  return encoded;
 }
 
-export function ulid(timestamp: number = Date.now()): string {
-  return encodeTime(timestamp) + encodeRandom();
+export function ulid(timestampMs: number = Date.now()): string {
+  return encodeTimestamp(timestampMs) + encodeRandomness();
 }
 
 export function isUlid(value: string): boolean {

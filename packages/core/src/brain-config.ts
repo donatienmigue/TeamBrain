@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { parse as parseYaml } from 'yaml';
+import { formatZodIssues } from './zod-issues.js';
 
 // brain.yaml (C7). Field set is not contract-frozen beyond what C7/the tech
 // brief name (scopes, required-tag rules, model pins, redaction level), so
@@ -31,22 +32,20 @@ export class BrainConfigParseError extends Error {
 }
 
 export function parseBrainConfig(yamlText: string): BrainConfig {
-  let raw: unknown;
+  let yamlData: unknown;
   try {
-    raw = parseYaml(yamlText);
+    yamlData = parseYaml(yamlText);
   } catch (err) {
     throw new BrainConfigParseError(`invalid YAML: ${(err as Error).message}`, {
       cause: err,
     });
   }
-  const result = brainConfigSchema.safeParse(raw);
-  if (!result.success) {
-    const issues = result.error.issues
-      .map((issue) => `${issue.path.join('.') || '(root)'}: ${issue.message}`)
-      .join('; ');
-    throw new BrainConfigParseError(`invalid brain.yaml: ${issues}`, {
-      cause: result.error,
-    });
+  const validation = brainConfigSchema.safeParse(yamlData);
+  if (!validation.success) {
+    throw new BrainConfigParseError(
+      `invalid brain.yaml: ${formatZodIssues(validation.error)}`,
+      { cause: validation.error },
+    );
   }
-  return result.data;
+  return validation.data;
 }

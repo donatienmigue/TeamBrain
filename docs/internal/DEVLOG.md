@@ -29,3 +29,11 @@ guarantee applies to canonical form; brain.yaml/event data shapes kept minimal
 + additive-loose. Also fixed latent M0.1 bug: per-package vitest configs so
 `pnpm --filter <pkg> test` works (root config's projects glob broke inside
 packages). Deps: zod, yaml (justified in commit body); ULID hand-rolled.
+
+## M1.2 — tb lint + injection heuristics
+What: injection-patterns table + scanner (scans whitespace-normalized text
+so phrases split by hard-wrapping still match); core lint rules (schema,
+400-word body, evidence, injection, class/status placement); first real
+`tb` binary (commander) with C6 exit codes. Ambiguity: C1 has no proposer
+field, so default lint only rejects empty evidence blocks; the distill PR
+check opts into mandatory evidence via `--require-evidence`.

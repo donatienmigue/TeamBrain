@@ -51,7 +51,7 @@ export type MemoryFrontmatter = z.infer<typeof memoryFrontmatterSchema>;
 export type Memory = MemoryFrontmatter & { body: string };
 
 // C1 path segment per memory class: memories/<directory>/<id>-<slug>.md
-const MEMORY_CLASS_DIRECTORIES: Record<MemoryClass, string> = {
+export const MEMORY_CLASS_DIRECTORIES: Record<MemoryClass, string> = {
   decision: 'decisions',
   convention: 'conventions',
   map: 'map',

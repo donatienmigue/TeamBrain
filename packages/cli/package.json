@@ -5,11 +5,15 @@
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "bin": {
+    "tb": "./dist/tb.js"
+  },
   "scripts": {
     "build": "tsc -b",
     "test": "vitest run"
   },
   "dependencies": {
-    "@teambrain/core": "workspace:*"
+    "@teambrain/core": "workspace:*",
+    "commander": "^15.0.0"
   }
 }

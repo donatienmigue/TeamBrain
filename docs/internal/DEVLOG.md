@@ -53,3 +53,12 @@ files split per ## section; >400-word units split at paragraph bounds into
 "(part n of m)" memories linked by a shared source: tag). Bodies keep
 source text verbatim → Jaccard ≥0.9 asserted per source; all candidates
 advisory (humans upgrade in the init PR); pure read, no repo writes.
+
+## M2.2 — init interview
+What: cli/init/interview — generateInterviewQuestions derives ≤10 questions
+from gaps (missing map/decision/convention classes; cross-source convention
+title overlap ≥0.5 → "which wins?", capped at 3; testing/build/style topic
+gaps); runInterview on plain readline with injectable streams (persistent
+line buffer — rl.question drops piped lines), empty answer or EOF skips;
+answersToMemories reuses the shared candidate builder (tag `interview`).
+Also refreshed README status/roadmap (was stale at M0.1).

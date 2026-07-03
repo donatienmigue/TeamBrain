@@ -114,27 +114,36 @@ function unitsForSource(source: ScannedSource): SourceUnit[] {
   return units;
 }
 
-function memoriesForUnit(
-  unit: SourceUnit,
-  source: ScannedSource,
+export interface CandidateSpec {
+  title: string;
+  text: string;
+  memoryClass: MemoryClass;
+  /** Provenance label, recorded as a `source:` tag (links split parts). */
+  sourceLabel: string;
+  extraTags?: string[];
+}
+
+/** Builds lint-clean candidate memories from one titled unit of text. */
+export function candidatesFromSpec(
+  spec: CandidateSpec,
   created: string,
 ): Memory[] {
-  const chunks = chunkByWords(unit.text);
+  const chunks = chunkByWords(spec.text);
   return chunks.map((chunk, index) => {
     const partSuffix =
       chunks.length > 1 ? ` (part ${index + 1} of ${chunks.length})` : '';
     return {
       id: ulid(),
-      class: KIND_TO_CLASS[source.kind],
+      class: spec.memoryClass,
       scope: 'team' as const,
       status: 'active' as const,
       // Humans upgrade to `required` in the init PR review; the importer
       // never floats candidates into the force-included context set.
       priority: 'advisory' as const,
-      title: truncateTitle(unit.title, partSuffix.length) + partSuffix,
+      title: truncateTitle(spec.title, partSuffix.length) + partSuffix,
       created,
       supersedes: [],
-      tags: ['imported', `source:${source.path}`],
+      tags: [...(spec.extraTags ?? []), `source:${spec.sourceLabel}`],
       ttl_days: null,
       body: chunk.trim(),
     };
@@ -150,7 +159,18 @@ export function importSources(
   const candidates: Memory[] = [];
   for (const source of sources) {
     for (const unit of unitsForSource(source)) {
-      candidates.push(...memoriesForUnit(unit, source, created));
+      candidates.push(
+        ...candidatesFromSpec(
+          {
+            title: unit.title,
+            text: unit.text,
+            memoryClass: KIND_TO_CLASS[source.kind],
+            sourceLabel: source.path,
+            extraTags: ['imported'],
+          },
+          created,
+        ),
+      );
     }
   }
   return { sources, candidates };

@@ -2,11 +2,13 @@
 
 Git-native, cross-vendor shared memory for AI coding agents.
 
-> **Status: early-stage.** This repo currently contains the project scaffold
-> only — a pnpm monorepo with build/test/lint tooling and CI. The CLI, MCP
-> server, retrieval, capture hooks, and distiller described below are
-> designed but not yet implemented. Nothing here is installable or runnable
-> as a product yet. See [Roadmap](#roadmap) for where things stand.
+> **Status: early-stage.** The brain format is implemented: memory schemas
+> with byte-exact parse/serialize, `tb lint` (schema, size limits, and
+> prompt-injection heuristics), a structured logger, and the `tb init`
+> importer that converts CLAUDE.md / .cursorrules / AGENTS.md / ADRs into
+> candidate memories. The MCP server, retrieval index, capture hooks, and
+> distiller described below are designed but not yet implemented — nothing
+> here is installable as a product yet. See [Roadmap](#roadmap).
 
 ## What TeamBrain is
 
@@ -65,10 +67,23 @@ CI runs all four on Node 20 and 22 (`.github/workflows/ci.yml`).
 
 ## Roadmap
 
-Currently at **M0.1 — monorepo scaffold**: packages, shared TypeScript/test/lint
-config, and CI are in place; no package has real functionality yet. The full
-milestone-by-milestone plan lives in `docs/internal/BUILD_PLAN.md` (see
-[Contributing](#contributing)).
+Currently at **M2 — the `tb init` importer**. Done so far:
+
+- **M0 — scaffold:** pnpm monorepo, shared strict TS config, vitest,
+  eslint/prettier, CI on Node 20/22.
+- **M1 — brain format (`packages/core`):** zod schemas for memory files,
+  brain config, and session events; ULIDs; byte-exact markdown+front-matter
+  round-trip; `tb lint` with a prompt-injection heuristics table; structured
+  logger with 7-day rotation and privacy redaction; typed errors mapped to
+  CLI exit codes.
+- **M2 (in progress) — `tb init`:** the scanner/importer (CLAUDE.md,
+  .cursorrules, .cursor/rules, AGENTS.md, docs/adr, README architecture
+  sections → classed candidate memories, ≥90% text preservation) and the
+  gap-driven init interview are done; writing the PR-ready `teambrain/init`
+  branch is next.
+
+The full milestone-by-milestone plan lives in `docs/internal/BUILD_PLAN.md`
+(see [Contributing](#contributing)).
 
 ## Contributing
 

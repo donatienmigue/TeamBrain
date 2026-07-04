@@ -395,6 +395,45 @@ export class SqliteIndex implements RetrievalBackend {
     return results;
   }
 
+  /**
+   * Query-less context assembly for `memory_context` (C3): every active,
+   * in-scope, unexpired doc, required-first then newest-first, trimmed to
+   * `tokenBudget` (required docs are exempt from the trim). No FTS/vector
+   * ranking runs — there is no query, so recency is the ordering signal.
+   */
+  contextDocs(
+    options: {
+      sources?: DocSource[];
+      scope?: 'team' | 'org';
+      tokenBudget?: number;
+      now?: Date;
+    } = {},
+  ): Scored[] {
+    const now = options.now ?? new Date();
+    const sources = options.sources ?? [...DOC_SOURCES];
+    const placeholders = sources.map(() => '?').join(', ');
+    // required before advisory, then newest first; id breaks date ties so
+    // the ordering is deterministic across processes.
+    const rows = this.db
+      .prepare(
+        `SELECT rowid, * FROM docs
+         WHERE status = 'active' AND source IN (${placeholders})
+         ORDER BY CASE priority WHEN 'required' THEN 0 ELSE 1 END,
+                  created DESC, id`,
+      )
+      .all(...sources) as DocRow[];
+    const scored = rows
+      .filter(
+        (row) =>
+          (options.scope === undefined || row.scope === options.scope) &&
+          !isExpired(row.created ?? undefined, row.ttl_days, now),
+      )
+      .map((row) => toScored(row, 0));
+    return options.tokenBudget === undefined
+      ? scored
+      : applyTokenBudget(scored, options.tokenBudget);
+  }
+
   private lexicalTopN(q: string, sources: DocSource[]): number[] {
     const matchExpression = toFtsMatchExpression(q);
     if (matchExpression === null) return [];

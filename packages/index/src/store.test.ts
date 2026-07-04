@@ -331,3 +331,59 @@ describe('hybrid search pipeline (M3.3, C4)', () => {
     expect(await index.search('', 8)).toHaveLength(0);
   });
 });
+
+describe('contextDocs (M4.2 query-less context assembly)', () => {
+  it('orders required first then newest advisory, and applies the budget', async () => {
+    const index = await memoryIndex({ embedder: null });
+    await index.index(
+      [
+        makeDoc({
+          id: 'req',
+          title: 'Required rule',
+          body: 'always do this',
+          priority: 'required',
+          created: '2026-01-01',
+        }),
+        makeDoc({
+          id: 'old',
+          title: 'Old advisory',
+          body: 'o'.repeat(400),
+          created: '2026-02-01',
+        }),
+        makeDoc({
+          id: 'new',
+          title: 'New advisory',
+          body: 'n'.repeat(400),
+          created: '2026-06-01',
+        }),
+      ],
+      'memory',
+    );
+    // Budget fits required + exactly one advisory; the newer advisory wins
+    // and the required doc is exempt from the trim and ordered first.
+    const docs = index.contextDocs({ tokenBudget: 140 });
+    expect(docs.map((doc) => doc.id)).toEqual(['req', 'new']);
+    expect(docs[0]?.priority).toBe('required');
+  });
+
+  it('omits retired and TTL-expired docs', async () => {
+    const index = await memoryIndex({ embedder: null });
+    await index.index(
+      [
+        makeDoc({ id: 'active', title: 'Active' }),
+        makeDoc({ id: 'retired', title: 'Retired', status: 'retired' }),
+        makeDoc({
+          id: 'expired',
+          title: 'Expired',
+          created: '2026-01-01',
+          ttl_days: 10,
+        }),
+      ],
+      'memory',
+    );
+    const docs = index.contextDocs({
+      now: new Date('2026-07-04T00:00:00Z'),
+    });
+    expect(docs.map((doc) => doc.id)).toEqual(['active']);
+  });
+});

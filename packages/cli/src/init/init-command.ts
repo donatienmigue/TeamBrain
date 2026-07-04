@@ -8,8 +8,9 @@ import {
 } from './interview.js';
 import {
   INIT_BRANCH,
-  assertInitPreconditions,
+  validateInitTarget,
   writeInitBranch,
+  type InitBranchResult,
 } from './branch.js';
 
 export interface InitCommandOptions extends ImportOptions {
@@ -25,15 +26,16 @@ export interface InitCommandResult {
 }
 
 function nextSteps(
-  commit: string,
+  result: InitBranchResult,
   memoryCount: number,
   sourceCount: number,
 ): string {
   return (
-    `\nImported ${memoryCount} memories from ${sourceCount} source(s) ` +
-    `onto branch ${INIT_BRANCH} (commit ${commit.slice(0, 7)}).\n` +
+    `\nImported ${memoryCount} memories from ${sourceCount} source(s) — ` +
+    `${result.fileCount} files on branch ${INIT_BRANCH} ` +
+    `(commit ${result.commit.slice(0, 7)}, branched from ${result.base}).\n` +
     '\nNext steps:\n' +
-    `  1. Review:  git switch ${INIT_BRANCH}   (or: git diff main...${INIT_BRANCH})\n` +
+    `  1. Review:  git switch ${INIT_BRANCH}   (or: git diff ${result.base}...${INIT_BRANCH})\n` +
     `  2. Push:    git push -u origin ${INIT_BRANCH}\n` +
     '  3. Open a pull request and merge it to share the brain with the team.\n' +
     '\nYour current branch and working tree were not touched.\n'
@@ -46,9 +48,11 @@ export async function runInitCommand(
 ): Promise<InitCommandResult> {
   try {
     // Validate the target before importing or interviewing: a non-git
-    // directory should fail as such, not as "nothing to import".
-    assertInitPreconditions(repoDir);
-    const { sources, candidates } = importRepo(repoDir, options);
+    // directory should fail as such, not as "nothing to import". A
+    // subdirectory target resolves to the repo root so the scan scope
+    // matches where the brain is written.
+    const repoRoot = validateInitTarget(repoDir);
+    const { sources, candidates } = importRepo(repoRoot, options);
     let memories = candidates;
 
     if (options.interview === true && options.io !== undefined) {
@@ -67,10 +71,10 @@ export async function runInitCommand(
       };
     }
 
-    const result = writeInitBranch(repoDir, memories);
+    const result = writeInitBranch(repoRoot, memories);
     return {
       exitCode: 0,
-      output: nextSteps(result.commit, memories.length, sources.length),
+      output: nextSteps(result, memories.length, sources.length),
     };
   } catch (err) {
     return {

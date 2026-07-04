@@ -73,3 +73,10 @@ only, --yes skips)→branch + next steps; preflight (git repo, has commits,
 no .teambrain, no branch) runs before import. M2 accept: integration test
 copies the 3 fixture repos into tmp git repos and asserts counts, class
 dirs, Jaccard ≥0.9 from written files, lint-clean brain, main untouched.
+
+## M2.3 review fixes
+What: init branch now parents on main/master (HEAD fallback, base named in
+the output) instead of whatever branch the user stood on; subdirectory
+targets resolve to the repo toplevel so scan scope matches where the brain
+is written (validateInitTarget returns the root); tb uses parseAsync;
+output names the file count. Three new integration tests cover each.

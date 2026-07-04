@@ -28,6 +28,8 @@ export interface InitBranchResult {
   branch: string;
   commit: string;
   fileCount: number;
+  /** Ref the branch was created from: main, master, or HEAD. */
+  base: string;
 }
 
 function git(args: string[], cwd: string): string {
@@ -108,47 +110,69 @@ function writeBrainTree(brainDir: string, memories: Memory[]): number {
 }
 
 /**
- * The preflight checks for `tb init`, exported so the command can run
- * them before doing any work (a non-git target should say so, not
- * "nothing to import").
+ * Preflight for `tb init`: validates the target and resolves it to the
+ * repository toplevel (a subdirectory target would otherwise scan the
+ * subdir but write the brain at the root). Exported so the command can
+ * run it before doing any work — a non-git target should say so, not
+ * "nothing to import". Returns the repo root all further work uses.
  */
-export function assertInitPreconditions(repoDir: string): void {
+export function validateInitTarget(repoDir: string): string {
   if (tryGit(['rev-parse', '--is-inside-work-tree'], repoDir) !== 'true') {
     throw new UserError(
       `${repoDir} is not a git repository — run tb init inside the repo the brain should live in`,
     );
   }
-  if (tryGit(['rev-parse', '--verify', 'HEAD'], repoDir) === null) {
+  const repoRoot = git(['rev-parse', '--show-toplevel'], repoDir);
+  if (tryGit(['rev-parse', '--verify', 'HEAD'], repoRoot) === null) {
     throw new UserError(
       'the repository has no commits yet — make an initial commit first',
     );
   }
-  if (existsSync(join(repoDir, '.teambrain'))) {
+  if (existsSync(join(repoRoot, '.teambrain'))) {
     throw new UserError(
       '.teambrain already exists in this repository — it looks initialized',
     );
   }
   if (
-    tryGit(['rev-parse', '--verify', `refs/heads/${INIT_BRANCH}`], repoDir) !==
+    tryGit(['rev-parse', '--verify', `refs/heads/${INIT_BRANCH}`], repoRoot) !==
     null
   ) {
     throw new UserError(
       `branch ${INIT_BRANCH} already exists — merge or delete it before re-running tb init`,
     );
   }
+  return repoRoot;
+}
+
+/**
+ * The init branch parents on the default branch when one exists, so a
+ * later PR to main carries only the brain — not whatever feature branch
+ * the user happened to be standing on.
+ */
+function resolveBaseRef(repoRoot: string): string {
+  for (const branch of ['main', 'master']) {
+    if (
+      tryGit(['rev-parse', '--verify', `refs/heads/${branch}`], repoRoot) !==
+      null
+    ) {
+      return branch;
+    }
+  }
+  return 'HEAD';
 }
 
 export function writeInitBranch(
   repoDir: string,
   memories: Memory[],
 ): InitBranchResult {
-  assertInitPreconditions(repoDir);
+  const repoRoot = validateInitTarget(repoDir);
+  const base = resolveBaseRef(repoRoot);
 
   const scratchRoot = mkdtempSync(join(tmpdir(), 'teambrain-init-'));
   const worktreeDir = join(scratchRoot, 'worktree');
   let branchCreated = false;
   try {
-    git(['worktree', 'add', worktreeDir, '-b', INIT_BRANCH, 'HEAD'], repoDir);
+    git(['worktree', 'add', worktreeDir, '-b', INIT_BRANCH, base], repoRoot);
     branchCreated = true;
 
     const fileCount = writeBrainTree(join(worktreeDir, '.teambrain'), memories);
@@ -162,17 +186,17 @@ export function writeInitBranch(
       worktreeDir,
     );
     const commit = git(['rev-parse', 'HEAD'], worktreeDir);
-    return { branch: INIT_BRANCH, commit, fileCount };
+    return { branch: INIT_BRANCH, commit, fileCount, base };
   } catch (err) {
     // Leave the repo exactly as found: drop the half-made branch.
     if (branchCreated) {
-      tryGit(['worktree', 'remove', '--force', worktreeDir], repoDir);
-      tryGit(['branch', '-D', INIT_BRANCH], repoDir);
+      tryGit(['worktree', 'remove', '--force', worktreeDir], repoRoot);
+      tryGit(['branch', '-D', INIT_BRANCH], repoRoot);
     }
     throw err;
   } finally {
-    tryGit(['worktree', 'remove', '--force', worktreeDir], repoDir);
-    tryGit(['worktree', 'prune'], repoDir);
+    tryGit(['worktree', 'remove', '--force', worktreeDir], repoRoot);
+    tryGit(['worktree', 'prune'], repoRoot);
     rmSync(scratchRoot, { recursive: true, force: true });
   }
 }

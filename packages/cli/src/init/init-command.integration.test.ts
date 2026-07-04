@@ -195,6 +195,54 @@ describe('M2 acceptance: tb init against the fixture repos', () => {
     expect(alreadyInit.output).toContain('.teambrain already exists');
   });
 
+  it('branches from main even when run from a feature branch', async () => {
+    const repo = makeGitRepo('claude-md-only');
+    const mainSha = git(['rev-parse', 'main'], repo);
+    git(['switch', '-c', 'feature/x'], repo);
+    git(['commit', '--allow-empty', '-m', 'feature work'], repo);
+
+    const result = await runInitCommand(repo, { interview: false });
+    expect(result.exitCode).toBe(0);
+    expect(result.output).toContain('branched from main');
+    // The init branch parents on main, not on the feature branch tip.
+    expect(git(['rev-parse', `${INIT_BRANCH}^`], repo)).toBe(mainSha);
+    expect(git(['branch', '--show-current'], repo)).toBe('feature/x');
+  });
+
+  it('falls back to the current HEAD when no main/master exists', async () => {
+    const dir = makeTempDir();
+    cpSync(join(REPOS_DIR, 'claude-md-only'), dir, { recursive: true });
+    git(['init', '--initial-branch=trunk'], dir);
+    git(['config', 'user.email', 'test@example.invalid'], dir);
+    git(['config', 'user.name', 'M2 Integration Test'], dir);
+    git(['add', '-A'], dir);
+    git(['commit', '-m', 'baseline'], dir);
+    const trunkSha = git(['rev-parse', 'trunk'], dir);
+
+    const result = await runInitCommand(dir, { interview: false });
+    expect(result.exitCode).toBe(0);
+    expect(result.output).toContain('branched from HEAD');
+    expect(git(['rev-parse', `${INIT_BRANCH}^`], dir)).toBe(trunkSha);
+  });
+
+  it('resolves a subdirectory target to the repository root', async () => {
+    const repo = makeGitRepo('adr-rich');
+    const result = await runInitCommand(join(repo, 'docs'), {
+      interview: false,
+    });
+    expect(result.exitCode).toBe(0);
+
+    // The whole repo was scanned (5 memories, incl. root CLAUDE.md),
+    // and the brain sits at the repo root on the branch.
+    const brainDir = join(checkoutInitBranch(repo), '.teambrain');
+    const report = lintBrain(brainDir);
+    expect(report.violations).toEqual([]);
+    expect(report.memoryFileCount).toBe(5);
+    expect(readdirSync(join(brainDir, 'memories', 'conventions'))).toHaveLength(
+      1,
+    );
+  });
+
   it('refuses to run twice (branch already exists), leaving main clean', async () => {
     const repo = makeGitRepo('adr-rich');
     expect((await runInitCommand(repo, { interview: false })).exitCode).toBe(0);

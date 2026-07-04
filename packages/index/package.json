@@ -8,5 +8,17 @@
   "scripts": {
     "build": "tsc -b",
     "test": "vitest run"
+  },
+  "dependencies": {
+    "@teambrain/core": "workspace:*",
+    "better-sqlite3": "^12.11.1",
+    "fastembed": "^2.1.0",
+    "sqlite-vec": "^0.1.9",
+    "tar": "^7.5.19",
+    "yaml": "^2.9.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13"
   }
 }

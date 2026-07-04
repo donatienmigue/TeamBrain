@@ -1,0 +1,81 @@
+# M3.4 golden query set: 25 query -> expected-id pairs over the
+# deterministic synthetic brain (packages/index/src/synthetic.ts).
+# Regenerate via: node packages/index/scripts/regen-golden-queries.mjs
+seed: 42
+count: 5000
+queries:
+  - key: exif-sidecar
+    query: 'where does exif metadata for thumbnails end up'
+    expected_id: 6D3TBF8P22PKC0SQMPA8A5TG4Z
+  - key: leap-second
+    query: 'how do we deal with leap second skew during ingest'
+    expected_id: 1ATX2AF3X856JXQB8FAVBKZPC4
+  - key: protobuf-oneof
+    query: 'can I use a protobuf oneof field in an event schema'
+    expected_id: 5MY32C7EKN47RGX889FGXZ6Q36
+  - key: redis-lua-bucket
+    query: 'how is the redis lua token bucket rate limiter set up'
+    expected_id: 3VF5NHW4YVQG9S2DNQER2ZRN1S
+  - key: canary-cookie
+    query: 'why do canary releases use a sticky cookie'
+    expected_id: 41HGE8RX5ZCKM6F6P4Y9Q8WZ5C
+  - key: hnsw-recall
+    query: 'what checks recall of the hnsw graph index'
+    expected_id: 0M4EZ1TBEV6N36FT2ZSKP2KG2J
+  - key: parquet-partitions
+    query: 'how are the parquet export files partitioned'
+    expected_id: 5DDB0BFPVB5AXXS7E9HTYG10X9
+  - key: mtls-internal
+    query: 'is mtls mandatory between internal services'
+    expected_id: 3D286XDSA0MP59ZS6D3SBXJ1KE
+  - key: saml-clock
+    query: 'what happens when a saml assertion has clock drift'
+    expected_id: 619SKN4SYZ9TGES8N29961S72R
+  - key: webauthn-fallback
+    query: 'what is the fallback when webauthn is unavailable'
+    expected_id: 078TBKC65RZFEBZXVPFF4SKHT9
+  - key: cron-jitter
+    query: 'why do scheduled jobs sleep with random jitter first'
+    expected_id: 498TKD7ZR4N86ZEA1XPHNDZVZ2
+  - key: zstd-spool
+    query: 'which zstd level compresses the spool'
+    expected_id: 7J3RMCMGKQJSM6RQH8TCN21995
+  - key: bloom-dedupe
+    query: 'how does the bloom filter help webhook deduplication'
+    expected_id: 54TAJZKRAEXA4X424KNXVVZYVZ
+  - key: jemalloc-fragmentation
+    query: 'which allocator fixed worker memory fragmentation'
+    expected_id: 1N2M0BX0Q84Z8DGE5E4PQ57HRY
+  - key: tombstone-compaction
+    query: 'when are tombstones removed from the ledger'
+    expected_id: 4P9FA8VT5N17FKAZHBV4H7YGTB
+  - key: hyperloglog-uniques
+    query: 'are dashboard unique visitor numbers exact or hyperloglog'
+    expected_id: 72JKEYG3M2NK4BGYN8TZVQAHCN
+  - key: circuit-halfopen
+    query: 'how many probes run while a circuit breaker is half open'
+    expected_id: 6332NKR9GP1X354PR2B4MQ950D
+  - key: saga-refunds
+    query: 'how do refund compensations get coordinated'
+    expected_id: 3HF5HV1Q293FZRKMR8YQGBDWV5
+  - key: backpressure-lag
+    query: 'what do consumers shed first under backpressure'
+    expected_id: 7C8WRF6ZRBY1AZVDGHPX0ER0JZ
+  - key: vector-clock-presence
+    query: 'how does presence resolve concurrent device updates'
+    expected_id: 7PVAY13C7904KVSPA3FXZE4EF4
+  - key: merkle-backup
+    query: 'how do we verify backups without a full restore'
+    expected_id: 5S2RZDWSY1ZEH5JF9WFV3HN9VS
+  - key: quic-fallback
+    query: 'what happens on networks that block quic'
+    expected_id: 08GS8FDSNBK6386RSH5GXJWAM8
+  - key: wasm-sandbox
+    query: 'how are customer plugins isolated from the host'
+    expected_id: 1E6DZHK4CJ07JC7R1PGQ0GG16F
+  - key: dlq-replay
+    query: 'how should dead letter queue messages be replayed'
+    expected_id: 03Q9E2Q3HFSW43EMKBJ5RK8ZCT
+  - key: killswitch-flags
+    query: 'which features need a kill switch flag'
+    expected_id: 1BECWHGKK8PFMBFPGS4P64PGM2

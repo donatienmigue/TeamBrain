@@ -43,3 +43,17 @@ export {
   syncIndexWithBrain,
 } from './brain.js';
 export type { SyncResult } from './brain.js';
+export {
+  SYNTHETIC_SEED,
+  SYNTHETIC_COUNT,
+  GOLDEN_TOPICS,
+  generateSyntheticBrain,
+  writeSyntheticBrain,
+} from './synthetic.js';
+export type {
+  GoldenTopic,
+  SyntheticBrain,
+  SyntheticBrainOptions,
+} from './synthetic.js';
+export { goldenQueriesSchema, loadGoldenQueries } from './golden-queries.js';
+export type { GoldenQueries } from './golden-queries.js';

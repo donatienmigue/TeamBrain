@@ -80,3 +80,12 @@ the output) instead of whatever branch the user stood on; subdirectory
 targets resolve to the repo toplevel so scan scope matches where the brain
 is written (validateInitTarget returns the root); tb uses parseAsync;
 output names the file count. Three new integration tests cover each.
+
+## M3 — packages/index: retrieval
+What: SqliteIndex (docs + FTS5 porter mirror + vec0) with brain-tree
+checksum auto-reindex; fastembed bge-small behind an Embedder interface
+(tarball+file sha256 pins verified before anything is unpacked or loaded;
+offline → lexical-only at debug); C4 pipeline with required force-include
+tied to token-budget mode so plain search top-k isn't flooded. Bench uses
+a deterministic HashingEmbedder (CI is offline): rebuild 15s, p95 35ms,
+recall@8 1.00 on the 25-query golden set. vec0 quirk: rowid binds as int64.

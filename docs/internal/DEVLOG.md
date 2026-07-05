@@ -142,3 +142,23 @@ upstream/main) — turn counting from the transcript is deferred, so V1 emits
 committed/unknown but rarely abandoned from the live hook; (4) the deny-glob
 matcher covers common .gitignore syntax, not every corner case (noted for a
 future hardening pass).
+
+## M6.1 — packages/distill: collect + cluster
+What: reads new redacted records off the never-merged teambrain/sessions
+branch since a brain.yaml `state.distill.watermark` (git diff of sessions/*),
+plus merged-PR metadata via `gh pr list --json`. clusterSignals folds four
+signals into deterministic evidence bundles (sessions[] + commits[] map to C1
+evidence): same-path struggles across ≥2 sessions, repeated failing commands,
+no-hit memory retrievals, agent-proposed candidates (merged by title). PRs are
+linked to path clusters by touched file, enriching commit evidence. Sources
+(SessionSource, PullRequestSource) are injectable so the whole stage is tested
+without git or the network; the git/gh drivers are covered by a temp-repo test
+and a fake-exec test. Watermark writes are a yaml document round-trip that
+preserves other keys/comments.
+Decisions/tradeoffs: (1) failing commands cluster by kind, not command text —
+the privacy model never captures the command, so finer grouping is impossible;
+(2) no-hit clustering counts empty memory_retrieved events but can't group by
+query (query text isn't recorded), so it's a documentation-gap volume signal;
+(3) GitLab PR driver deferred (V1 is GitHub-only via gh), noted in prs.ts;
+(4) M6.1 has no standalone Accept — the golden pipeline test lands with M6.4;
+this stage ships with unit + integration coverage per the DoD.

@@ -60,6 +60,10 @@ export {
   HOOK_CLIENT_TIMEOUT_MS,
 } from './hook-client.js';
 export {
+  runSessionStartHook,
+  type SessionStartHookOptions,
+} from './session-start-hook.js';
+export {
   daemonRequestSchema,
   daemonResponseSchema,
   encodeMessage,

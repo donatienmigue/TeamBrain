@@ -1,5 +1,11 @@
 import { execFile } from 'node:child_process';
-import { existsSync, rmSync, watch, writeFileSync, type FSWatcher } from 'node:fs';
+import {
+  existsSync,
+  rmSync,
+  watch,
+  writeFileSync,
+  type FSWatcher,
+} from 'node:fs';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { createServer, type Server, type Socket } from 'node:net';
 import { join } from 'node:path';
@@ -145,9 +151,15 @@ export async function startDaemon(
       lexicalOnly: stats.lexicalOnly,
     };
     try {
-      writeFileSync(heartbeatPath(runtimeDir), `${JSON.stringify(record, null, 2)}\n`, 'utf8');
+      writeFileSync(
+        heartbeatPath(runtimeDir),
+        `${JSON.stringify(record, null, 2)}\n`,
+        'utf8',
+      );
     } catch (err) {
-      logger?.debug('heartbeat write failed', { reason: (err as Error).message });
+      logger?.debug('heartbeat write failed', {
+        reason: (err as Error).message,
+      });
     }
   };
   await writeFile(pidFilePath(runtimeDir), `${pid}\n`, 'utf8');
@@ -170,9 +182,7 @@ export async function startDaemon(
       } else {
         response = {
           kind: 'session_context_result',
-          bundle: renderContextBundle(
-            tools.memoryContext(),
-          ),
+          bundle: renderContextBundle(tools.memoryContext()),
         };
       }
     } catch (err) {

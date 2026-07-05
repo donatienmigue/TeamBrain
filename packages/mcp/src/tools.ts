@@ -1,7 +1,15 @@
 import { z } from 'zod';
-import { candidateDraftSchema, type CandidateDraft, type Logger } from '@teambrain/core';
+import {
+  candidateDraftSchema,
+  type CandidateDraft,
+  type Logger,
+} from '@teambrain/core';
 import type { Scored, SearchOptions } from '@teambrain/index';
-import { buildMemoryContext, type ContextBackend, type MemoryContext } from './context.js';
+import {
+  buildMemoryContext,
+  type ContextBackend,
+  type MemoryContext,
+} from './context.js';
 import { toMemoryView, type MemoryView } from './render.js';
 import { recordFeedback, writeCandidate } from './candidates.js';
 

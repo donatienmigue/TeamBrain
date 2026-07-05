@@ -45,7 +45,9 @@ export function renderMemoryBlock(memory: MemoryView): string {
 }
 
 /** Estimated tokens for a bundle of scored memories (title + body, C4's 4 chars/token). */
-export function bundleTokens(docs: ReadonlyArray<Pick<Scored, 'title' | 'body'>>): number {
+export function bundleTokens(
+  docs: ReadonlyArray<Pick<Scored, 'title' | 'body'>>,
+): number {
   let total = 0;
   for (const doc of docs) {
     total += estimateTokens(doc.title) + estimateTokens(doc.body);

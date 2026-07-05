@@ -21,12 +21,16 @@ afterEach(async () => {
   while (cleanups.length > 0) await cleanups.pop()?.();
 });
 
-async function connectedClient(): Promise<{ client: Client; runtimeDir: string }> {
+async function connectedClient(): Promise<{
+  client: Client;
+  runtimeDir: string;
+}> {
   const index = await indexForBrain(fixtureBrainDir());
   cleanups.push(() => index.close());
   const runtimeDir = await tempRuntimeDir(cleanups);
   const server = createMcpServer(toolContextFor(index, runtimeDir));
-  const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+  const [clientTransport, serverTransport] =
+    InMemoryTransport.createLinkedPair();
   await server.connect(serverTransport);
   const client = new Client({ name: 'test-client', version: '0.0.0' });
   await client.connect(clientTransport);

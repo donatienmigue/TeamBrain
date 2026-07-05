@@ -46,7 +46,10 @@ export function feedbackSpoolPath(runtimeDir: string): string {
  */
 export function daemonSocketPath(runtimeDir: string): string {
   if (platform() === 'win32') {
-    const tag = createHash('sha256').update(runtimeDir).digest('hex').slice(0, 16);
+    const tag = createHash('sha256')
+      .update(runtimeDir)
+      .digest('hex')
+      .slice(0, 16);
     return `\\\\.\\pipe\\teambrain-${tag}`;
   }
   return join(runtimeDir, 'daemon.sock');

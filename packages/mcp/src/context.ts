@@ -1,5 +1,10 @@
 import type { Scored } from '@teambrain/index';
-import { bundleTokens, renderMemoryBlock, toMemoryView, type MemoryView } from './render.js';
+import {
+  bundleTokens,
+  renderMemoryBlock,
+  toMemoryView,
+  type MemoryView,
+} from './render.js';
 
 // memory_context (C3): the standing context bundle. There is no query, so
 // contextDocs orders required-first then newest and trims to the token

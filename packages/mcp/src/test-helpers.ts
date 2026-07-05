@@ -2,7 +2,11 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { openIndex, syncIndexWithBrain, type SqliteIndex } from '@teambrain/index';
+import {
+  openIndex,
+  syncIndexWithBrain,
+  type SqliteIndex,
+} from '@teambrain/index';
 import type { ToolContext } from './tools.js';
 
 // Shared test utilities (not exported from the package).

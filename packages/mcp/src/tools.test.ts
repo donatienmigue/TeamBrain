@@ -35,7 +35,10 @@ describe('memory_search', () => {
 
   it('honors k', async () => {
     const { tools: t } = await tools();
-    const results = await t.memorySearch({ query: 'daemon index search', k: 1 });
+    const results = await t.memorySearch({
+      query: 'daemon index search',
+      k: 1,
+    });
     expect(results).toHaveLength(1);
   });
 });
@@ -86,9 +89,9 @@ describe('memory_propose', () => {
 describe('memory_feedback', () => {
   it('appends a feedback signal and returns ok', async () => {
     const { tools: t, runtimeDir } = await tools();
-    expect(t.memoryFeedback({ id: FIXTURE_IDS.mapDaemon, useful: true })).toEqual(
-      { ok: true },
-    );
+    expect(
+      t.memoryFeedback({ id: FIXTURE_IDS.mapDaemon, useful: true }),
+    ).toEqual({ ok: true });
     const line = readFileSync(
       join(runtimeDir, 'spool', 'feedback.jsonl'),
       'utf8',

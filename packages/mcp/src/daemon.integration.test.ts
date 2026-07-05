@@ -1,11 +1,20 @@
 import { execFileSync } from 'node:child_process';
-import { cp, mkdtemp, readFile, rm, mkdir, writeFile, rename } from 'node:fs/promises';
+import {
+  cp,
+  mkdtemp,
+  readFile,
+  rm,
+  mkdir,
+  writeFile,
+  rename,
+} from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { startDaemon, type DaemonHandle } from './daemon.js';
 import { pingDaemon, requestSessionContext } from './hook-client.js';
+import { runSessionStartHook } from './session-start-hook.js';
 import { heartbeatPath, pidFilePath } from './paths.js';
 import { FIXTURE_IDS, fixtureBrainDir } from './test-helpers.js';
 
@@ -35,7 +44,9 @@ async function fixtureRepo(): Promise<{ repoDir: string; brainDir: string }> {
   return { repoDir, brainDir };
 }
 
-async function startFixtureDaemon(): Promise<DaemonHandle & { runtimeDir: string }> {
+async function startFixtureDaemon(): Promise<
+  DaemonHandle & { runtimeDir: string }
+> {
   const { brainDir } = await fixtureRepo();
   const runtimeDir = await mkdtemp(join(tmpdir(), 'tb-daemon-home-'));
   cleanups.push(() => rm(runtimeDir, { recursive: true, force: true }));
@@ -51,7 +62,10 @@ async function startFixtureDaemon(): Promise<DaemonHandle & { runtimeDir: string
   return Object.assign(daemon, { runtimeDir, brainDir });
 }
 
-async function searchIds(daemon: DaemonHandle, query: string): Promise<string[]> {
+async function searchIds(
+  daemon: DaemonHandle,
+  query: string,
+): Promise<string[]> {
   const results = await daemon.tools.memorySearch({ query, k: 8 });
   return results.map((memory) => memory.id);
 }
@@ -110,7 +124,11 @@ describe('daemon (M4.1)', () => {
     const retiredDir = join(daemon.brainDir, 'retired');
     await mkdir(retiredDir, { recursive: true });
     const body = await readFile(absSource, 'utf8');
-    await writeFile(absSource, body.replace('status: active', 'status: retired'), 'utf8');
+    await writeFile(
+      absSource,
+      body.replace('status: active', 'status: retired'),
+      'utf8',
+    );
     await rename(
       absSource,
       join(retiredDir, `${FIXTURE_IDS.learningRedis}-redis-embedding-cache.md`),
@@ -127,6 +145,39 @@ describe('daemon (M4.1)', () => {
     expect(await searchIds(daemon, 'zod validation boundary')).toContain(
       FIXTURE_IDS.requiredZod,
     );
+  });
+
+  it('SessionStart hook emits hookSpecificOutput.additionalContext', async () => {
+    const daemon = await startFixtureDaemon();
+    let emitted = '';
+    await runSessionStartHook({
+      runtimeDir: daemon.runtimeDir,
+      write: (text) => {
+        emitted += text;
+      },
+    });
+    const payload = JSON.parse(emitted);
+    expect(payload.hookSpecificOutput.hookEventName).toBe('SessionStart');
+    expect(payload.hookSpecificOutput.additionalContext).toContain(
+      FIXTURE_IDS.requiredZod,
+    );
+    expect(
+      payload.hookSpecificOutput.additionalContext.length,
+    ).toBeLessThanOrEqual(10000);
+  });
+
+  it('SessionStart hook writes nothing when the daemon is down (graceful)', async () => {
+    const runtimeDir = await mkdtemp(join(tmpdir(), 'tb-nodaemon-'));
+    cleanups.push(() => rm(runtimeDir, { recursive: true, force: true }));
+    let emitted = '';
+    await runSessionStartHook({
+      runtimeDir,
+      timeoutMs: 300,
+      write: (text) => {
+        emitted += text;
+      },
+    });
+    expect(emitted).toBe('');
   });
 
   it('cleans up pidfile, heartbeat, and socket on close', async () => {

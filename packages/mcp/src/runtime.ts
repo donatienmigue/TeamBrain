@@ -7,11 +7,7 @@ import {
   type Embedder,
   type SqliteIndex,
 } from '@teambrain/index';
-import {
-  candidateSpoolDir,
-  feedbackSpoolPath,
-  indexDbPath,
-} from './paths.js';
+import { candidateSpoolDir, feedbackSpoolPath, indexDbPath } from './paths.js';
 import type { ToolContext } from './tools.js';
 
 // Wiring that opens the SQLite index (with the embedder, degrading to
@@ -64,7 +60,9 @@ export async function openBackend(
   });
   if (options.brainDir !== undefined) {
     await syncIndexWithBrain(index, options.brainDir, {
-      ...(options.forceReindex === undefined ? {} : { force: options.forceReindex }),
+      ...(options.forceReindex === undefined
+        ? {}
+        : { force: options.forceReindex }),
       ...(options.logger === undefined ? {} : { logger: options.logger }),
     });
   }

@@ -63,7 +63,14 @@ importers:
         specifier: ^4.4.3
         version: 4.4.3
 
-  packages/distill: {}
+  packages/distill:
+    dependencies:
+      '@teambrain/core':
+        specifier: workspace:*
+        version: link:../core
+      yaml:
+        specifier: ^2.9.0
+        version: 2.9.0
 
   packages/hooks:
     dependencies:

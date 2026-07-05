@@ -8,5 +8,9 @@
   "scripts": {
     "build": "tsc -b",
     "test": "vitest run"
+  },
+  "dependencies": {
+    "@teambrain/core": "workspace:*",
+    "yaml": "^2.9.0"
   }
 }

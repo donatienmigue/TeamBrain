@@ -1,0 +1,133 @@
+{"id":"aws_access_key-1","kind":"positive","detector":"aws_access_key","input":"aws_access_key_id AKIAIOSFODNN7EXAMPLE","expect_types":["aws_access_key"],"secret":"AKIAIOSFODNN7EXAMPLE"}
+{"id":"aws_access_key-2","kind":"positive","detector":"aws_access_key","input":"aws_access_key_id AKIA1234567890ABCDEF","expect_types":["aws_access_key"],"secret":"AKIA1234567890ABCDEF"}
+{"id":"aws_access_key-3","kind":"positive","detector":"aws_access_key","input":"aws_access_key_id AKIAZZ99XXYYWWVVUUTT","expect_types":["aws_access_key"],"secret":"AKIAZZ99XXYYWWVVUUTT"}
+{"id":"aws_access_key-4","kind":"positive","detector":"aws_access_key","input":"AKIAQWERTYUIOPASDFGH","expect_types":["aws_access_key"],"secret":"AKIAQWERTYUIOPASDFGH"}
+{"id":"github_token-5","kind":"positive","detector":"github_token","input":"token ghp_abcdef0123456789abcdef0123456789abcd","expect_types":["github_token"],"secret":"ghp_abcdef0123456789abcdef0123456789abcd"}
+{"id":"github_token-6","kind":"positive","detector":"github_token","input":"token gho_abcdef0123456789abcdef0123456789abcd","expect_types":["github_token"],"secret":"gho_abcdef0123456789abcdef0123456789abcd"}
+{"id":"github_token-7","kind":"positive","detector":"github_token","input":"token ghu_abcdef0123456789abcdef0123456789abcd","expect_types":["github_token"],"secret":"ghu_abcdef0123456789abcdef0123456789abcd"}
+{"id":"github_token-8","kind":"positive","detector":"github_token","input":"token ghs_abcdef0123456789abcdef0123456789abcd","expect_types":["github_token"],"secret":"ghs_abcdef0123456789abcdef0123456789abcd"}
+{"id":"github_token-9","kind":"positive","detector":"github_token","input":"token ghr_abcdef0123456789abcdef0123456789abcd","expect_types":["github_token"],"secret":"ghr_abcdef0123456789abcdef0123456789abcd"}
+{"id":"github_token-10","kind":"positive","detector":"github_token","input":"github_pat_1111111111111111111111_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","expect_types":["github_token"],"secret":"github_pat_1111111111111111111111_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"}
+{"id":"gitlab_token-11","kind":"positive","detector":"gitlab_token","input":"glpat-ABCDEF1234567890abcd","expect_types":["gitlab_token"],"secret":"glpat-ABCDEF1234567890abcd"}
+{"id":"gitlab_token-12","kind":"positive","detector":"gitlab_token","input":"glpat-xyzABCD1234567890wxy","expect_types":["gitlab_token"],"secret":"glpat-xyzABCD1234567890wxy"}
+{"id":"slack_token-13","kind":"positive","detector":"slack_token","input":"slack xoxb-123456789012-abcdefABCDEF","expect_types":["slack_token"],"secret":"xoxb-123456789012-abcdefABCDEF"}
+{"id":"slack_token-14","kind":"positive","detector":"slack_token","input":"slack xoxp-123456789012-abcdefABCDEF","expect_types":["slack_token"],"secret":"xoxp-123456789012-abcdefABCDEF"}
+{"id":"slack_token-15","kind":"positive","detector":"slack_token","input":"slack xoxa-123456789012-abcdefABCDEF","expect_types":["slack_token"],"secret":"xoxa-123456789012-abcdefABCDEF"}
+{"id":"slack_token-16","kind":"positive","detector":"slack_token","input":"slack xoxr-123456789012-abcdefABCDEF","expect_types":["slack_token"],"secret":"xoxr-123456789012-abcdefABCDEF"}
+{"id":"google_api_key-17","kind":"positive","detector":"google_api_key","input":"AIza0123456789abcdefghijklmnopqrstuvwxy","expect_types":["google_api_key"],"secret":"AIza0123456789abcdefghijklmnopqrstuvwxy"}
+{"id":"google_api_key-18","kind":"positive","detector":"google_api_key","input":"AIzaBBBB1111222233334444555566667777888","expect_types":["google_api_key"],"secret":"AIzaBBBB1111222233334444555566667777888"}
+{"id":"stripe_key-19","kind":"positive","detector":"stripe_key","input":"sk_live_0123456789abcdefABCDEFXY","expect_types":["stripe_key"],"secret":"sk_live_0123456789abcdefABCDEFXY"}
+{"id":"stripe_key-20","kind":"positive","detector":"stripe_key","input":"rk_live_9876543210ZYXWvutsRQPONM","expect_types":["stripe_key"],"secret":"rk_live_9876543210ZYXWvutsRQPONM"}
+{"id":"anthropic_key-21","kind":"positive","detector":"anthropic_key","input":"sk-ant-api03-abcdef0123456789ABCDEF_gh","expect_types":["anthropic_key"],"secret":"sk-ant-api03-abcdef0123456789ABCDEF_gh"}
+{"id":"anthropic_key-22","kind":"positive","detector":"anthropic_key","input":"sk-ant-xxxxYYYYzzzz11112222aaaa","expect_types":["anthropic_key"],"secret":"sk-ant-xxxxYYYYzzzz11112222aaaa"}
+{"id":"openai_key-23","kind":"positive","detector":"openai_key","input":"sk-abcdef0123456789ABCDEFGHIJ","expect_types":["openai_key"],"secret":"sk-abcdef0123456789ABCDEFGHIJ"}
+{"id":"openai_key-24","kind":"positive","detector":"openai_key","input":"sk-proj-ABCDEFGHIJ0123456789klmno","expect_types":["openai_key"],"secret":"sk-proj-ABCDEFGHIJ0123456789klmno"}
+{"id":"npm_token-25","kind":"positive","detector":"npm_token","input":"npm_abcdefghijklmnopqrstuvwxyz0123456789","expect_types":["npm_token"],"secret":"npm_abcdefghijklmnopqrstuvwxyz0123456789"}
+{"id":"jwt-26","kind":"positive","detector":"jwt","input":"Authorization Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w","expect_types":["jwt"],"secret":"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w"}
+{"id":"jwt-27","kind":"positive","detector":"jwt","input":"Authorization Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpc3MiOiJhY21lIn0.SflKxwRJSMeKKF2QT4","expect_types":["jwt"],"secret":"eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpc3MiOiJhY21lIn0.SflKxwRJSMeKKF2QT4"}
+{"id":"connection_string-28","kind":"positive","detector":"connection_string","input":"postgres://dbuser:s3cr3tPass@db.internal:5432/app","expect_types":["connection_string"],"secret":"postgres://dbuser:s3cr3tPass@db.internal:5432/app"}
+{"id":"connection_string-29","kind":"positive","detector":"connection_string","input":"postgresql://admin:hunter2long@127.0.0.1/prod","expect_types":["connection_string"],"secret":"postgresql://admin:hunter2long@127.0.0.1/prod"}
+{"id":"connection_string-30","kind":"positive","detector":"connection_string","input":"mysql://root:toorPassword@10.0.0.5:3306/main","expect_types":["connection_string"],"secret":"mysql://root:toorPassword@10.0.0.5:3306/main"}
+{"id":"connection_string-31","kind":"positive","detector":"connection_string","input":"mongodb+srv://svc:M0ngoP4ss@cluster0.mongodb.net/db","expect_types":["connection_string"],"secret":"mongodb+srv://svc:M0ngoP4ss@cluster0.mongodb.net/db"}
+{"id":"connection_string-32","kind":"positive","detector":"connection_string","input":"redis://:AuthPass123456@cache.local:6379","expect_types":["connection_string"],"secret":"redis://:AuthPass123456@cache.local:6379"}
+{"id":"generic_secret-33","kind":"positive","detector":"generic_secret","input":"api_key=abcdef1234567890XYZ","expect_types":["generic_secret"],"secret":"abcdef1234567890XYZ"}
+{"id":"generic_secret-34","kind":"positive","detector":"generic_secret","input":"apikey: \"sk_test_verylongsecretvalue\"","expect_types":["generic_secret"],"secret":"sk_test_verylongsecretvalue"}
+{"id":"generic_secret-35","kind":"positive","detector":"generic_secret","input":"secret = topSecretValue1234","expect_types":["generic_secret"],"secret":"topSecretValue1234"}
+{"id":"generic_secret-36","kind":"positive","detector":"generic_secret","input":"password=Sup3rSecretHunter2!!","expect_types":["generic_secret"],"secret":"Sup3rSecretHunter2!!"}
+{"id":"generic_secret-37","kind":"positive","detector":"generic_secret","input":"passwd: correcthorsebatterystaple","expect_types":["generic_secret"],"secret":"correcthorsebatterystaple"}
+{"id":"generic_secret-38","kind":"positive","detector":"generic_secret","input":"auth_token = ABCdef1234567890tokenvalue","expect_types":["generic_secret"],"secret":"ABCdef1234567890tokenvalue"}
+{"id":"generic_secret-39","kind":"positive","detector":"generic_secret","input":"access-key: myAccessKeyValue12345","expect_types":["generic_secret"],"secret":"myAccessKeyValue12345"}
+{"id":"generic_secret-40","kind":"positive","detector":"generic_secret","input":"token=ghijklmnop1234567890QRST","expect_types":["generic_secret"],"secret":"ghijklmnop1234567890QRST"}
+{"id":"private_key-41","kind":"positive","detector":"private_key","input":"key:\n-----BEGIN RSA PRIVATE KEY-----\nMIIBVAIBADANBgkqhkiG9w0BAQEFAASC\nAKCXYZ0123456789\n-----END RSA PRIVATE KEY-----\n","expect_types":["private_key"],"secret":"-----BEGIN RSA PRIVATE KEY-----\nMIIBVAIBADANBgkqhkiG9w0BAQEFAASC\nAKCXYZ0123456789\n-----END RSA PRIVATE KEY-----"}
+{"id":"private_key-42","kind":"positive","detector":"private_key","input":"key:\n-----BEGIN EC PRIVATE KEY-----\nMIIBVAIBADANBgkqhkiG9w0BAQEFAASC\nAKCXYZ0123456789\n-----END EC PRIVATE KEY-----\n","expect_types":["private_key"],"secret":"-----BEGIN EC PRIVATE KEY-----\nMIIBVAIBADANBgkqhkiG9w0BAQEFAASC\nAKCXYZ0123456789\n-----END EC PRIVATE KEY-----"}
+{"id":"private_key-43","kind":"positive","detector":"private_key","input":"key:\n-----BEGIN OPENSSH PRIVATE KEY-----\nMIIBVAIBADANBgkqhkiG9w0BAQEFAASC\nAKCXYZ0123456789\n-----END OPENSSH PRIVATE KEY-----\n","expect_types":["private_key"],"secret":"-----BEGIN OPENSSH PRIVATE KEY-----\nMIIBVAIBADANBgkqhkiG9w0BAQEFAASC\nAKCXYZ0123456789\n-----END OPENSSH PRIVATE KEY-----"}
+{"id":"high_entropy-44","kind":"positive","detector":"high_entropy","input":"Zm9vYmFyYmF6cXV4MTIzNDU2Nzg5MEFCQ0RFRkdISUpLTE0=","expect_types":["high_entropy"],"secret":"Zm9vYmFyYmF6cXV4MTIzNDU2Nzg5MEFCQ0RFRkdISUpLTE0="}
+{"id":"high_entropy-45","kind":"positive","detector":"high_entropy","input":"aGVsbG8td29ybGQtdGhpcy1pcy1hLXNlY3JldC10b2tlbg==","expect_types":["high_entropy"],"secret":"aGVsbG8td29ybGQtdGhpcy1pcy1hLXNlY3JldC10b2tlbg=="}
+{"id":"high_entropy-46","kind":"positive","detector":"high_entropy","input":"gAAAAABlZ3h2c2VjcmV0LWZlcm5ldC10b2tlbi1oZXJlMTIz","expect_types":["high_entropy"],"secret":"gAAAAABlZ3h2c2VjcmV0LWZlcm5ldC10b2tlbi1oZXJlMTIz"}
+{"id":"high_entropy-47","kind":"positive","detector":"high_entropy","input":"x7Kd93JfLm2Qp8Rt5Vw1Zb4Nc6Hs0Ye2Ui9Ao3Pl7Gk5Dq","expect_types":["high_entropy"],"secret":"x7Kd93JfLm2Qp8Rt5Vw1Zb4Nc6Hs0Ye2Ui9Ao3Pl7Gk5Dq"}
+{"id":"high_entropy-48","kind":"positive","detector":"high_entropy","input":"aB3dE6gH9jK2mN5pQ8sT1vW4xZ7cF0iL3oR6uY9wD2","expect_types":["high_entropy"],"secret":"aB3dE6gH9jK2mN5pQ8sT1vW4xZ7cF0iL3oR6uY9wD2"}
+{"id":"high_entropy-49","kind":"positive","detector":"high_entropy","input":"c2VjcmV0LWFwaS1rZXktZm9yLXRoZS1zZXJ2aWNlLTk5OQ==","expect_types":["high_entropy"],"secret":"c2VjcmV0LWFwaS1rZXktZm9yLXRoZS1zZXJ2aWNlLTk5OQ=="}
+{"id":"high_entropy-50","kind":"positive","detector":"high_entropy","input":"dGhpc19pc19hX3ZlcnlfbG9uZ19zZWNyZXRfdmFsdWVfMDA","expect_types":["high_entropy"],"secret":"dGhpc19pc19hX3ZlcnlfbG9uZ19zZWNyZXRfdmFsdWVfMDA"}
+{"id":"high_entropy-51","kind":"positive","detector":"high_entropy","input":"Xy7Kp2Vn9Qm4Lt6Rs1Wz8Bc3Hd5Fg0Jk7Ab4De9Ci","expect_types":["high_entropy"],"secret":"Xy7Kp2Vn9Qm4Lt6Rs1Wz8Bc3Hd5Fg0Jk7Ab4De9Ci"}
+{"id":"email-52","kind":"positive","detector":"email","input":"contact alice@example.com today","expect_types":["email"],"secret":"alice@example.com"}
+{"id":"email-53","kind":"positive","detector":"email","input":"contact bob.smith+tag@corp.co.uk today","expect_types":["email"],"secret":"bob.smith+tag@corp.co.uk"}
+{"id":"email-54","kind":"positive","detector":"email","input":"contact x_y@sub.domain.io today","expect_types":["email"],"secret":"x_y@sub.domain.io"}
+{"id":"email-55","kind":"positive","detector":"email","input":"contact dev@localhost.dev today","expect_types":["email"],"secret":"dev@localhost.dev"}
+{"id":"email-56","kind":"positive","detector":"email","input":"contact q.a@test-team.org today","expect_types":["email"],"secret":"q.a@test-team.org"}
+{"id":"ip-57","kind":"positive","detector":"ip","input":"host 10.0.0.1 down","expect_types":["ip"],"secret":"10.0.0.1"}
+{"id":"ip-58","kind":"positive","detector":"ip","input":"host 192.168.1.254 down","expect_types":["ip"],"secret":"192.168.1.254"}
+{"id":"ip-59","kind":"positive","detector":"ip","input":"host 172.16.0.42 down","expect_types":["ip"],"secret":"172.16.0.42"}
+{"id":"ip-60","kind":"positive","detector":"ip","input":"host 8.8.8.8 down","expect_types":["ip"],"secret":"8.8.8.8"}
+{"id":"ip-61","kind":"positive","detector":"ip","input":"addr 2001:0db8:85a3:0000:0000:8a2e:0370:7334 up","expect_types":["ip"],"secret":"2001:0db8:85a3:0000:0000:8a2e:0370:7334"}
+{"id":"ip-62","kind":"positive","detector":"ip","input":"addr fe80::1ff:fe23:4567:890a here","expect_types":["ip"],"secret":"fe80::1ff:fe23:4567:890a"}
+{"id":"phone-63","kind":"positive","detector":"phone","input":"call 555-123-4567 now","expect_types":["phone"],"secret":"555-123-4567"}
+{"id":"phone-64","kind":"positive","detector":"phone","input":"call (555) 987-6543 now","expect_types":["phone"],"secret":"(555) 987-6543"}
+{"id":"phone-65","kind":"positive","detector":"phone","input":"call +1 415-555-2671 now","expect_types":["phone"],"secret":"+1 415-555-2671"}
+{"id":"aws_access_key-66","kind":"positive","detector":"aws_access_key","input":"log: creds AKIAIOSFODNN7EXAMPLE and more text","expect_types":["aws_access_key"],"secret":"AKIAIOSFODNN7EXAMPLE"}
+{"id":"multi-67","kind":"positive","detector":"multi","input":"email a@b.com key AKIA1234567890ABCDEF","expect_types":["aws_access_key","email"],"secret":"AKIA1234567890ABCDEF"}
+{"id":"neg-68","kind":"negative","input":"commit 9fceb02d0ae598e95dc970b74767f19372d61af8","note":"git sha (40 hex)"}
+{"id":"neg-69","kind":"negative","input":"commit da39a3ee5e6b4b0d3255bfef95601890afd80709","note":"git sha (40 hex)"}
+{"id":"neg-70","kind":"negative","input":"commit e3b0c44298fc1c149afbf4c8996fb92427ae41e4","note":"git sha (40 hex)"}
+{"id":"neg-71","kind":"negative","input":"commit abc1234 fixed it","note":"short git sha"}
+{"id":"neg-72","kind":"negative","input":"id 550e8400-e29b-41d4-a716-446655440000","note":"uuid v4"}
+{"id":"neg-73","kind":"negative","input":"id 123e4567-e89b-12d3-a456-426614174000","note":"uuid v4"}
+{"id":"neg-74","kind":"negative","input":"id f47ac10b-58cc-4372-a567-0e02b2c3d479","note":"uuid v4"}
+{"id":"neg-75","kind":"negative","input":"5d41402abc4b2a76b9719d911017c592","note":"md5 hash"}
+{"id":"neg-76","kind":"negative","input":"src/components/user/UserProfileSettingsPanel.tsx","note":"file path"}
+{"id":"neg-77","kind":"negative","input":"packages/index/src/search-pipeline.ts","note":"file path"}
+{"id":"neg-78","kind":"negative","input":"a/very/deeply/nested/directory/structure/file.md","note":"file path"}
+{"id":"neg-79","kind":"negative","input":"node_modules/@teambrain/core/dist/index.js","note":"file path"}
+{"id":"neg-80","kind":"negative","input":"./relative/path/to/SomeVeryLongComponentName.jsx","note":"file path"}
+{"id":"neg-81","kind":"negative","input":"C:/Users/dev/Documents/project/README.md","note":"file path"}
+{"id":"neg-82","kind":"negative","input":"1.2.3","note":"semver"}
+{"id":"neg-83","kind":"negative","input":"v2.10.5","note":"semver"}
+{"id":"neg-84","kind":"negative","input":"version 10.4.1 released","note":"semver"}
+{"id":"neg-85","kind":"negative","input":"#a1b2c3","note":"hex color"}
+{"id":"neg-86","kind":"negative","input":"#FFAABB color","note":"hex color"}
+{"id":"neg-87","kind":"negative","input":"please rotate the API token before Friday","note":"prose mentioning secret words"}
+{"id":"neg-88","kind":"negative","input":"the secret to success is persistence","note":"prose mentioning secret words"}
+{"id":"neg-89","kind":"negative","input":"reset your password using the link","note":"prose mentioning secret words"}
+{"id":"neg-90","kind":"negative","input":"this access key expired last week","note":"prose mentioning secret words"}
+{"id":"neg-91","kind":"negative","input":"we store the auth token in memory only","note":"prose mentioning secret words"}
+{"id":"neg-92","kind":"negative","input":"order 1234567890 shipped","note":"numeric id"}
+{"id":"neg-93","kind":"negative","input":"invoice 0009988776655","note":"numeric id"}
+{"id":"neg-94","kind":"negative","input":"ticket 42 resolved","note":"numeric id"}
+{"id":"neg-95","kind":"negative","input":"aaaaaaaaaaaaaaaaaaaaaaaa","note":"low-entropy long token"}
+{"id":"neg-96","kind":"negative","input":"abcabcabcabcabcabcabcabc","note":"repeated pattern"}
+{"id":"neg-97","kind":"negative","input":"12:34:56","note":"clock time"}
+{"id":"neg-98","kind":"negative","input":"meeting at 09:30:00","note":"clock time"}
+{"id":"neg-99","kind":"negative","input":"2026-07-05T12:00:00Z","note":"iso timestamp"}
+{"id":"neg-100","kind":"negative","input":"2026-01-30 08:15:00","note":"iso timestamp"}
+{"id":"neg-101","kind":"negative","input":"https://github.com/acme/repo","note":"url without creds"}
+{"id":"neg-102","kind":"negative","input":"http://example.com/path/to/page","note":"url without creds"}
+{"id":"neg-103","kind":"negative","input":"calculateShippingCostForOrder","note":"code identifier"}
+{"id":"neg-104","kind":"negative","input":"MAX_RETRY_ATTEMPTS_ALLOWED","note":"code identifier"}
+{"id":"neg-105","kind":"negative","input":"getUserAccountSettingsById","note":"code identifier"}
+{"id":"high_entropy-106","kind":"positive","detector":"high_entropy","input":"Kp9Wm3Xz7Qb1Nt5Rv8Hs2Yd6Ug0Ai4Po9Lk3Fj7","expect_types":["high_entropy"],"secret":"Kp9Wm3Xz7Qb1Nt5Rv8Hs2Yd6Ug0Ai4Po9Lk3Fj7"}
+{"id":"high_entropy-107","kind":"positive","detector":"high_entropy","input":"q2W4e6R8t0Y1u3I5o7P9a1S3d5F7g9H0jKlZxCvBnM","expect_types":["high_entropy"],"secret":"q2W4e6R8t0Y1u3I5o7P9a1S3d5F7g9H0jKlZxCvBnM"}
+{"id":"high_entropy-108","kind":"positive","detector":"high_entropy","input":"Tr6Yh8Uj0Ik2Ol4Pm6Qn8Rs0Tv2Wx4Za6Bc8De0Fg","expect_types":["high_entropy"],"secret":"Tr6Yh8Uj0Ik2Ol4Pm6Qn8Rs0Tv2Wx4Za6Bc8De0Fg"}
+{"id":"jwt-109","kind":"positive","detector":"jwt","input":"bearer eyJhbGciOiJFUzI1NiJ9.eyJyb2xlIjoiYWRtaW4ifQ.9kd2mFPqLr3sTuVwXyZ01","expect_types":["jwt"],"secret":"eyJhbGciOiJFUzI1NiJ9.eyJyb2xlIjoiYWRtaW4ifQ.9kd2mFPqLr3sTuVwXyZ01"}
+{"id":"jwt-110","kind":"positive","detector":"jwt","input":"bearer eyJraWQiOiJhYmMifQ.eyJhdWQiOiJhcGkifQ.Qp7Rs9Tv1Wx3Yz5Ab7Cd","expect_types":["jwt"],"secret":"eyJraWQiOiJhYmMifQ.eyJhdWQiOiJhcGkifQ.Qp7Rs9Tv1Wx3Yz5Ab7Cd"}
+{"id":"email-111","kind":"positive","detector":"email","input":"to: ops-team@service.internal","expect_types":["email"],"secret":"ops-team@service.internal"}
+{"id":"email-112","kind":"positive","detector":"email","input":"to: first.last@company-name.com","expect_types":["email"],"secret":"first.last@company-name.com"}
+{"id":"email-113","kind":"positive","detector":"email","input":"to: user+filter@mail.example.co","expect_types":["email"],"secret":"user+filter@mail.example.co"}
+{"id":"ip-114","kind":"positive","detector":"ip","input":"peer 203.0.113.7","expect_types":["ip"],"secret":"203.0.113.7"}
+{"id":"ip-115","kind":"positive","detector":"ip","input":"peer 198.51.100.23","expect_types":["ip"],"secret":"198.51.100.23"}
+{"id":"ip-116","kind":"positive","detector":"ip","input":"peer 169.254.0.1","expect_types":["ip"],"secret":"169.254.0.1"}
+{"id":"slack_token-117","kind":"positive","detector":"slack_token","input":"xoxs-999888777666-aabbccddeeff","expect_types":["slack_token"],"secret":"xoxs-999888777666-aabbccddeeff"}
+{"id":"aws_access_key-118","kind":"positive","detector":"aws_access_key","input":"AKIAABCDEFGHIJKLMNOP","expect_types":["aws_access_key"],"secret":"AKIAABCDEFGHIJKLMNOP"}
+{"id":"neg-119","kind":"negative","input":"apps/web/src/routes/(dashboard)/settings/+page.svelte","note":"file path"}
+{"id":"neg-120","kind":"negative","input":"internal/service/handler/user_profile_handler.go","note":"file path"}
+{"id":"neg-121","kind":"negative","input":"lib/python3.11/site-packages/requests/models.py","note":"file path"}
+{"id":"neg-122","kind":"negative","input":"00000000-0000-0000-0000-000000000000","note":"uuid"}
+{"id":"neg-123","kind":"negative","input":"a1b2c3d4-e5f6-7890-abcd-ef1234567890","note":"uuid"}
+{"id":"neg-124","kind":"negative","input":"sha 356a192b7913b04c54574d18c28d46e6395428ab","note":"git sha"}
+{"id":"neg-125","kind":"negative","input":"sha 7c4a8d09ca3762af61e59520943dc26494f8941b","note":"git sha"}
+{"id":"neg-126","kind":"negative","input":"rotate credentials quarterly per policy","note":"prose"}
+{"id":"neg-127","kind":"negative","input":"the API returned an auth error code","note":"prose"}
+{"id":"neg-128","kind":"negative","input":"handleUserAuthenticationFlow","note":"identifier"}
+{"id":"neg-129","kind":"negative","input":"DEFAULT_CONNECTION_POOL_SIZE","note":"identifier"}
+{"id":"neg-130","kind":"negative","input":"https://docs.example.com/guide/setup","note":"url"}
+{"id":"neg-131","kind":"negative","input":"git+https://github.com/acme/tool.git","note":"url"}
+{"id":"neg-132","kind":"negative","input":"listening on 3000 8080 9229","note":"port list"}
+{"id":"neg-133","kind":"negative","input":"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","note":"sha256 hex"}

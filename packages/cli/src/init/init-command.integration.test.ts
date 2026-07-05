@@ -12,9 +12,14 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { PassThrough } from 'node:stream';
 import { fileURLToPath } from 'node:url';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { lintBrain, parseMemoryFile } from '@teambrain/core';
 import { scanRepo } from './scan.js';
+
+// Each case spins up real git worktrees; under full-monorepo parallelism the
+// git ops contend for I/O and can exceed the 5s default. Give them headroom
+// so the suite is not flaky when every package runs at once.
+vi.setConfig({ testTimeout: 30_000 });
 import { runInitCommand } from './init-command.js';
 import { INIT_BRANCH } from './branch.js';
 

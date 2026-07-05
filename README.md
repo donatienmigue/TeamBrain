@@ -3,13 +3,14 @@
 Git-native, cross-vendor shared memory for AI coding agents.
 
 > **Status: early-stage.** The brain format, `tb init` importer, retrieval
-> index, MCP server, and daemon are implemented: memory schemas with
-> byte-exact parse/serialize, `tb lint`, `tb init`, a SQLite hybrid
-> (lexical + vector) index, and `tb serve` — a daemon that keeps the index
-> fresh and serves the four memory tools to agents over MCP, plus
-> `tb install claude-code` to wire the SessionStart hook and MCP server into
-> a project. The capture hooks and CI distiller described below are designed
-> but not yet implemented. See [Roadmap](#roadmap).
+> index, MCP server, daemon, and capture pipeline are implemented: memory
+> schemas with byte-exact parse/serialize, `tb lint`, `tb init`, a SQLite
+> hybrid (lexical + vector) index, `tb serve` (a daemon that keeps the index
+> fresh and serves the four memory tools over MCP), `tb install claude-code`
+> to wire the hooks + MCP server into a project, privacy-first capture hooks
+> with an on-device redaction engine, and `tb audit`. The CI distiller
+> described below is designed but not yet implemented. See
+> [Roadmap](#roadmap).
 
 ## What TeamBrain is
 

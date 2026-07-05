@@ -113,3 +113,32 @@ target CC version wants servers in settings.json, that's a one-line change.
 offline. Note: the pre-existing M2 claude-md-only init test can time out under
 full-monorepo parallelism (5s per-test budget vs. git-worktree contention);
 green in isolation — not an M4 change.
+
+## M5 — packages/redact + packages/hooks + capture
+What: (M5.1) pure, dependency-free redaction engine — gitleaks-subset secret
+rules, a Shannon-entropy scanner whose token charset excludes path/URL
+punctuation (so git SHAs, hex UUIDs, and file paths never cross the 4.5
+bits/char line — hex tops out at 4.0), PII (email/ip/phone, strict-only), and
+a gitignore-flavored deny-glob matcher; typed «REDACTED:type» markers. A
+133-case public corpus (packages/redact/corpus) is the CI release gate.
+(M5.2) Claude Code capture hooks: pure mappers turn raw payloads into C2
+events carrying only {kind, path?, exit_code?} — content fields are read to
+classify but never stored, with a defense-in-depth key filter dropping
+content|old_string|new_string|command; deny-listed paths drop the event; every
+event is redacted before it leaves the handler. (M5.3) daemon Spool persists
+to ~/.teambrain/spool/<sid>.jsonl and, on session_end, publishes the record to
+the never-merged orphan teambrain/sessions branch (push best-effort), capped
+at 200MB oldest-first. (M5.4) tb audit prints a record verbatim with a typed
+redaction summary; tb install now wires all three hooks.
+Accept: pnpm --filter redact test (corpus green); replaying
+testdata/sessions/raw-claude.jsonl yields C2-valid, fully-redacted,
+content-free events at <20ms p95.
+Decisions/tradeoffs: (1) redaction runs in the hook (before the socket/spool),
+so the daemon trusts already-redacted local input and doesn't re-scan;
+(2) hooks import the daemon socket client via the @teambrain/mcp/hook-client
+subpath export, so a hook process never loads better-sqlite3;
+(3) the session_end outcome is a commit heuristic (commits ahead of
+upstream/main) — turn counting from the transcript is deferred, so V1 emits
+committed/unknown but rarely abandoned from the live hook; (4) the deny-glob
+matcher covers common .gitignore syntax, not every corner case (noted for a
+future hardening pass).

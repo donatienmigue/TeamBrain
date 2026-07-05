@@ -38,6 +38,15 @@ export function feedbackSpoolPath(runtimeDir: string): string {
   return join(runtimeDir, 'spool', 'feedback.jsonl');
 }
 
+/** Directory holding per-session event records (`<sid>.jsonl`). */
+export function sessionSpoolDir(runtimeDir: string): string {
+  return join(runtimeDir, 'spool');
+}
+
+export function sessionRecordPath(runtimeDir: string, sid: string): string {
+  return join(sessionSpoolDir(runtimeDir), `${sid}.jsonl`);
+}
+
 /**
  * The daemon's local listening address. POSIX gets the C7 unix socket path;
  * Windows has no unix sockets in the C7 sense, so we use a named pipe whose

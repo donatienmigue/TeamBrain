@@ -18,6 +18,7 @@ import {
 import { openBackend } from './runtime.js';
 import { renderContextBundle } from './context.js';
 import { createTools, type Tools } from './tools.js';
+import { Spool } from './spool.js';
 import {
   daemonRequestSchema,
   encodeMessage,
@@ -50,8 +51,12 @@ export interface StartDaemonOptions {
   logger?: Logger;
   /** Inject an embedder, or `null` for lexical-only (tests). Omit to auto-load. */
   embedder?: Embedder | null;
-  /** Hook to persist incoming session events (wired by M5's spool). */
+  /** Override event persistence; defaults to the M5.3 Spool. */
   onHookEvent?: (event: SessionEvent) => void;
+  /** Push the sessions branch after each session_end (default true). */
+  spoolPush?: boolean;
+  /** Spool size cap in bytes before oldest-first eviction. */
+  spoolMaxBytes?: number;
   now?: () => Date;
 }
 
@@ -61,6 +66,8 @@ export interface DaemonHandle {
   pid: number;
   /** In-process tool handles (used by tests and the co-located MCP server). */
   tools: Tools;
+  /** Event spool (M5.3); null when a custom onHookEvent override is supplied. */
+  spool: Spool | null;
   index: SqliteIndex;
   /** Runs a checksum-gated reindex now; resolves to whether it reindexed. */
   reindexNow(): Promise<boolean>;
@@ -106,6 +113,30 @@ export async function startDaemon(
   });
   const tools = createTools(backend.context);
   const pid = process.pid;
+
+  // Event persistence: the M5.3 spool by default, or a caller override (tests
+  // that intercept raw events). The spool is exposed on the handle for audit.
+  const spool =
+    options.onHookEvent === undefined
+      ? new Spool({
+          runtimeDir,
+          brainDir,
+          ...(logger === undefined ? {} : { logger }),
+          ...(options.spoolPush === undefined ? {} : { push: options.spoolPush }),
+          ...(options.spoolMaxBytes === undefined
+            ? {}
+            : { maxBytes: options.spoolMaxBytes }),
+        })
+      : null;
+  const onHookEvent =
+    options.onHookEvent ??
+    ((event: SessionEvent): void => {
+      void spool?.handle(event).catch((err: unknown) => {
+        logger?.debug('spool handling failed', {
+          reason: (err as Error).message,
+        });
+      });
+    });
 
   const contextBundle = (): string =>
     renderContextBundle(tools.memoryContext());
@@ -170,7 +201,7 @@ export async function startDaemon(
     try {
       const request = daemonRequestSchema.parse(JSON.parse(raw));
       if (request.kind === 'hook_event') {
-        options.onHookEvent?.(request.event);
+        onHookEvent(request.event);
         return; // fire-and-forget: no response
       }
       if (request.kind === 'ping') {
@@ -296,6 +327,7 @@ export async function startDaemon(
     brainDir,
     pid,
     tools,
+    spool,
     index: backend.index,
     reindexNow,
     contextBundle,

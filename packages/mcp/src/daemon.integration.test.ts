@@ -13,10 +13,11 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { startDaemon, type DaemonHandle } from './daemon.js';
-import { pingDaemon, requestSessionContext } from './hook-client.js';
+import { pingDaemon, requestSessionContext, sendHookEvent } from './hook-client.js';
 import { runSessionStartHook } from './session-start-hook.js';
-import { heartbeatPath, pidFilePath } from './paths.js';
+import { heartbeatPath, pidFilePath, sessionRecordPath } from './paths.js';
 import { FIXTURE_IDS, fixtureBrainDir } from './test-helpers.js';
+import type { SessionEvent } from '@teambrain/core';
 
 // M4.1 accept incl. the R5 negative test: retire a memory in the watched
 // brain and assert it leaves memory_search within one watcher cycle.
@@ -178,6 +179,26 @@ describe('daemon (M4.1)', () => {
       },
     });
     expect(emitted).toBe('');
+  });
+
+  it('spools hook events received over the socket (M5.3)', async () => {
+    const daemon = await startFixtureDaemon();
+    const event: SessionEvent = {
+      v: 1,
+      sid: 'daemon-sess',
+      t: '2026-07-05T12:00:00.000Z',
+      tool: 'claude-code',
+      model: 'claude-opus-4-8',
+      repo: 'acme/api',
+      branch: 'main',
+      ev: 'tool_use',
+      data: { kind: 'edit', path: 'src/a.ts' },
+    };
+    await sendHookEvent(daemon.runtimeDir, event);
+    const recordPath = sessionRecordPath(daemon.runtimeDir, 'daemon-sess');
+    const landed = await waitFor(async () => existsSync(recordPath));
+    expect(landed).toBe(true);
+    expect(await readFile(recordPath, 'utf8')).toContain('src/a.ts');
   });
 
   it('cleans up pidfile, heartbeat, and socket on close', async () => {

@@ -6,7 +6,15 @@ export {
   indexDbPath,
   candidateSpoolDir,
   feedbackSpoolPath,
+  sessionSpoolDir,
+  sessionRecordPath,
 } from './paths.js';
+export {
+  Spool,
+  SESSIONS_BRANCH,
+  DEFAULT_SPOOL_CAP_BYTES,
+  type SpoolOptions,
+} from './spool.js';
 export {
   toMemoryView,
   renderMemoryBlock,

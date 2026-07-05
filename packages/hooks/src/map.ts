@@ -33,7 +33,8 @@ const EDIT_TOOLS = new Set([
   'Update',
 ]);
 
-const TEST_COMMAND = /\b(vitest|jest|mocha|pytest|rspec|phpunit|go\s+test|cargo\s+test|gradle\s+test|dotnet\s+test|(?:npm|pnpm|yarn)\s+(?:run\s+)?test)\b/;
+const TEST_COMMAND =
+  /\b(vitest|jest|mocha|pytest|rspec|phpunit|go\s+test|cargo\s+test|gradle\s+test|dotnet\s+test|(?:npm|pnpm|yarn)\s+(?:run\s+)?test)\b/;
 
 function envelope(
   ctx: HookContext,
@@ -60,7 +61,9 @@ function sidOf(payloadSid: string | undefined, ctx: HookContext): string {
     : ctx.sid;
 }
 
-function numericExitCode(response: Record<string, unknown> | undefined): number | undefined {
+function numericExitCode(
+  response: Record<string, unknown> | undefined,
+): number | undefined {
   if (response === undefined) return undefined;
   for (const key of ['exit_code', 'exitCode', 'code', 'returnCode']) {
     const value = response[key];
@@ -87,7 +90,8 @@ export function mapPostToolUse(
     const candidate = input['file_path'] ?? input['notebook_path'];
     path = typeof candidate === 'string' ? candidate : undefined;
   } else if (payload.tool_name === 'Bash') {
-    const command = typeof input['command'] === 'string' ? input['command'] : '';
+    const command =
+      typeof input['command'] === 'string' ? input['command'] : '';
     kind = TEST_COMMAND.test(command) ? 'test' : 'command';
   } else {
     return null; // Read/Grep/Glob/WebFetch/… are not tool_use events
@@ -97,7 +101,9 @@ export function mapPostToolUse(
 
   const data: Record<string, unknown> = { kind };
   if (path !== undefined) data['path'] = path;
-  const exitCode = numericExitCode(payload.tool_response as Record<string, unknown>);
+  const exitCode = numericExitCode(
+    payload.tool_response as Record<string, unknown>,
+  );
   if (exitCode !== undefined) data['exit_code'] = exitCode;
 
   return envelope(ctx, sidOf(payload.session_id, ctx), 'tool_use', data);

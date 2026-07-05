@@ -3,6 +3,7 @@ export {
   redactValue,
   redactionMarker,
   summarizeReplacements,
+  countRedactionMarkers,
   type RedactionLevel,
   type RedactionResult,
   type RedactionValueResult,
@@ -15,8 +16,4 @@ export {
   ENTROPY_MIN_LENGTH,
   ENTROPY_THRESHOLD,
 } from './entropy.js';
-export {
-  buildDenyMatcher,
-  normalizePath,
-  type DenyMatcher,
-} from './globs.js';
+export { buildDenyMatcher, normalizePath, type DenyMatcher } from './globs.js';

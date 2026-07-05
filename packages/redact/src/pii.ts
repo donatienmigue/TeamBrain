@@ -8,7 +8,10 @@ export interface PiiRule {
 }
 
 export const PII_RULES: PiiRule[] = [
-  { type: 'email', regex: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g },
+  {
+    type: 'email',
+    regex: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g,
+  },
   // IPv4 with octet range validation, so a 3-part version like 1.2.3 or a
   // 4-part semver 1.2.3.4 with an out-of-range part is not treated as an IP.
   {
@@ -26,7 +29,6 @@ export const PII_RULES: PiiRule[] = [
   // North-American / international phone numbers with separators.
   {
     type: 'phone',
-    regex:
-      /(?:\+?\d{1,3}[\s.-]?)?(?:\(\d{3}\)|\d{3})[\s.-]\d{3}[\s.-]\d{4}\b/g,
+    regex: /(?:\+?\d{1,3}[\s.-]?)?(?:\(\d{3}\)|\d{3})[\s.-]\d{3}[\s.-]\d{4}\b/g,
   },
 ];

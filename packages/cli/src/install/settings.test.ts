@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  CAPTURE_HOOKS,
+  ensureCaptureHooks,
   ensureMcpServer,
-  ensureSessionStartHook,
   SESSION_START_HOOK_COMMAND,
 } from './settings.js';
 
@@ -32,19 +33,39 @@ describe('ensureMcpServer', () => {
   });
 });
 
-describe('ensureSessionStartHook', () => {
-  it('adds a SessionStart group running the injector', () => {
-    const { value, changed } = ensureSessionStartHook({});
+describe('ensureCaptureHooks', () => {
+  it('adds SessionStart (sync) plus async PostToolUse and Stop', () => {
+    const { value, changed } = ensureCaptureHooks({});
     expect(changed).toBe(true);
-    const groups = (value['hooks'] as { SessionStart: unknown[] }).SessionStart;
-    expect(groups).toEqual([
+    const hooks = value['hooks'] as Record<string, unknown[]>;
+    expect(hooks['SessionStart']).toEqual([
       { hooks: [{ type: 'command', command: SESSION_START_HOOK_COMMAND }] },
+    ]);
+    expect(hooks['PostToolUse']).toEqual([
+      {
+        hooks: [
+          { type: 'command', command: 'tb hook post-tool-use', async: true },
+        ],
+      },
+    ]);
+    expect(hooks['Stop']).toEqual([
+      { hooks: [{ type: 'command', command: 'tb hook stop', async: true }] },
     ]);
   });
 
-  it('does not duplicate the hook on a second pass', () => {
-    const once = ensureSessionStartHook({}).value;
-    const { changed } = ensureSessionStartHook(once);
+  it('registers exactly the CAPTURE_HOOKS event set', () => {
+    const hooks = ensureCaptureHooks({}).value['hooks'] as Record<
+      string,
+      unknown
+    >;
+    expect(Object.keys(hooks).sort()).toEqual(
+      CAPTURE_HOOKS.map((h) => h.event).sort(),
+    );
+  });
+
+  it('does not duplicate hooks on a second pass', () => {
+    const once = ensureCaptureHooks({}).value;
+    const { changed } = ensureCaptureHooks(once);
     expect(changed).toBe(false);
   });
 
@@ -54,7 +75,7 @@ describe('ensureSessionStartHook', () => {
         SessionStart: [{ hooks: [{ type: 'command', command: 'other-tool' }] }],
       },
     };
-    const { value, changed } = ensureSessionStartHook(existing);
+    const { value, changed } = ensureCaptureHooks(existing);
     expect(changed).toBe(true);
     const groups = (value['hooks'] as { SessionStart: unknown[] }).SessionStart;
     expect(groups).toHaveLength(2);

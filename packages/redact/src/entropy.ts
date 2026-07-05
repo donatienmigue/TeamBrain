@@ -35,15 +35,13 @@ export function shannonEntropy(value: string): number {
  */
 export function isHighEntropyToken(token: string): boolean {
   return (
-    token.length >= ENTROPY_MIN_LENGTH && shannonEntropy(token) > ENTROPY_THRESHOLD
+    token.length >= ENTROPY_MIN_LENGTH &&
+    shannonEntropy(token) > ENTROPY_THRESHOLD
   );
 }
 
 /** Replaces high-entropy tokens via `replace`, which returns the marker. */
-export function redactHighEntropy(
-  text: string,
-  replace: () => string,
-): string {
+export function redactHighEntropy(text: string, replace: () => string): string {
   return text.replace(TOKEN_PATTERN, (token) =>
     isHighEntropyToken(token) ? replace() : token,
   );

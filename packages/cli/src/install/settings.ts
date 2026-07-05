@@ -7,6 +7,21 @@
 
 /** The command the SessionStart hook runs. `tb` is expected on PATH. */
 export const SESSION_START_HOOK_COMMAND = 'tb hook session-start';
+
+export interface HookSpec {
+  event: string;
+  command: string;
+  /** PostToolUse/Stop fire-and-forget; SessionStart injects context, so sync. */
+  async: boolean;
+}
+
+/** The Claude Code hooks `tb install` registers (M4.3 + M5.2). */
+export const CAPTURE_HOOKS: HookSpec[] = [
+  { event: 'SessionStart', command: SESSION_START_HOOK_COMMAND, async: false },
+  { event: 'PostToolUse', command: 'tb hook post-tool-use', async: true },
+  { event: 'Stop', command: 'tb hook stop', async: true },
+];
+
 /** The MCP server name (C3) and how to launch it. */
 export const MCP_SERVER_KEY = 'teambrain';
 export const MCP_SERVER_COMMAND = 'tb';
@@ -58,33 +73,28 @@ function groupHasCommand(group: unknown, command: string): boolean {
 }
 
 /**
- * Ensures `.claude/settings.json` has a SessionStart hook running the
- * TeamBrain context injector. Idempotent: if any existing SessionStart group
- * already runs the command, nothing changes (no duplicate is appended).
+ * Ensures `.claude/settings.json` registers every TeamBrain capture hook
+ * (SessionStart, PostToolUse, Stop). Idempotent: an event whose group already
+ * runs the command is left untouched, so no duplicates accumulate and a second
+ * install is a no-op.
  */
-export function ensureSessionStartHook(existing: Json): MergeResult {
+export function ensureCaptureHooks(existing: Json): MergeResult {
   const hooks = asObject(existing['hooks']);
-  const sessionStart = asArray(hooks['SessionStart']);
-  if (
-    sessionStart.some((group) =>
-      groupHasCommand(group, SESSION_START_HOOK_COMMAND),
-    )
-  ) {
-    return { value: existing, changed: false };
+  let changed = false;
+  for (const spec of CAPTURE_HOOKS) {
+    const groups = asArray(hooks[spec.event]);
+    if (groups.some((group) => groupHasCommand(group, spec.command))) continue;
+    const command: Record<string, unknown> = {
+      type: 'command',
+      command: spec.command,
+    };
+    if (spec.async) command['async'] = true;
+    hooks[spec.event] = [...groups, { hooks: [command] }];
+    changed = true;
   }
-  const newGroup = {
-    hooks: [{ type: 'command', command: SESSION_START_HOOK_COMMAND }],
-  };
-  return {
-    value: {
-      ...existing,
-      hooks: {
-        ...hooks,
-        SessionStart: [...sessionStart, newGroup],
-      },
-    },
-    changed: true,
-  };
+  return changed
+    ? { value: { ...existing, hooks }, changed: true }
+    : { value: existing, changed: false };
 }
 
 /** Canonical JSON serialization used for both writing and diffing. */

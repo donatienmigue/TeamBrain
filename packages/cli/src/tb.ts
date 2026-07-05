@@ -9,6 +9,7 @@ import { runServeCommand } from './serve-command.js';
 import { runMcpCommand } from './mcp-command.js';
 import { runDoctorCommand } from './doctor-command.js';
 import { runHookCommand } from './hook-command.js';
+import { runAuditCommand } from './audit-command.js';
 
 /** Reads a single y/N answer from a TTY for `tb install`'s confirm step. */
 function promptConfirm(question: string): Promise<boolean> {
@@ -107,6 +108,19 @@ program
   .argument('[path]', 'repository holding the brain', '.')
   .action(async (repoDir: string) => {
     await runMcpCommand(repoDir);
+  });
+
+program
+  .command('audit')
+  .description("print a session's stored record with a redaction summary")
+  .argument('[sid]', 'session id to audit (default: the most recent)')
+  .option('--last-session', 'audit the most recent session (default)', false)
+  .action((sid: string | undefined) => {
+    const { exitCode, output } = runAuditCommand(
+      sid === undefined ? {} : { sid },
+    );
+    process.stdout.write(output);
+    process.exitCode = exitCode;
   });
 
 program

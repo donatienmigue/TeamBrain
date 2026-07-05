@@ -19,7 +19,5 @@ export {
   type CaptureHookName,
   type ProcessedHook,
 } from './run.js';
-export {
-  buildHookContext,
-  type BuildHookContextOptions,
-} from './context.js';
+export { buildHookContext, type BuildHookContextOptions } from './context.js';
+export { captureAndEmit, type CaptureAndEmitParams } from './dispatch.js';

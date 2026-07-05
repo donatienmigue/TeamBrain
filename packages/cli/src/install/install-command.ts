@@ -6,8 +6,8 @@ import {
   type ErrorExitCode,
 } from '@teambrain/core';
 import {
+  ensureCaptureHooks,
   ensureMcpServer,
-  ensureSessionStartHook,
   lineDiff,
   serializeSettings,
 } from './settings.js';
@@ -89,9 +89,9 @@ export async function runInstallCommand(
         ensureMcpServer,
       ),
       planFor(
-        'SessionStart hook (.claude/settings.json)',
+        'Capture hooks (.claude/settings.json)',
         join(root, '.claude', 'settings.json'),
-        ensureSessionStartHook,
+        ensureCaptureHooks,
       ),
     ];
 

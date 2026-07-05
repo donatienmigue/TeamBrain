@@ -41,9 +41,15 @@ importers:
       '@teambrain/core':
         specifier: workspace:*
         version: link:../core
+      '@teambrain/hooks':
+        specifier: workspace:*
+        version: link:../hooks
       '@teambrain/mcp':
         specifier: workspace:*
         version: link:../mcp
+      '@teambrain/redact':
+        specifier: workspace:*
+        version: link:../redact
       commander:
         specifier: ^15.0.0
         version: 15.0.0

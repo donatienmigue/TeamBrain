@@ -102,3 +102,19 @@ export function summarizeReplacements(
   }
   return summary;
 }
+
+const MARKER_REGEX = /«REDACTED:([^»]+)»/g;
+
+/**
+ * Counts `«REDACTED:type»` markers already present in text (e.g. a stored
+ * session record), grouped by type — the basis for `tb audit`'s redaction
+ * summary line.
+ */
+export function countRedactionMarkers(text: string): Record<string, number> {
+  const summary: Record<string, number> = {};
+  for (const match of text.matchAll(MARKER_REGEX)) {
+    const type = match[1] as string;
+    summary[type] = (summary[type] ?? 0) + 1;
+  }
+  return summary;
+}

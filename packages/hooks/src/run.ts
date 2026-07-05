@@ -17,10 +17,7 @@ import { redactEvent } from './redact-event.js';
 // fire-and-forget step so the handler cost excludes network.
 
 export type CaptureHookName =
-  | 'PostToolUse'
-  | 'SessionStart'
-  | 'Stop'
-  | 'SessionEnd';
+  'PostToolUse' | 'SessionStart' | 'Stop' | 'SessionEnd';
 
 export interface ProcessedHook {
   event: SessionEvent | null;

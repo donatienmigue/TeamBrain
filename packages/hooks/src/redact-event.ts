@@ -59,7 +59,11 @@ export function redactEvent(
   level: RedactionLevel = 'strict',
 ): RedactedEvent {
   const replacements: string[] = [];
-  const data = sanitize(event.data, level, replacements) as SessionEvent['data'];
+  const data = sanitize(
+    event.data,
+    level,
+    replacements,
+  ) as SessionEvent['data'];
   const redacted = sessionEventSchema.parse({ ...event, data });
   return { event: redacted, replacements };
 }

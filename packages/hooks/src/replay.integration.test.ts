@@ -13,7 +13,15 @@ import type { HookContext } from './map.js';
 
 function fixturePayloads(): Array<{ hook: CaptureHookName; json: string }> {
   const here = dirname(fileURLToPath(import.meta.url));
-  const path = join(here, '..', '..', '..', 'testdata', 'sessions', 'raw-claude.jsonl');
+  const path = join(
+    here,
+    '..',
+    '..',
+    '..',
+    'testdata',
+    'sessions',
+    'raw-claude.jsonl',
+  );
   return readFileSync(path, 'utf8')
     .split('\n')
     .filter((line) => line.trim().length > 0)

@@ -37,9 +37,7 @@ describe('redaction corpus (M5.1 release gate)', () => {
   });
 
   it('covers every detector type with at least one positive', () => {
-    const detectors = new Set(
-      corpus.flatMap((c) => c.expect_types ?? []),
-    );
+    const detectors = new Set(corpus.flatMap((c) => c.expect_types ?? []));
     for (const required of [
       'aws_access_key',
       'github_token',

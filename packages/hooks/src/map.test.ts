@@ -55,7 +55,10 @@ describe('mapPostToolUse', () => {
 
   it('returns null for non-captured tools', () => {
     expect(
-      mapPostToolUse({ tool_name: 'Read', tool_input: { file_path: 'x' } }, ctx()),
+      mapPostToolUse(
+        { tool_name: 'Read', tool_input: { file_path: 'x' } },
+        ctx(),
+      ),
     ).toBeNull();
   });
 
@@ -69,7 +72,11 @@ describe('mapPostToolUse', () => {
 
   it('prefers the payload session_id over the context sid', () => {
     const event = mapPostToolUse(
-      { session_id: 'payload-sid', tool_name: 'Bash', tool_input: { command: 'ls' } },
+      {
+        session_id: 'payload-sid',
+        tool_name: 'Bash',
+        tool_input: { command: 'ls' },
+      },
       ctx(),
     );
     expect(event?.sid).toBe('payload-sid');
@@ -82,7 +89,10 @@ describe('mapSessionEnd outcome heuristic', () => {
     expect((event.data as { outcome: string }).outcome).toBe('committed');
   });
   it('abandoned when there were turns but no commits', () => {
-    const event = mapSessionEnd({}, ctx({ session: { turns: 4, commitShas: [] } }));
+    const event = mapSessionEnd(
+      {},
+      ctx({ session: { turns: 4, commitShas: [] } }),
+    );
     expect((event.data as { outcome: string }).outcome).toBe('abandoned');
   });
   it('unknown when nothing is known', () => {

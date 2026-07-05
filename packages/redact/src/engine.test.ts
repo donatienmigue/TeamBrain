@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  redactString,
-  redactValue,
-  summarizeReplacements,
-} from './engine.js';
+import { redactString, redactValue, summarizeReplacements } from './engine.js';
 import { shannonEntropy, isHighEntropyToken } from './entropy.js';
 import { buildDenyMatcher } from './globs.js';
 
@@ -29,9 +25,9 @@ describe('redactString — secrets', () => {
     expect(redactString('password = hunter2superLongValue').text).toContain(
       '«REDACTED:generic_secret»',
     );
-    expect(redactString('the auth token expired last night').replacements).toEqual(
-      [],
-    );
+    expect(
+      redactString('the auth token expired last night').replacements,
+    ).toEqual([]);
   });
 });
 

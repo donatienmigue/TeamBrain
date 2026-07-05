@@ -34,8 +34,10 @@ function resolveRepo(cwd: string): string {
 /** Commits on HEAD not yet on the upstream/main — a proxy for session work. */
 function sessionCommits(cwd: string): string[] {
   const range =
-    tryGit(['rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{upstream}'], cwd) !==
-    null
+    tryGit(
+      ['rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{upstream}'],
+      cwd,
+    ) !== null
       ? '@{upstream}..HEAD'
       : tryGit(['rev-parse', '--verify', 'main'], cwd) !== null
         ? 'main..HEAD'
@@ -54,7 +56,9 @@ function readDenyGlobs(brainDir: string): string[] {
       const redaction = config.redaction as Record<string, unknown>;
       const deny = redaction['deny_globs'];
       if (Array.isArray(deny)) {
-        patterns.push(...deny.filter((g): g is string => typeof g === 'string'));
+        patterns.push(
+          ...deny.filter((g): g is string => typeof g === 'string'),
+        );
       }
     } catch {
       /* malformed brain.yaml → no extra deny globs */
@@ -71,7 +75,9 @@ export interface BuildHookContextOptions {
   session?: HookContext['session'];
 }
 
-export function buildHookContext(options: BuildHookContextOptions): HookContext {
+export function buildHookContext(
+  options: BuildHookContextOptions,
+): HookContext {
   const { cwd } = options;
   const root = tryGit(['rev-parse', '--show-toplevel'], cwd) ?? cwd;
   const branch = tryGit(['rev-parse', '--abbrev-ref', 'HEAD'], cwd) ?? 'HEAD';
@@ -81,7 +87,8 @@ export function buildHookContext(options: BuildHookContextOptions): HookContext 
   const configPath = join(brainDir, 'brain.yaml');
   if (existsSync(configPath)) {
     try {
-      level = parseBrainConfig(readFileSync(configPath, 'utf8')).redaction.level;
+      level = parseBrainConfig(readFileSync(configPath, 'utf8')).redaction
+        .level;
     } catch {
       /* keep strict on a malformed config — fail safe toward more redaction */
     }

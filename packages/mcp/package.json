@@ -8,5 +8,11 @@
   "scripts": {
     "build": "tsc -b",
     "test": "vitest run"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@teambrain/core": "workspace:*",
+    "@teambrain/index": "workspace:*",
+    "zod": "^4.4.3"
   }
 }

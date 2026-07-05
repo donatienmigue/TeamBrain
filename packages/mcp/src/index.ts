@@ -48,3 +48,21 @@ export {
   type OpenBackendOptions,
   type BackendHandle,
 } from './runtime.js';
+export {
+  startDaemon,
+  type StartDaemonOptions,
+  type DaemonHandle,
+} from './daemon.js';
+export {
+  requestSessionContext,
+  sendHookEvent,
+  pingDaemon,
+  HOOK_CLIENT_TIMEOUT_MS,
+} from './hook-client.js';
+export {
+  daemonRequestSchema,
+  daemonResponseSchema,
+  encodeMessage,
+  type DaemonRequest,
+  type DaemonResponse,
+} from './protocol.js';

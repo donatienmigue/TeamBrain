@@ -4,6 +4,7 @@ import {
   openIndex,
   syncIndexWithBrain,
   tryCreateFastEmbedEmbedder,
+  type Embedder,
   type SqliteIndex,
 } from '@teambrain/index';
 import {
@@ -27,6 +28,12 @@ export interface OpenBackendOptions {
   forceReindex?: boolean;
   scope?: 'team' | 'org';
   logger?: Logger;
+  /**
+   * Inject an embedder, or `null` for lexical-only. Omit to auto-load
+   * fastembed from the runtime models dir (degrading to lexical-only if the
+   * model is unavailable). Tests pass `null` to stay offline (no download).
+   */
+  embedder?: Embedder | null;
 }
 
 export interface BackendHandle {
@@ -43,10 +50,13 @@ export interface BackendHandle {
 export async function openBackend(
   options: OpenBackendOptions,
 ): Promise<BackendHandle> {
-  const embedder = await tryCreateFastEmbedEmbedder({
-    modelsDir: join(options.runtimeDir, 'models'),
-    ...(options.logger === undefined ? {} : { logger: options.logger }),
-  });
+  const embedder =
+    options.embedder !== undefined
+      ? options.embedder
+      : await tryCreateFastEmbedEmbedder({
+          modelsDir: join(options.runtimeDir, 'models'),
+          ...(options.logger === undefined ? {} : { logger: options.logger }),
+        });
   const index = await openIndex({
     dbPath: indexDbPath(options.runtimeDir),
     embedder,

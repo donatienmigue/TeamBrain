@@ -41,6 +41,9 @@ importers:
       '@teambrain/core':
         specifier: workspace:*
         version: link:../core
+      '@teambrain/mcp':
+        specifier: workspace:*
+        version: link:../mcp
       commander:
         specifier: ^15.0.0
         version: 15.0.0
@@ -56,7 +59,20 @@ importers:
 
   packages/distill: {}
 
-  packages/hooks: {}
+  packages/hooks:
+    dependencies:
+      '@teambrain/core':
+        specifier: workspace:*
+        version: link:../core
+      '@teambrain/mcp':
+        specifier: workspace:*
+        version: link:../mcp
+      '@teambrain/redact':
+        specifier: workspace:*
+        version: link:../redact
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
 
   packages/index:
     dependencies:

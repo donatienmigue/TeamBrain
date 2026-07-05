@@ -8,5 +8,11 @@
   "scripts": {
     "build": "tsc -b",
     "test": "vitest run"
+  },
+  "dependencies": {
+    "@teambrain/core": "workspace:*",
+    "@teambrain/mcp": "workspace:*",
+    "@teambrain/redact": "workspace:*",
+    "zod": "^4.4.3"
   }
 }

@@ -5,6 +5,16 @@
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./hook-client": {
+      "types": "./dist/hook-client.d.ts",
+      "default": "./dist/hook-client.js"
+    }
+  },
   "scripts": {
     "build": "tsc -b",
     "test": "vitest run"

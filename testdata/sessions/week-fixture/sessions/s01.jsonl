@@ -1,0 +1,4 @@
+{"v":1,"tool":"claude-code","model":"claude-opus-4-8","repo":"acme/web","sid":"s01","t":"2026-06-29T09:01:00.000Z","branch":"feat/auth","ev":"session_start","data":{}}
+{"v":1,"tool":"claude-code","model":"claude-opus-4-8","repo":"acme/web","sid":"s01","t":"2026-06-29T09:02:00.000Z","branch":"feat/auth","ev":"tool_use","data":{"kind":"edit","path":"src/auth/session.ts"}}
+{"v":1,"tool":"claude-code","model":"claude-opus-4-8","repo":"acme/web","sid":"s01","t":"2026-06-29T09:03:00.000Z","branch":"feat/auth","ev":"tool_use","data":{"kind":"edit","path":"src/auth/session.ts"}}
+{"v":1,"tool":"claude-code","model":"claude-opus-4-8","repo":"acme/web","sid":"s01","t":"2026-06-29T09:04:00.000Z","branch":"feat/auth","ev":"session_end","data":{"outcome":"committed","duration_s":900,"turns":12,"commit_shas":["a1b2c3d"]}}

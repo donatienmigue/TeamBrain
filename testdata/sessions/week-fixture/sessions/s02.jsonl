@@ -1,0 +1,3 @@
+{"v":1,"tool":"claude-code","model":"claude-opus-4-8","repo":"acme/web","sid":"s02","t":"2026-06-29T09:05:00.000Z","branch":"feat/auth-retry","ev":"session_start","data":{}}
+{"v":1,"tool":"claude-code","model":"claude-opus-4-8","repo":"acme/web","sid":"s02","t":"2026-06-29T09:06:00.000Z","branch":"feat/auth-retry","ev":"tool_use","data":{"kind":"edit","path":"src/auth/session.ts"}}
+{"v":1,"tool":"claude-code","model":"claude-opus-4-8","repo":"acme/web","sid":"s02","t":"2026-06-29T09:07:00.000Z","branch":"feat/auth-retry","ev":"session_end","data":{"outcome":"committed","duration_s":900,"turns":12,"commit_shas":["a2c4e6f"]}}

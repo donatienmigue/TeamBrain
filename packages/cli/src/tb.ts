@@ -10,6 +10,9 @@ import { runMcpCommand } from './mcp-command.js';
 import { runDoctorCommand } from './doctor-command.js';
 import { runHookCommand } from './hook-command.js';
 import { runAuditCommand } from './audit-command.js';
+import { runDistillCommand } from './distill/distill-command.js';
+import { runDigestCommand } from './digest/digest-command.js';
+import { runRetireCommand } from './retire/retire-command.js';
 
 /** Reads a single y/N answer from a TTY for `tb install`'s confirm step. */
 function promptConfirm(question: string): Promise<boolean> {
@@ -31,6 +34,24 @@ program
   .name('tb')
   .description('TeamBrain — git-native shared memory for AI coding agents')
   .version(CORE_VERSION);
+
+program.addHelpText(
+  'after',
+  `
+Quick start:
+  $ tb init                     import existing agent rules into a PR branch
+  $ tb install claude-code      wire the MCP server + hooks into this project
+  $ tb serve                    run the local daemon (index + MCP + capture)
+  $ tb doctor                   check daemon, index freshness, and hooks
+
+Everyday:
+  $ tb audit --last-session     what was recorded, post-redaction
+  $ tb distill                  (CI) cluster sessions → open a memory PR
+  $ tb retire <id> "reason"     open a PR retiring a memory
+  $ tb digest                   (CI) post a people-free weekly digest
+
+Run \`tb <command> --help\` for a command's options.`,
+);
 
 program
   .command('lint')
@@ -119,6 +140,55 @@ program
     const { exitCode, output } = runAuditCommand(
       sid === undefined ? {} : { sid },
     );
+    process.stdout.write(output);
+    process.exitCode = exitCode;
+  });
+
+program
+  .command('distill')
+  .description(
+    'distill recent sessions into proposed memories on a PR branch ' +
+      '(collect → cluster → draft → dedup → gate)',
+  )
+  .argument('[path]', 'repository holding the brain', '.')
+  .option(
+    '--dry-run',
+    'print the would-be PR without any git side effects',
+    false,
+  )
+  .action(async (repoDir: string, opts: { dryRun: boolean }) => {
+    const { exitCode, output } = await runDistillCommand(repoDir, {
+      dryRun: opts.dryRun,
+    });
+    process.stdout.write(output);
+    process.exitCode = exitCode;
+  });
+
+program
+  .command('retire')
+  .description(
+    'retire a memory: move it to retired/ with status: retired on a PR branch',
+  )
+  .argument('<id>', 'the ULID of the memory to retire')
+  .argument('<reason>', 'why it is being retired (recorded in the PR)')
+  .argument('[path]', 'repository holding the brain', '.')
+  .action((id: string, reason: string, repoDir: string) => {
+    const { exitCode, output } = runRetireCommand(repoDir, id, reason);
+    process.stdout.write(output);
+    process.exitCode = exitCode;
+  });
+
+program
+  .command('digest')
+  .description(
+    'aggregate a people-free weekly digest and post it to a Slack webhook',
+  )
+  .argument('[path]', 'repository holding the brain', '.')
+  .option('--dry-run', 'print the digest JSON instead of posting', false)
+  .action(async (repoDir: string, opts: { dryRun: boolean }) => {
+    const { exitCode, output } = await runDigestCommand(repoDir, {
+      dryRun: opts.dryRun,
+    });
     process.stdout.write(output);
     process.exitCode = exitCode;
   });

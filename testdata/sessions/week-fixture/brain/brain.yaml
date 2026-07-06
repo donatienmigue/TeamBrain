@@ -1,0 +1,8 @@
+version: 1
+capture:
+  level: metadata
+redaction:
+  level: strict
+distill:
+  model: claude-opus-4-8
+required_tags: []

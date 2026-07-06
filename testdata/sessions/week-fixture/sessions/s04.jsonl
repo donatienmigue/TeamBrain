@@ -1,0 +1,3 @@
+{"v":1,"tool":"claude-code","model":"claude-opus-4-8","repo":"acme/web","sid":"s04","t":"2026-06-29T09:11:00.000Z","branch":"fix/users-migration","ev":"session_start","data":{}}
+{"v":1,"tool":"claude-code","model":"claude-opus-4-8","repo":"acme/web","sid":"s04","t":"2026-06-29T09:12:00.000Z","branch":"fix/users-migration","ev":"tool_use","data":{"kind":"edit","path":"db/migrations/0007_add_users.sql"}}
+{"v":1,"tool":"claude-code","model":"claude-opus-4-8","repo":"acme/web","sid":"s04","t":"2026-06-29T09:13:00.000Z","branch":"fix/users-migration","ev":"session_end","data":{"outcome":"committed","duration_s":900,"turns":12,"commit_shas":["b2d4f60"]}}

@@ -1,0 +1,4 @@
+{"v":1,"tool":"claude-code","model":"claude-opus-4-8","repo":"acme/web","sid":"s10","t":"2026-06-29T09:30:00.000Z","branch":"docs/readme","ev":"session_start","data":{}}
+{"v":1,"tool":"claude-code","model":"claude-opus-4-8","repo":"acme/web","sid":"s10","t":"2026-06-29T09:31:00.000Z","branch":"docs/readme","ev":"tool_use","data":{"kind":"edit","path":"README.md"}}
+{"v":1,"tool":"claude-code","model":"claude-opus-4-8","repo":"acme/web","sid":"s10","t":"2026-06-29T09:32:00.000Z","branch":"docs/readme","ev":"memory_retrieved","data":{"ids":["01J8YC01A2B3C4D5E6F7G8H9J0"]}}
+{"v":1,"tool":"claude-code","model":"claude-opus-4-8","repo":"acme/web","sid":"s10","t":"2026-06-29T09:33:00.000Z","branch":"docs/readme","ev":"session_end","data":{"outcome":"unknown","duration_s":900,"turns":12,"commit_shas":[]}}

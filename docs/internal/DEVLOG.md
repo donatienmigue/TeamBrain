@@ -142,3 +142,147 @@ upstream/main) — turn counting from the transcript is deferred, so V1 emits
 committed/unknown but rarely abandoned from the live hook; (4) the deny-glob
 matcher covers common .gitignore syntax, not every corner case (noted for a
 future hardening pass).
+
+## M6.1 — packages/distill: collect + cluster
+What: reads new redacted records off the never-merged teambrain/sessions
+branch since a brain.yaml `state.distill.watermark` (git diff of sessions/*),
+plus merged-PR metadata via `gh pr list --json`. clusterSignals folds four
+signals into deterministic evidence bundles (sessions[] + commits[] map to C1
+evidence): same-path struggles across ≥2 sessions, repeated failing commands,
+no-hit memory retrievals, agent-proposed candidates (merged by title). PRs are
+linked to path clusters by touched file, enriching commit evidence. Sources
+(SessionSource, PullRequestSource) are injectable so the whole stage is tested
+without git or the network; the git/gh drivers are covered by a temp-repo test
+and a fake-exec test. Watermark writes are a yaml document round-trip that
+preserves other keys/comments.
+Decisions/tradeoffs: (1) failing commands cluster by kind, not command text —
+the privacy model never captures the command, so finer grouping is impossible;
+(2) no-hit clustering counts empty memory_retrieved events but can't group by
+query (query text isn't recorded), so it's a documentation-gap volume signal;
+(3) GitLab PR driver deferred (V1 is GitHub-only via gh), noted in prs.ts;
+(4) M6.1 has no standalone Accept — the golden pipeline test lands with M6.4;
+this stage ships with unit + integration coverage per the DoD.
+
+## M6.2 — distill: draft
+What: C5 Provider interface (complete({system,prompt,schema})→zod-validated T or
+throws) with a FakeProvider (responder, tests) and a real anthropicProvider
+(official SDK, structured outputs via messages.parse + zodOutputFormat, lazy
+import, model from brain.yaml → default claude-opus-4-8). draftCandidates makes
+one Provider call per cluster using the versioned prompt prompts/distill-v1.md,
+fills the deterministic C1 fields (advisory/active/team, evidence from the
+cluster) around the model's class/title/body/tags; a rejected call is discarded
+and counted. Deps added to distill: @anthropic-ai/sdk + zod (LLM calls stay in
+distill per guardrail 4). Tradeoffs: openai/ollama drivers deferred (V1 =
+anthropic + fake); the prompt ships beside the built code and loads via
+import.meta.url.
+
+## M6.3 — distill: dedup + conflict
+What: dedupCandidates embeds each candidate (injected EmbedFn; CLI wires the
+index's bge/HashingEmbedder), drops it when cosine ≥0.85 vs an existing active
+memory, else runs a pairwise contradiction check (Provider call) against the
+top-3 neighbors and, on "contradicts", sets supersedes + a conflict flag.
+Novelty = 1−max_sim feeds M6.4 scoring. Existing memories load from
+.teambrain/memories only (retired excluded — R5 stance). Tradeoffs: ≥0.85 is a
+hard drop (amendment-marking noted as a future option); conflict checks are
+best-effort — a failed Provider call is treated as no-conflict (principle 2).
+
+## M6.4 — distill: gate + PR
+What: gateCandidates scores evidence_count × novelty(1−max_sim), keeps top ≤10
+(deterministic tie-break), and renderPrBody emits a summary table with a
+supersedes flag section. pipeline.distill() wires collect→cluster→draft→dedup→
+gate with no git side effects (also the --dry-run path). tb distill writes one
+file per proposal onto teambrain/proposals-<date> via a temp worktree (main
+untouched), advances the watermark on that branch, and opens a PR via gh
+(best-effort). Ships ci-templates/lint.yml (tb lint --require-evidence on PRs
+touching .teambrain). Accept: golden pipeline test over the new
+testdata/sessions/week-fixture (12 sessions → 4 clusters) asserts exactly 3
+proposals, duplicate dropped, contradiction carries supersedes + PR flag, all
+proposals pass tb lint; a CLI test proves --dry-run makes no branch.
+
+## M5.3 fix — spool commits via git plumbing, not a worktree
+What: the sessions-branch publish path spun up a throwaway `git worktree`
+(checkout + add + commit + remove + prune ≈ 6–8 subprocesses + temp-dir churn)
+per record. Under parallel test load it contended on git/disk and blew the 5s
+per-test budget (the spool integration test timed out intermittently). Replaced
+it with pure plumbing against a temporary GIT_INDEX_FILE: hash-object -w →
+read-tree the branch tip → update-index → write-tree → commit-tree -p tip →
+update-ref (compare-and-set). No working tree is ever checked out. Also dropped
+a dead `git mktree` call (the empty tree is always known to git). Behavior is
+unchanged (same orphan branch, same paths, idempotent re-handling) and faster;
+the full suite is stable across repeated parallel runs.
+
+## M7.2 — tb doctor (Tech Brief §6)
+What: enriched the daemon heartbeat with self-observability — brain checksum
+(freshness), last-reindex time, per-tool hook heartbeats (last event + count,
+keyed by C2 `tool`), and retrieval p95 over a rolling window of the daemon's
+last 100 context renders. `tb doctor` assembles these into a frozen,
+zod-validated DoctorReport (daemon/index/retrieval/hooks/sync/checks), adds a
+git branch-sync check (ahead/behind vs upstream), and validates its own output
+before printing (human or --json). Exit 0 when reachable, 2 otherwise.
+Tradeoffs: retrieval p95 covers the daemon's own context renders, not the
+agent's MCP-server-process searches (a separate short-lived process) — honest
+partial signal, labelled as such; every field degrades to null from a
+partial/absent heartbeat. Accept: --json schema test + observability-field test.
+
+## M7.1 — tb digest (R6)
+What: a weekly CI digest. The aggregator consumes AggregateEvent — a projection
+that keeps only {ev, data} and structurally drops every identity-bearing field
+(the C2 join keys and any future author/user), so the output is people-free by
+construction (Tech Brief §4.7). Computes proposed/approved/retired counts,
+top-retrieved ids, no-hit search volume (doc gaps), stale ≥90d (active + no
+retrieval in the window), and rules-file drift (sha256 of CLAUDE.md/AGENTS.md/
+.cursorrules/.cursor/rules vs a brain.yaml baseline). Renders a Slack
+incoming-webhook payload; `tb digest [--dry-run]` prints or posts (best-effort,
+never throws — the only network egress in the digest path, guideline 4).
+Guardrail test: authored fixtures → no per-person data in the output.
+
+## M7.3 — ci-templates
+What: shipped distill.yml (weekly cron → proposals PR), digest.yml (weekly cron
+→ Slack), sessions-rotation.yml (monthly squash+prune of the teambrain/sessions
+orphan branch via commit-tree + force-push, records kept), alongside the
+existing lint.yml, plus a README table. Workflows fetch the sessions branch
+best-effort and never touch main. Note: actionlint could not be executed here
+(installing it was blocked as untrusted external code); the templates were hand-
+validated (valid triggers/cron/permissions, shellcheck-safe quoted `run`
+scripts) and parse as YAML — run `actionlint ci-templates/*.yml` in CI to
+confirm. Also raised testTimeout to 20s for the git-subprocess-heavy mcp/cli
+integration suites, which are correct but slow under peak parallel contention.
+
+## M8.1 — full-loop release test + tb retire
+What: implemented `tb retire <id> <reason>` (C6) — finds the active memory by
+id, and on a throwaway worktree git-moves it to retired/ with status: retired
+(C1), commits a teambrain/retire-<id> branch, and opens a PR best-effort; main
+is never touched. Then the release loop test drives the whole product through
+its CLI: fixture repo → tb init → merge → tb serve (live daemon) → replay
+sessions → tb distill → merge → memory_search finds the new memory → tb retire
+→ merge → memory_search no longer returns it (R5). Real git throughout; the LLM
+Provider + embedder are injected so it's offline and deterministic. Accept:
+green 3 consecutive runs (verified locally). Tradeoffs: sessions are replayed
+via an injected source rather than round-tripped through the socket/spool (that
+path is covered by the mcp integration tests); reindex is forced explicitly
+after each merge to keep the assertions non-flaky.
+
+## M8.2 — packaging
+What: `.github/workflows/release.yml` fires on a v* tag: job 1 `pnpm -r publish
+--provenance` (all @teambrain/* packages, workspace:* rewritten to real
+versions), job 2 a bun `--compile` matrix (darwin-arm64/x64, linux-x64) that
+smoke-tests `--version` and attaches the binaries to the GitHub Release. Made
+every package publishable (license, repository, publishConfig, files). Verified
+locally: `pnpm --filter cli pack` produces a tarball with workspace deps
+rewritten to versions (registry-installable once published), and
+`bun build --compile` of the cli yields a single binary that runs `--version`,
+`doctor --json`, and `--help` (embeds the native better-sqlite3). Post-install
+self-check is `tb doctor` (documented in the README quick start). Blocker (per
+DoD): the literal "npm pack installs clean on a bare container" and the actual
+npm publish / cross-platform binaries can only be verified in CI — the sandbox
+has no registry, no bare container, and cross-OS runners; the pieces are staged
+and locally smoke-tested.
+
+## M8.3 — docs
+What: rewrote README.md with a <5-min quick start (install → init → install
+claude-code → serve → doctor) + an everyday-commands section and an accurate
+status list; added FORMAT.md (the C1 memory spec — layout, front-matter table,
+body rules, canonical serialization) and SECURITY.md (the §5 threat model
+summary, memory-poisoning stance front and centre); added a `tb --help`
+examples block (commander addHelpText) so the top-level help lists the quick
+start + everyday commands, with per-command `--help` from each description.

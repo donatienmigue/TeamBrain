@@ -210,3 +210,40 @@ update-ref (compare-and-set). No working tree is ever checked out. Also dropped
 a dead `git mktree` call (the empty tree is always known to git). Behavior is
 unchanged (same orphan branch, same paths, idempotent re-handling) and faster;
 the full suite is stable across repeated parallel runs.
+
+## M7.2 — tb doctor (Tech Brief §6)
+What: enriched the daemon heartbeat with self-observability — brain checksum
+(freshness), last-reindex time, per-tool hook heartbeats (last event + count,
+keyed by C2 `tool`), and retrieval p95 over a rolling window of the daemon's
+last 100 context renders. `tb doctor` assembles these into a frozen,
+zod-validated DoctorReport (daemon/index/retrieval/hooks/sync/checks), adds a
+git branch-sync check (ahead/behind vs upstream), and validates its own output
+before printing (human or --json). Exit 0 when reachable, 2 otherwise.
+Tradeoffs: retrieval p95 covers the daemon's own context renders, not the
+agent's MCP-server-process searches (a separate short-lived process) — honest
+partial signal, labelled as such; every field degrades to null from a
+partial/absent heartbeat. Accept: --json schema test + observability-field test.
+
+## M7.1 — tb digest (R6)
+What: a weekly CI digest. The aggregator consumes AggregateEvent — a projection
+that keeps only {ev, data} and structurally drops every identity-bearing field
+(the C2 join keys and any future author/user), so the output is people-free by
+construction (Tech Brief §4.7). Computes proposed/approved/retired counts,
+top-retrieved ids, no-hit search volume (doc gaps), stale ≥90d (active + no
+retrieval in the window), and rules-file drift (sha256 of CLAUDE.md/AGENTS.md/
+.cursorrules/.cursor/rules vs a brain.yaml baseline). Renders a Slack
+incoming-webhook payload; `tb digest [--dry-run]` prints or posts (best-effort,
+never throws — the only network egress in the digest path, guideline 4).
+Guardrail test: authored fixtures → no per-person data in the output.
+
+## M7.3 — ci-templates
+What: shipped distill.yml (weekly cron → proposals PR), digest.yml (weekly cron
+→ Slack), sessions-rotation.yml (monthly squash+prune of the teambrain/sessions
+orphan branch via commit-tree + force-push, records kept), alongside the
+existing lint.yml, plus a README table. Workflows fetch the sessions branch
+best-effort and never touch main. Note: actionlint could not be executed here
+(installing it was blocked as untrusted external code); the templates were hand-
+validated (valid triggers/cron/permissions, shellcheck-safe quoted `run`
+scripts) and parse as YAML — run `actionlint ci-templates/*.yml` in CI to
+confirm. Also raised testTimeout to 20s for the git-subprocess-heavy mcp/cli
+integration suites, which are correct but slow under peak parallel contention.

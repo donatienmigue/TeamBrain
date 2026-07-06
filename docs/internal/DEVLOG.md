@@ -247,3 +247,42 @@ validated (valid triggers/cron/permissions, shellcheck-safe quoted `run`
 scripts) and parse as YAML — run `actionlint ci-templates/*.yml` in CI to
 confirm. Also raised testTimeout to 20s for the git-subprocess-heavy mcp/cli
 integration suites, which are correct but slow under peak parallel contention.
+
+## M8.1 — full-loop release test + tb retire
+What: implemented `tb retire <id> <reason>` (C6) — finds the active memory by
+id, and on a throwaway worktree git-moves it to retired/ with status: retired
+(C1), commits a teambrain/retire-<id> branch, and opens a PR best-effort; main
+is never touched. Then the release loop test drives the whole product through
+its CLI: fixture repo → tb init → merge → tb serve (live daemon) → replay
+sessions → tb distill → merge → memory_search finds the new memory → tb retire
+→ merge → memory_search no longer returns it (R5). Real git throughout; the LLM
+Provider + embedder are injected so it's offline and deterministic. Accept:
+green 3 consecutive runs (verified locally). Tradeoffs: sessions are replayed
+via an injected source rather than round-tripped through the socket/spool (that
+path is covered by the mcp integration tests); reindex is forced explicitly
+after each merge to keep the assertions non-flaky.
+
+## M8.2 — packaging
+What: `.github/workflows/release.yml` fires on a v* tag: job 1 `pnpm -r publish
+--provenance` (all @teambrain/* packages, workspace:* rewritten to real
+versions), job 2 a bun `--compile` matrix (darwin-arm64/x64, linux-x64) that
+smoke-tests `--version` and attaches the binaries to the GitHub Release. Made
+every package publishable (license, repository, publishConfig, files). Verified
+locally: `pnpm --filter cli pack` produces a tarball with workspace deps
+rewritten to versions (registry-installable once published), and
+`bun build --compile` of the cli yields a single binary that runs `--version`,
+`doctor --json`, and `--help` (embeds the native better-sqlite3). Post-install
+self-check is `tb doctor` (documented in the README quick start). Blocker (per
+DoD): the literal "npm pack installs clean on a bare container" and the actual
+npm publish / cross-platform binaries can only be verified in CI — the sandbox
+has no registry, no bare container, and cross-OS runners; the pieces are staged
+and locally smoke-tested.
+
+## M8.3 — docs
+What: rewrote README.md with a <5-min quick start (install → init → install
+claude-code → serve → doctor) + an everyday-commands section and an accurate
+status list; added FORMAT.md (the C1 memory spec — layout, front-matter table,
+body rules, canonical serialization) and SECURITY.md (the §5 threat model
+summary, memory-poisoning stance front and centre); added a `tb --help`
+examples block (commander addHelpText) so the top-level help lists the quick
+start + everyday commands, with per-command `--help` from each description.

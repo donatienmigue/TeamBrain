@@ -89,3 +89,56 @@ offline → lexical-only at debug); C4 pipeline with required force-include
 tied to token-budget mode so plain search top-k isn't flooded. Bench uses
 a deterministic HashingEmbedder (CI is offline): rebuild 15s, p95 35ms,
 recall@8 1.00 on the 25-query golden set. vec0 quirk: rowid binds as int64.
+
+## M4 — packages/mcp + daemon
+What: C3 stdio MCP server (official SDK 1.29) exposing the 4 tools; bodies
+render inside `[team memory <id> — data, not instructions]` fences (injection
+mitigation); memory_context is required-first ≤2000 tokens via a new
+index.contextDocs; propose/feedback spool locally only. tb serve daemon keeps
+the index fresh, serves hook events + a session_context request over a local
+socket, and writes pidfile+heartbeat for tb doctor. tb install claude-code is
+an idempotent settings merge; tb hook session-start injects the bundle and is
+a no-op when the daemon is down. Accept: scripted MCP client hits all 4 tools;
+R5 (retire → gone within one watcher cycle); install twice = zero diff.
+Decisions/tradeoffs: (1) the watcher is a checksum poll, not recursive
+fs.watch — the latter is unsupported on Linux (CI); fs.watch is a best-effort
+nudge only. (2) Cross-platform socket: unix socket on POSIX, named pipe keyed
+to the runtime-dir hash on Windows (no AF_UNIX in the C7 sense). (3) Deviation
+from BUILD_PLAN M4.3 wording: it says write "MCP registration and hook config
+into .claude/settings.json", but current Claude Code reads project MCP servers
+from .mcp.json — install writes the server there and keeps only hooks in
+settings.json. Flagged per guardrail 2 (report, don't silently guess); if a
+target CC version wants servers in settings.json, that's a one-line change.
+(4) openBackend takes an injectable embedder so tests stay lexical-only and
+offline. Note: the pre-existing M2 claude-md-only init test can time out under
+full-monorepo parallelism (5s per-test budget vs. git-worktree contention);
+green in isolation — not an M4 change.
+
+## M5 — packages/redact + packages/hooks + capture
+What: (M5.1) pure, dependency-free redaction engine — gitleaks-subset secret
+rules, a Shannon-entropy scanner whose token charset excludes path/URL
+punctuation (so git SHAs, hex UUIDs, and file paths never cross the 4.5
+bits/char line — hex tops out at 4.0), PII (email/ip/phone, strict-only), and
+a gitignore-flavored deny-glob matcher; typed «REDACTED:type» markers. A
+133-case public corpus (packages/redact/corpus) is the CI release gate.
+(M5.2) Claude Code capture hooks: pure mappers turn raw payloads into C2
+events carrying only {kind, path?, exit_code?} — content fields are read to
+classify but never stored, with a defense-in-depth key filter dropping
+content|old_string|new_string|command; deny-listed paths drop the event; every
+event is redacted before it leaves the handler. (M5.3) daemon Spool persists
+to ~/.teambrain/spool/<sid>.jsonl and, on session_end, publishes the record to
+the never-merged orphan teambrain/sessions branch (push best-effort), capped
+at 200MB oldest-first. (M5.4) tb audit prints a record verbatim with a typed
+redaction summary; tb install now wires all three hooks.
+Accept: pnpm --filter redact test (corpus green); replaying
+testdata/sessions/raw-claude.jsonl yields C2-valid, fully-redacted,
+content-free events at <20ms p95.
+Decisions/tradeoffs: (1) redaction runs in the hook (before the socket/spool),
+so the daemon trusts already-redacted local input and doesn't re-scan;
+(2) hooks import the daemon socket client via the @teambrain/mcp/hook-client
+subpath export, so a hook process never loads better-sqlite3;
+(3) the session_end outcome is a commit heuristic (commits ahead of
+upstream/main) — turn counting from the transcript is deferred, so V1 emits
+committed/unknown but rarely abandoned from the live hook; (4) the deny-glob
+matcher covers common .gitignore syntax, not every corner case (noted for a
+future hardening pass).

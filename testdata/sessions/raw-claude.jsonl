@@ -1,0 +1,10 @@
+{"hook_event_name":"SessionStart","session_id":"sess-abc-123","source":"startup"}
+{"hook_event_name":"PostToolUse","session_id":"sess-abc-123","tool_name":"Edit","tool_input":{"file_path":"src/index.ts","old_string":"const key = 'AKIAIOSFODNN7EXAMPLE'","new_string":"const key = process.env.KEY"}}
+{"hook_event_name":"PostToolUse","session_id":"sess-abc-123","tool_name":"Write","tool_input":{"file_path":"src/config.ts","content":"password=hunter2SuperSecretValue reach me at leak@example.com"}}
+{"hook_event_name":"PostToolUse","session_id":"sess-abc-123","tool_name":"Bash","tool_input":{"command":"gh auth login --with-token ghp_abcdef0123456789abcdef0123456789abcd"},"tool_response":{"exit_code":0,"stdout":"Logged in"}}
+{"hook_event_name":"PostToolUse","session_id":"sess-abc-123","tool_name":"Bash","tool_input":{"command":"pnpm test"},"tool_response":{"exit_code":1,"stderr":"1 test failed"}}
+{"hook_event_name":"PostToolUse","session_id":"sess-abc-123","tool_name":"Read","tool_input":{"file_path":"README.md"}}
+{"hook_event_name":"PostToolUse","session_id":"sess-abc-123","tool_name":"Edit","tool_input":{"file_path":"config/prod.env","old_string":"A","new_string":"B"}}
+{"hook_event_name":"PostToolUse","session_id":"sess-abc-123","tool_name":"Write","tool_input":{"file_path":"src/keys/AKIAIOSFODNN7EXAMPLE.ts","content":"placeholder"}}
+{"hook_event_name":"PostToolUse","session_id":"sess-abc-123","tool_name":"Bash","tool_input":{"command":"vitest run packages/redact"},"tool_response":{"exit_code":0}}
+{"hook_event_name":"Stop","session_id":"sess-abc-123","stop_hook_active":false}

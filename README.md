@@ -2,14 +2,15 @@
 
 Git-native, cross-vendor shared memory for AI coding agents.
 
-> **Status: early-stage.** The brain format and the `tb init` importer are
-> implemented: memory schemas with byte-exact parse/serialize, `tb lint`
-> (schema, size limits, and prompt-injection heuristics), a structured
-> logger, and `tb init` — which converts CLAUDE.md / .cursorrules /
-> AGENTS.md / ADRs into a reviewable brain on a PR-ready `teambrain/init`
-> branch without ever touching your checkout. The MCP server, retrieval
-> index, capture hooks, and distiller described below are designed but not
-> yet implemented. See [Roadmap](#roadmap).
+> **Status: early-stage.** The brain format, `tb init` importer, retrieval
+> index, MCP server, daemon, and capture pipeline are implemented: memory
+> schemas with byte-exact parse/serialize, `tb lint`, `tb init`, a SQLite
+> hybrid (lexical + vector) index, `tb serve` (a daemon that keeps the index
+> fresh and serves the four memory tools over MCP), `tb install claude-code`
+> to wire the hooks + MCP server into a project, privacy-first capture hooks
+> with an on-device redaction engine, and `tb audit`. The CI distiller
+> described below is designed but not yet implemented. See
+> [Roadmap](#roadmap).
 
 ## What TeamBrain is
 
@@ -62,14 +63,14 @@ pnpm build              # tsc -b across all packages, respecting dependency orde
 pnpm test               # every package's test suite
 pnpm test:integration   # tb init end-to-end against fixture git repos
 pnpm lint               # eslint + prettier --check
-pnpm bench              # performance budgets (no-op until retrieval ships)
+pnpm bench              # retrieval performance budgets (p95, rebuild, recall)
 ```
 
 CI runs all four on Node 20 and 22 (`.github/workflows/ci.yml`).
 
 ## Roadmap
 
-Currently heading into **M3 — the retrieval index**. Done so far:
+Currently heading into **M5 — capture hooks + redaction**. Done so far:
 
 - **M0 — scaffold:** pnpm monorepo, shared strict TS config, vitest,
   eslint/prettier, CI on Node 20/22.
@@ -84,6 +85,17 @@ Currently heading into **M3 — the retrieval index**. Done so far:
   interview (≤10 skippable questions), and output as a PR-ready
   `teambrain/init` branch written through a temporary git worktree — your
   current branch and working tree are never touched.
+- **M3 — retrieval (`packages/index`):** SQLite index with an FTS5 mirror
+  and sqlite-vec embeddings, checksum-based auto-reindex, local fastembed
+  (bge-small) with a lexical-only fallback, and a hybrid BM25 ∪ vector →
+  reciprocal-rank-fusion pipeline; `pnpm bench` enforces p95, rebuild, and
+  recall budgets on a synthetic 5k-memory brain.
+- **M4 — MCP server + daemon (`packages/mcp`):** a stdio MCP server exposing
+  `memory_context` / `memory_search` / `memory_propose` / `memory_feedback`
+  (bodies rendered as attributed data-not-instructions blocks), and
+  `tb serve` — a daemon that watches the brain, keeps the index fresh, and
+  answers agents over a local socket; `tb install claude-code` wires it into
+  a project idempotently, and `tb doctor` reports health.
 
 The full milestone-by-milestone plan lives in `docs/internal/BUILD_PLAN.md`
 (see [Contributing](#contributing)).

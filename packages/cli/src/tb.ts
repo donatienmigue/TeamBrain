@@ -1,8 +1,29 @@
 #!/usr/bin/env node
+import { createInterface } from 'node:readline';
 import { Command } from 'commander';
 import { CORE_VERSION, exitCodeForError } from '@teambrain/core';
 import { runLintCommand } from './lint-command.js';
 import { runInitCommand } from './init/init-command.js';
+import { runInstallCommand } from './install/install-command.js';
+import { runServeCommand } from './serve-command.js';
+import { runMcpCommand } from './mcp-command.js';
+import { runDoctorCommand } from './doctor-command.js';
+import { runHookCommand } from './hook-command.js';
+import { runAuditCommand } from './audit-command.js';
+
+/** Reads a single y/N answer from a TTY for `tb install`'s confirm step. */
+function promptConfirm(question: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    const rl = createInterface({
+      input: process.stdin,
+      output: process.stdout,
+    });
+    rl.question(question, (answer) => {
+      rl.close();
+      resolve(/^y(es)?$/i.test(answer.trim()));
+    });
+  });
+}
 
 const program = new Command();
 
@@ -52,6 +73,73 @@ program
       io: { input: process.stdin, output: process.stdout },
     });
     process.stdout.write(output);
+    process.exitCode = exitCode;
+  });
+
+program
+  .command('install')
+  .description('write MCP + hook config for an agent tool (idempotent)')
+  .argument('<tool>', 'claude-code (cursor is deferred)')
+  .argument('[path]', 'project directory to install into', '.')
+  .option('--yes', 'apply without confirmation (for CI)', false)
+  .action(async (tool: string, targetDir: string, opts: { yes: boolean }) => {
+    const interactive = !opts.yes && process.stdin.isTTY === true;
+    const { exitCode, output } = await runInstallCommand(tool, targetDir, {
+      yes: opts.yes,
+      ...(interactive ? { confirm: promptConfirm } : {}),
+    });
+    process.stdout.write(output);
+    process.exitCode = exitCode;
+  });
+
+program
+  .command('serve')
+  .description('run the daemon: MCP index + brain watcher + hook socket')
+  .argument('[path]', 'repository holding the brain', '.')
+  .action(async (repoDir: string) => {
+    const { exitCode, output } = await runServeCommand(repoDir);
+    process.stdout.write(output);
+    process.exitCode = exitCode;
+  });
+
+program
+  .command('mcp')
+  .description('run the stdio MCP server (launched by the agent tool)')
+  .argument('[path]', 'repository holding the brain', '.')
+  .action(async (repoDir: string) => {
+    await runMcpCommand(repoDir);
+  });
+
+program
+  .command('audit')
+  .description("print a session's stored record with a redaction summary")
+  .argument('[sid]', 'session id to audit (default: the most recent)')
+  .option('--last-session', 'audit the most recent session (default)', false)
+  .action((sid: string | undefined) => {
+    const { exitCode, output } = runAuditCommand(
+      sid === undefined ? {} : { sid },
+    );
+    process.stdout.write(output);
+    process.exitCode = exitCode;
+  });
+
+program
+  .command('doctor')
+  .description('report daemon + index health')
+  .option('--json', 'emit machine-readable JSON', false)
+  .action(async (opts: { json: boolean }) => {
+    const { exitCode, output } = await runDoctorCommand({ json: opts.json });
+    process.stdout.write(output);
+    process.exitCode = exitCode;
+  });
+
+program
+  .command('hook')
+  .description('internal: hook bodies invoked by the agent tool')
+  .argument('<event>', 'session-start')
+  .action(async (event: string) => {
+    const { exitCode, output } = await runHookCommand(event);
+    if (output.length > 0) process.stderr.write(output);
     process.exitCode = exitCode;
   });
 

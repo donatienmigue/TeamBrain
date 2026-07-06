@@ -122,7 +122,9 @@ export async function startDaemon(
           runtimeDir,
           brainDir,
           ...(logger === undefined ? {} : { logger }),
-          ...(options.spoolPush === undefined ? {} : { push: options.spoolPush }),
+          ...(options.spoolPush === undefined
+            ? {}
+            : { push: options.spoolPush }),
           ...(options.spoolMaxBytes === undefined
             ? {}
             : { maxBytes: options.spoolMaxBytes }),

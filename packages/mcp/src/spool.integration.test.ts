@@ -33,7 +33,11 @@ async function tempHome(): Promise<string> {
   return dir;
 }
 
-function ev(sid: string, ev: SessionEvent['ev'], data: Record<string, unknown>): SessionEvent {
+function ev(
+  sid: string,
+  ev: SessionEvent['ev'],
+  data: Record<string, unknown>,
+): SessionEvent {
   return {
     v: 1,
     sid,
@@ -64,10 +68,18 @@ describe('Spool (M5.3)', () => {
   it('appends events to spool/<sid>.jsonl', async () => {
     const runtimeDir = await tempHome();
     const repo = await tempRepo();
-    const spool = new Spool({ runtimeDir, brainDir: join(repo, '.teambrain'), push: false });
+    const spool = new Spool({
+      runtimeDir,
+      brainDir: join(repo, '.teambrain'),
+      push: false,
+    });
     await spool.handle(ev('sess-1', 'session_start', {}));
-    await spool.handle(ev('sess-1', 'tool_use', { kind: 'edit', path: 'src/a.ts' }));
-    const lines = (await readFile(sessionRecordPath(runtimeDir, 'sess-1'), 'utf8'))
+    await spool.handle(
+      ev('sess-1', 'tool_use', { kind: 'edit', path: 'src/a.ts' }),
+    );
+    const lines = (
+      await readFile(sessionRecordPath(runtimeDir, 'sess-1'), 'utf8')
+    )
       .trim()
       .split('\n');
     expect(lines).toHaveLength(2);
@@ -92,15 +104,23 @@ describe('Spool (M5.3)', () => {
     );
 
     // Branch exists and holds the record under sessions/.
-    expect(git(['rev-parse', '--verify', `refs/heads/${SESSIONS_BRANCH}`], repo)).toBeTruthy();
-    const stored = git(['show', `${SESSIONS_BRANCH}:sessions/sess-9.jsonl`], repo);
+    expect(
+      git(['rev-parse', '--verify', `refs/heads/${SESSIONS_BRANCH}`], repo),
+    ).toBeTruthy();
+    const stored = git(
+      ['show', `${SESSIONS_BRANCH}:sessions/sess-9.jsonl`],
+      repo,
+    );
     expect(stored).toContain('session_end');
 
     // main must not carry the sessions tree (orphan branch, never merged).
     const mainTree = git(['ls-tree', '--name-only', 'main'], repo);
     expect(mainTree).not.toContain('sessions');
     // Independent history: the sessions branch has its own root commit.
-    const sessionsRoot = git(['rev-list', '--max-parents=0', SESSIONS_BRANCH], repo);
+    const sessionsRoot = git(
+      ['rev-list', '--max-parents=0', SESSIONS_BRANCH],
+      repo,
+    );
     const mainRoot = git(['rev-list', '--max-parents=0', 'main'], repo);
     expect(sessionsRoot).not.toBe(mainRoot);
   });
@@ -135,7 +155,12 @@ describe('Spool (M5.3)', () => {
     });
     for (let i = 0; i < 6; i++) {
       // Non-session_end events so nothing commits; each record ~150 bytes.
-      await spool.handle(ev(`sess-cap-${i}`, 'tool_use', { kind: 'edit', path: `src/file-${i}.ts` }));
+      await spool.handle(
+        ev(`sess-cap-${i}`, 'tool_use', {
+          kind: 'edit',
+          path: `src/file-${i}.ts`,
+        }),
+      );
       await spool.handle(ev(`sess-cap-${i}`, 'tool_use', { kind: 'command' }));
     }
     expect(logger.warns.some((m) => m.includes('evicted'))).toBe(true);

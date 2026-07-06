@@ -13,7 +13,11 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { startDaemon, type DaemonHandle } from './daemon.js';
-import { pingDaemon, requestSessionContext, sendHookEvent } from './hook-client.js';
+import {
+  pingDaemon,
+  requestSessionContext,
+  sendHookEvent,
+} from './hook-client.js';
 import { runSessionStartHook } from './session-start-hook.js';
 import { heartbeatPath, pidFilePath, sessionRecordPath } from './paths.js';
 import { FIXTURE_IDS, fixtureBrainDir } from './test-helpers.js';

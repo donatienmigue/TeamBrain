@@ -11,6 +11,7 @@ import { runDoctorCommand } from './doctor-command.js';
 import { runHookCommand } from './hook-command.js';
 import { runAuditCommand } from './audit-command.js';
 import { runDistillCommand } from './distill/distill-command.js';
+import { runDigestCommand } from './digest/digest-command.js';
 
 /** Reads a single y/N answer from a TTY for `tb install`'s confirm step. */
 function promptConfirm(question: string): Promise<boolean> {
@@ -138,6 +139,21 @@ program
   )
   .action(async (repoDir: string, opts: { dryRun: boolean }) => {
     const { exitCode, output } = await runDistillCommand(repoDir, {
+      dryRun: opts.dryRun,
+    });
+    process.stdout.write(output);
+    process.exitCode = exitCode;
+  });
+
+program
+  .command('digest')
+  .description(
+    'aggregate a people-free weekly digest and post it to a Slack webhook',
+  )
+  .argument('[path]', 'repository holding the brain', '.')
+  .option('--dry-run', 'print the digest JSON instead of posting', false)
+  .action(async (repoDir: string, opts: { dryRun: boolean }) => {
+    const { exitCode, output } = await runDigestCommand(repoDir, {
       dryRun: opts.dryRun,
     });
     process.stdout.write(output);

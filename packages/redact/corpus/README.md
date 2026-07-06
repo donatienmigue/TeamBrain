@@ -26,6 +26,24 @@ no build ships that leaks a secret or over-redacts a benign token.
   fired — the class of tricky non-secrets (git SHAs, UUIDs, file paths,
   semver, hex colors, timestamps, code identifiers, prose) must never redact.
 
+## De-fanged fixtures
+
+Some detector prefixes match live-credential formats that platform secret
+scanners (e.g. GitHub push protection) block on sight — a redaction *test*
+corpus otherwise can't be pushed. Those fixtures store the prefix as a
+`{placeholder}` so the committed bytes never form a scannable credential; the
+loader in `../src/corpus.test.ts` re-assembles the real prefix at test time, so
+detection coverage is unchanged. Current placeholders:
+
+| placeholder  | real prefix  |
+| ------------ | ------------ |
+| `{glpat}`    | `glpat-`     |
+| `{sk_live}`  | `sk_live_`   |
+| `{rk_live}`  | `rk_live_`   |
+
+Add a mapping (and use the placeholder in the fixture) whenever a new fixture
+would otherwise trip a scanner.
+
 ## Contributing
 
 Add cases for any new detector or any real-world false positive/negative you

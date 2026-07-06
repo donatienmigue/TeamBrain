@@ -8,16 +8,16 @@
 {"id":"github_token-8","kind":"positive","detector":"github_token","input":"token ghs_abcdef0123456789abcdef0123456789abcd","expect_types":["github_token"],"secret":"ghs_abcdef0123456789abcdef0123456789abcd"}
 {"id":"github_token-9","kind":"positive","detector":"github_token","input":"token ghr_abcdef0123456789abcdef0123456789abcd","expect_types":["github_token"],"secret":"ghr_abcdef0123456789abcdef0123456789abcd"}
 {"id":"github_token-10","kind":"positive","detector":"github_token","input":"github_pat_1111111111111111111111_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","expect_types":["github_token"],"secret":"github_pat_1111111111111111111111_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"}
-{"id":"gitlab_token-11","kind":"positive","detector":"gitlab_token","input":"glpat-ABCDEF1234567890abcd","expect_types":["gitlab_token"],"secret":"glpat-ABCDEF1234567890abcd"}
-{"id":"gitlab_token-12","kind":"positive","detector":"gitlab_token","input":"glpat-xyzABCD1234567890wxy","expect_types":["gitlab_token"],"secret":"glpat-xyzABCD1234567890wxy"}
+{"id":"gitlab_token-11","kind":"positive","detector":"gitlab_token","input":"{glpat}ABCDEF1234567890abcd","expect_types":["gitlab_token"],"secret":"{glpat}ABCDEF1234567890abcd"}
+{"id":"gitlab_token-12","kind":"positive","detector":"gitlab_token","input":"{glpat}xyzABCD1234567890wxy","expect_types":["gitlab_token"],"secret":"{glpat}xyzABCD1234567890wxy"}
 {"id":"slack_token-13","kind":"positive","detector":"slack_token","input":"slack xoxb-123456789012-abcdefABCDEF","expect_types":["slack_token"],"secret":"xoxb-123456789012-abcdefABCDEF"}
 {"id":"slack_token-14","kind":"positive","detector":"slack_token","input":"slack xoxp-123456789012-abcdefABCDEF","expect_types":["slack_token"],"secret":"xoxp-123456789012-abcdefABCDEF"}
 {"id":"slack_token-15","kind":"positive","detector":"slack_token","input":"slack xoxa-123456789012-abcdefABCDEF","expect_types":["slack_token"],"secret":"xoxa-123456789012-abcdefABCDEF"}
 {"id":"slack_token-16","kind":"positive","detector":"slack_token","input":"slack xoxr-123456789012-abcdefABCDEF","expect_types":["slack_token"],"secret":"xoxr-123456789012-abcdefABCDEF"}
 {"id":"google_api_key-17","kind":"positive","detector":"google_api_key","input":"AIza0123456789abcdefghijklmnopqrstuvwxy","expect_types":["google_api_key"],"secret":"AIza0123456789abcdefghijklmnopqrstuvwxy"}
 {"id":"google_api_key-18","kind":"positive","detector":"google_api_key","input":"AIzaBBBB1111222233334444555566667777888","expect_types":["google_api_key"],"secret":"AIzaBBBB1111222233334444555566667777888"}
-{"id":"stripe_key-19","kind":"positive","detector":"stripe_key","input":"sk_live_0123456789abcdefABCDEFXY","expect_types":["stripe_key"],"secret":"sk_live_0123456789abcdefABCDEFXY"}
-{"id":"stripe_key-20","kind":"positive","detector":"stripe_key","input":"rk_live_9876543210ZYXWvutsRQPONM","expect_types":["stripe_key"],"secret":"rk_live_9876543210ZYXWvutsRQPONM"}
+{"id":"stripe_key-19","kind":"positive","detector":"stripe_key","input":"{sk_live}0123456789abcdefABCDEFXY","expect_types":["stripe_key"],"secret":"{sk_live}0123456789abcdefABCDEFXY"}
+{"id":"stripe_key-20","kind":"positive","detector":"stripe_key","input":"{rk_live}9876543210ZYXWvutsRQPONM","expect_types":["stripe_key"],"secret":"{rk_live}9876543210ZYXWvutsRQPONM"}
 {"id":"anthropic_key-21","kind":"positive","detector":"anthropic_key","input":"sk-ant-api03-abcdef0123456789ABCDEF_gh","expect_types":["anthropic_key"],"secret":"sk-ant-api03-abcdef0123456789ABCDEF_gh"}
 {"id":"anthropic_key-22","kind":"positive","detector":"anthropic_key","input":"sk-ant-xxxxYYYYzzzz11112222aaaa","expect_types":["anthropic_key"],"secret":"sk-ant-xxxxYYYYzzzz11112222aaaa"}
 {"id":"openai_key-23","kind":"positive","detector":"openai_key","input":"sk-abcdef0123456789ABCDEFGHIJ","expect_types":["openai_key"],"secret":"sk-abcdef0123456789ABCDEFGHIJ"}

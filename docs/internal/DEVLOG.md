@@ -162,3 +162,51 @@ query (query text isn't recorded), so it's a documentation-gap volume signal;
 (3) GitLab PR driver deferred (V1 is GitHub-only via gh), noted in prs.ts;
 (4) M6.1 has no standalone Accept — the golden pipeline test lands with M6.4;
 this stage ships with unit + integration coverage per the DoD.
+
+## M6.2 — distill: draft
+What: C5 Provider interface (complete({system,prompt,schema})→zod-validated T or
+throws) with a FakeProvider (responder, tests) and a real anthropicProvider
+(official SDK, structured outputs via messages.parse + zodOutputFormat, lazy
+import, model from brain.yaml → default claude-opus-4-8). draftCandidates makes
+one Provider call per cluster using the versioned prompt prompts/distill-v1.md,
+fills the deterministic C1 fields (advisory/active/team, evidence from the
+cluster) around the model's class/title/body/tags; a rejected call is discarded
+and counted. Deps added to distill: @anthropic-ai/sdk + zod (LLM calls stay in
+distill per guardrail 4). Tradeoffs: openai/ollama drivers deferred (V1 =
+anthropic + fake); the prompt ships beside the built code and loads via
+import.meta.url.
+
+## M6.3 — distill: dedup + conflict
+What: dedupCandidates embeds each candidate (injected EmbedFn; CLI wires the
+index's bge/HashingEmbedder), drops it when cosine ≥0.85 vs an existing active
+memory, else runs a pairwise contradiction check (Provider call) against the
+top-3 neighbors and, on "contradicts", sets supersedes + a conflict flag.
+Novelty = 1−max_sim feeds M6.4 scoring. Existing memories load from
+.teambrain/memories only (retired excluded — R5 stance). Tradeoffs: ≥0.85 is a
+hard drop (amendment-marking noted as a future option); conflict checks are
+best-effort — a failed Provider call is treated as no-conflict (principle 2).
+
+## M6.4 — distill: gate + PR
+What: gateCandidates scores evidence_count × novelty(1−max_sim), keeps top ≤10
+(deterministic tie-break), and renderPrBody emits a summary table with a
+supersedes flag section. pipeline.distill() wires collect→cluster→draft→dedup→
+gate with no git side effects (also the --dry-run path). tb distill writes one
+file per proposal onto teambrain/proposals-<date> via a temp worktree (main
+untouched), advances the watermark on that branch, and opens a PR via gh
+(best-effort). Ships ci-templates/lint.yml (tb lint --require-evidence on PRs
+touching .teambrain). Accept: golden pipeline test over the new
+testdata/sessions/week-fixture (12 sessions → 4 clusters) asserts exactly 3
+proposals, duplicate dropped, contradiction carries supersedes + PR flag, all
+proposals pass tb lint; a CLI test proves --dry-run makes no branch.
+
+## M5.3 fix — spool commits via git plumbing, not a worktree
+What: the sessions-branch publish path spun up a throwaway `git worktree`
+(checkout + add + commit + remove + prune ≈ 6–8 subprocesses + temp-dir churn)
+per record. Under parallel test load it contended on git/disk and blew the 5s
+per-test budget (the spool integration test timed out intermittently). Replaced
+it with pure plumbing against a temporary GIT_INDEX_FILE: hash-object -w →
+read-tree the branch tip → update-index → write-tree → commit-tree -p tip →
+update-ref (compare-and-set). No working tree is ever checked out. Also dropped
+a dead `git mktree` call (the empty tree is always known to git). Behavior is
+unchanged (same orphan branch, same paths, idempotent re-handling) and faster;
+the full suite is stable across repeated parallel runs.

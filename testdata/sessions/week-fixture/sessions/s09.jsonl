@@ -1,0 +1,4 @@
+{"v":1,"tool":"claude-code","model":"claude-opus-4-8","repo":"acme/web","sid":"s09","t":"2026-06-29T09:26:00.000Z","branch":"chore/format","ev":"session_start","data":{}}
+{"v":1,"tool":"claude-code","model":"claude-opus-4-8","repo":"acme/web","sid":"s09","t":"2026-06-29T09:27:00.000Z","branch":"chore/format","ev":"tool_use","data":{"kind":"edit","path":"src/util/format.ts"}}
+{"v":1,"tool":"claude-code","model":"claude-opus-4-8","repo":"acme/web","sid":"s09","t":"2026-06-29T09:28:00.000Z","branch":"chore/format","ev":"tool_use","data":{"kind":"command","exit_code":0}}
+{"v":1,"tool":"claude-code","model":"claude-opus-4-8","repo":"acme/web","sid":"s09","t":"2026-06-29T09:29:00.000Z","branch":"chore/format","ev":"session_end","data":{"outcome":"committed","duration_s":900,"turns":12,"commit_shas":["c1a2b30"]}}

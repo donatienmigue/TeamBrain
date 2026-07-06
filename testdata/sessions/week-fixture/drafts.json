@@ -1,0 +1,26 @@
+{
+  "src/auth/session.ts": {
+    "class": "learning",
+    "title": "Refresh auth session tokens server-side before they expire",
+    "body": "Refresh authentication session tokens on the server shortly before they expire, rather than waiting for a request to fail with a 401 and retrying. Sliding the expiry on the server keeps a signed-in user from being bounced mid-flow and avoids the retry storms seen when many clients notice expiry at once. Store the refresh deadline alongside the session record so the check is a single comparison.",
+    "tags": ["auth", "sessions"]
+  },
+  "db/migrations/0007_add_users.sql": {
+    "class": "convention",
+    "title": "Squash database migrations before merging",
+    "body": "Squash all database migration files into a single migration before merging a feature branch. Multiple migration files cause ordering conflicts on main when two branches add migrations in parallel.",
+    "tags": ["database", "migrations"]
+  },
+  "test": {
+    "class": "convention",
+    "title": "Rely on CI for the slow integration test suite",
+    "body": "Run only the fast unit tests locally and let CI run the slow integration suite. Waiting on the full integration run for every change wastes developer time, and CI already gates merges on it, so a green local unit run plus a green CI run is enough to push.",
+    "tags": ["testing", "ci"]
+  },
+  "no_hit": {
+    "class": "learning",
+    "title": "Write a memory for the deployment rollback steps",
+    "body": "Repeated searches that return no memory about deployment rollback are a documentation gap. Capture the exact rollback procedure — the command to redeploy the previous release and how to confirm health — as its own memory so agents stop rediscovering it under incident pressure.",
+    "tags": ["deploy", "runbook"]
+  }
+}

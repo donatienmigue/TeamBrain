@@ -1,0 +1,3 @@
+{"v":1,"tool":"claude-code","model":"claude-opus-4-8","repo":"acme/web","sid":"s08","t":"2026-06-29T09:23:00.000Z","branch":"chore/deploy-2","ev":"session_start","data":{}}
+{"v":1,"tool":"claude-code","model":"claude-opus-4-8","repo":"acme/web","sid":"s08","t":"2026-06-29T09:24:00.000Z","branch":"chore/deploy-2","ev":"memory_retrieved","data":{"ids":[]}}
+{"v":1,"tool":"claude-code","model":"claude-opus-4-8","repo":"acme/web","sid":"s08","t":"2026-06-29T09:25:00.000Z","branch":"chore/deploy-2","ev":"session_end","data":{"outcome":"unknown","duration_s":900,"turns":12,"commit_shas":[]}}

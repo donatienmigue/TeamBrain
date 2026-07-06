@@ -1,0 +1,32 @@
+# TeamBrain — brain lint (PR check for the distiller's proposals)
+#
+# Runs `tb lint --require-evidence` on the brain whenever a PR touches
+# `.teambrain/`, so every distiller-proposed memory (and every hand edit) is
+# schema-valid, within the size limits, cites evidence, and trips no
+# memory-poisoning injection heuristic before a human approves the merge.
+#
+# Copy this file to `.github/workflows/teambrain-lint.yml` in the target repo.
+name: teambrain-lint
+
+on:
+  pull_request:
+    paths:
+      - '.teambrain/**'
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install TeamBrain CLI
+        run: npm install -g @teambrain/cli
+
+      # Exit code 3 = lint/validation failure (CONTRACTS C6); the job fails and
+      # the PR is blocked until the memories are fixed.
+      - name: Lint the brain
+        run: tb lint .teambrain --require-evidence

@@ -7,7 +7,9 @@
   "include": ["src"],
   "references": [
     { "path": "../core" },
+    { "path": "../distill" },
     { "path": "../hooks" },
+    { "path": "../index" },
     { "path": "../mcp" },
     { "path": "../redact" }
   ]

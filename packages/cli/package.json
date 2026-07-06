@@ -14,7 +14,9 @@
   },
   "dependencies": {
     "@teambrain/core": "workspace:*",
+    "@teambrain/distill": "workspace:^",
     "@teambrain/hooks": "workspace:*",
+    "@teambrain/index": "workspace:^",
     "@teambrain/mcp": "workspace:*",
     "@teambrain/redact": "workspace:*",
     "commander": "^15.0.0"

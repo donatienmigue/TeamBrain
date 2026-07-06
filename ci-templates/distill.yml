@@ -1,0 +1,44 @@
+# TeamBrain — distiller (weekly)
+#
+# Runs `tb distill` on a schedule: reads new redacted session records off the
+# teambrain/sessions branch, drafts + dedups + gates candidate memories, and
+# opens a proposals PR for human review. The distiller has no merge rights —
+# the PR is gated by review and by the lint check (lint.yml).
+#
+# Copy this file to `.github/workflows/teambrain-distill.yml`.
+# Required repo secret: ANTHROPIC_API_KEY (the team's own key; CI is never in
+# the data path beyond clustered metadata — Tech Brief TB3).
+name: teambrain-distill
+
+on:
+  schedule:
+    - cron: '0 6 * * 1' # Mondays 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  distill:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch the sessions branch
+        run: git fetch origin 'teambrain/sessions:teambrain/sessions' || true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install TeamBrain CLI
+        run: npm install -g @teambrain/cli
+
+      - name: Distill new sessions into a proposals PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: tb distill

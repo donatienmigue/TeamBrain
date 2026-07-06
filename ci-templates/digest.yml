@@ -1,0 +1,41 @@
+# TeamBrain — weekly digest
+#
+# Runs `tb digest` on a schedule: aggregates people-free activity (memories
+# proposed/approved/retired, top-retrieved, no-hit searches, stale flags,
+# rules-file drift) and posts a summary to a Slack incoming webhook. The
+# aggregator has no code path that groups by author (Tech Brief §4.7).
+#
+# Copy this file to `.github/workflows/teambrain-digest.yml`.
+# Required repo secret: TEAMBRAIN_SLACK_WEBHOOK (a Slack incoming-webhook URL).
+name: teambrain-digest
+
+on:
+  schedule:
+    - cron: '0 13 * * 1' # Mondays 13:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch the sessions branch
+        run: git fetch origin 'teambrain/sessions:teambrain/sessions' || true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install TeamBrain CLI
+        run: npm install -g @teambrain/cli
+
+      - name: Post the weekly digest
+        env:
+          TEAMBRAIN_SLACK_WEBHOOK: ${{ secrets.TEAMBRAIN_SLACK_WEBHOOK }}
+        run: tb digest

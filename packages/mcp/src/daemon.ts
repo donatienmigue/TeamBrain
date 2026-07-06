@@ -143,6 +143,32 @@ export async function startDaemon(
   const contextBundle = (): string =>
     renderContextBundle(tools.memoryContext());
 
+  // --- observability state (surfaced via the heartbeat for `tb doctor`) ---
+  const startedAt = now();
+  // Index was freshly built in openBackend, so the initial "last reindex" is
+  // startup; reindexNow advances it whenever the checksum poll reindexes.
+  let lastReindexAt: string = startedAt.toISOString();
+  // Per-tool hook liveness: last event time + count, keyed by C2 `tool`.
+  const hookHeartbeats = new Map<
+    string,
+    { lastEventAt: string; count: number }
+  >();
+  // Rolling window of the daemon's own retrieval (context-render) latencies,
+  // last 100, for the p95 `tb doctor` reports (Tech Brief §6).
+  const RETRIEVAL_WINDOW = 100;
+  const retrievalSamplesMs: number[] = [];
+  const recordRetrieval = (ms: number): void => {
+    retrievalSamplesMs.push(ms);
+    if (retrievalSamplesMs.length > RETRIEVAL_WINDOW)
+      retrievalSamplesMs.shift();
+  };
+  const retrievalP95 = (): number | null => {
+    if (retrievalSamplesMs.length === 0) return null;
+    const sorted = [...retrievalSamplesMs].sort((a, b) => a - b);
+    const rank = Math.ceil(0.95 * sorted.length) - 1;
+    return Math.round((sorted[rank] as number) * 1000) / 1000;
+  };
+
   // --- checksum-gated reindex (the watcher cycle) ---
   let reindexing = false;
   const reindexNow = async (): Promise<boolean> => {
@@ -153,6 +179,7 @@ export async function startDaemon(
         ...(logger === undefined ? {} : { logger }),
       });
       if (result.reindexed) {
+        lastReindexAt = now().toISOString();
         logger?.debug('daemon reindexed brain', {
           docs: result.docCount,
           checksum: result.checksum,
@@ -170,7 +197,6 @@ export async function startDaemon(
   };
 
   // --- heartbeat + pidfile ---
-  const startedAt = now();
   const writeHeartbeat = (): void => {
     const stats = backend.index.stats();
     const record = {
@@ -182,6 +208,13 @@ export async function startDaemon(
       lastBeat: now().toISOString(),
       docCount: stats.docCount,
       lexicalOnly: stats.lexicalOnly,
+      brainChecksum: stats.brainChecksum,
+      lastReindexAt,
+      hooks: Object.fromEntries(hookHeartbeats),
+      retrieval: {
+        p95Ms: retrievalP95(),
+        samples: retrievalSamplesMs.length,
+      },
     };
     try {
       writeFileSync(
@@ -203,6 +236,13 @@ export async function startDaemon(
     try {
       const request = daemonRequestSchema.parse(JSON.parse(raw));
       if (request.kind === 'hook_event') {
+        // Per-tool liveness (Tech Brief §6): record before dispatch so the
+        // heartbeat reflects the hook even if persistence later degrades.
+        const prior = hookHeartbeats.get(request.event.tool);
+        hookHeartbeats.set(request.event.tool, {
+          lastEventAt: now().toISOString(),
+          count: (prior?.count ?? 0) + 1,
+        });
         onHookEvent(request.event);
         return; // fire-and-forget: no response
       }
@@ -213,10 +253,11 @@ export async function startDaemon(
           doc_count: backend.index.stats().docCount,
         };
       } else {
-        response = {
-          kind: 'session_context_result',
-          bundle: renderContextBundle(tools.memoryContext()),
-        };
+        // Time the retrieval so `tb doctor` can report p95 over the window.
+        const started = performance.now();
+        const bundle = renderContextBundle(tools.memoryContext());
+        recordRetrieval(performance.now() - started);
+        response = { kind: 'session_context_result', bundle };
       }
     } catch (err) {
       response = { kind: 'error', message: (err as Error).message };

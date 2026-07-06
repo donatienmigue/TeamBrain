@@ -1,0 +1,86 @@
+# TeamBrain — release (npm publish + standalone binaries)
+#
+# Fires on a version tag (e.g. v1.2.3). Publishes every @teambrain/* package to
+# npm with provenance (pnpm rewrites workspace:* to the real version), then
+# builds standalone `tb` binaries for mac/linux via `bun build --compile` and
+# attaches them to the GitHub Release.
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # provenance
+    steps:
+      - uses: actions/checkout@v4
+
+      - run: corepack enable
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+
+      # publishConfig.provenance is set per package; -r publishes all of them
+      # and rewrites workspace:* to the released version.
+      - name: Publish to npm
+        run: pnpm -r publish --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  binaries:
+    needs: publish
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write # attach assets to the release
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            target: bun-darwin-arm64
+            asset: tb-macos-arm64
+          - os: macos-13
+            target: bun-darwin-x64
+            asset: tb-macos-x64
+          - os: ubuntu-latest
+            target: bun-linux-x64
+            asset: tb-linux-x64
+    steps:
+      - uses: actions/checkout@v4
+
+      - run: corepack enable
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - uses: oven-sh/setup-bun@v2
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+
+      - name: Compile the tb binary
+        run: >
+          bun build packages/cli/dist/tb.js
+          --compile --target=${{ matrix.target }}
+          --outfile ${{ matrix.asset }}
+
+      - name: Smoke-test the binary
+        run: ./${{ matrix.asset }} --version
+
+      - name: Attach to the release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ matrix.asset }}

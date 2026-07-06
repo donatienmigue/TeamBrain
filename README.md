@@ -2,109 +2,115 @@
 
 Git-native, cross-vendor shared memory for AI coding agents.
 
-> **Status: early-stage.** The brain format, `tb init` importer, retrieval
-> index, MCP server, daemon, and capture pipeline are implemented: memory
-> schemas with byte-exact parse/serialize, `tb lint`, `tb init`, a SQLite
-> hybrid (lexical + vector) index, `tb serve` (a daemon that keeps the index
-> fresh and serves the four memory tools over MCP), `tb install claude-code`
-> to wire the hooks + MCP server into a project, privacy-first capture hooks
-> with an on-device redaction engine, and `tb audit`. The CI distiller
-> described below is designed but not yet implemented. See
-> [Roadmap](#roadmap).
-
-## What TeamBrain is
-
-Coding agents (Claude Code, Cursor, etc.) relearn the same lessons every
-session: a team's conventions, past decisions, and hard-won gotchas don't
-carry over between sessions or across tools. TeamBrain is a shared memory
-for those lessons that lives in your repo, not in a vendor's database:
+Coding agents (Claude Code, Cursor, …) relearn the same lessons every session:
+a team's conventions, past decisions, and hard-won gotchas don't carry over
+between sessions or across tools. TeamBrain is a shared memory for those lessons
+that lives in **your repo**, not a vendor's database — and no TeamBrain server
+is ever involved.
 
 - **The brain is a git repo.** Memories are markdown files with YAML
-  front-matter, committed like any other file. Git history is the audit
-  trail; pull requests are the approval gate — nothing is written to the
-  shared brain without human review.
-- **A local daemon serves it to your agent.** A per-machine daemon indexes
-  the brain (SQLite with hybrid lexical + vector search) and exposes it to
-  coding agents over MCP.
-- **Capture is vendor-neutral and privacy-first.** Thin, fire-and-forget
-  hooks record the *shape* of a session (files touched, commands run,
-  outcomes) — never raw prompts or diffs — and redact secrets locally
-  before anything is written to disk.
-- **New memories are proposed, never auto-written.** A scheduled CI job
-  reads recorded sessions and drafts candidate memories as a pull request.
-  A human merges it.
-- **Nothing leaves your machine un-redacted**, and no TeamBrain server is
-  involved: sync happens through your own git remote, and distillation runs
-  in your own CI using your own LLM API key.
+  front-matter (see [FORMAT.md](FORMAT.md)), committed like any other file. Git
+  history is the audit trail; pull requests are the approval gate — nothing is
+  written to the shared brain without human review.
+- **A local daemon serves it to your agent** over MCP, indexing the brain with
+  hybrid lexical + vector search.
+- **Capture is vendor-neutral and privacy-first.** Thin, fire-and-forget hooks
+  record the *shape* of a session (files touched, commands run, outcomes) —
+  never raw prompts or diffs — and redact secrets locally before anything
+  touches disk. See [SECURITY.md](SECURITY.md).
+- **New memories are proposed, never auto-written.** A scheduled CI job reads
+  recorded sessions and drafts candidate memories as a pull request; a human
+  merges it.
+
+## Quick start (< 5 min)
+
+Requires Node ≥ 20 and git. Run these in the repo you want a brain for.
+
+```sh
+npm install -g @teambrain/cli        # installs the `tb` binary
+
+tb init                              # import CLAUDE.md/.cursorrules/ADRs into a
+                                     #   teambrain/init branch (main untouched)
+#   → review and merge the teambrain/init PR, then:
+
+tb install claude-code               # wire the MCP server + capture hooks into
+                                     #   this project's .claude config (idempotent)
+
+tb serve &                           # start the local daemon (index + MCP + capture)
+tb doctor                            # verify: daemon reachable, index fresh, hooks live
+```
+
+That's it — your agent now retrieves team memories over MCP, and sessions are
+captured (metadata only) for later distillation. On the CI side, copy the
+workflows from [`ci-templates/`](ci-templates/) to run the distiller and the
+weekly digest.
+
+### Everyday commands
+
+```sh
+tb audit --last-session   # exactly what was recorded, post-redaction
+tb distill                # (CI) cluster recent sessions → open a memory PR
+tb retire <id> "reason"   # open a PR moving a memory to retired/
+tb digest                 # (CI) post a people-free weekly digest to Slack
+tb lint .teambrain        # validate memories (schema, size, injection heuristics)
+```
+
+Run `tb --help` or `tb <command> --help` for the full surface and examples.
 
 ## Repo layout
 
 ```
 packages/
-  core/      brain format: schemas, IDs, parse/serialize
+  core/      brain format: schemas, IDs, parse/serialize, lint
   index/     retrieval: SQLite + FTS5/vector hybrid search
-  mcp/       MCP server exposing memory_context/memory_search/memory_propose/memory_feedback
-  hooks/     Claude Code (and later Cursor) capture hook scripts
+  mcp/       MCP server + `tb serve` daemon (index, capture spool)
+  hooks/     Claude Code capture hook scripts
   redact/    redaction engine + detector corpus
-  distill/   CI distiller: cluster, draft, dedup, gate, open PR
-  cli/       `tb` command surface
+  distill/   CI distiller: collect, cluster, draft, dedup, gate, open PR
+  cli/       the `tb` command surface
+ci-templates/  GitHub Actions: lint, distill, digest, sessions-branch rotation
 ```
 
-Every package builds via TypeScript project references (`tsc -b`) and shares
-one root `vitest`/`eslint` config.
+Every package builds via TypeScript project references (`tsc -b`) and shares one
+root `vitest`/`eslint` config.
 
 ## Development
 
-Requirements: Node >= 20, [pnpm](https://pnpm.io).
-
-```
+```sh
 pnpm install
-pnpm build              # tsc -b across all packages, respecting dependency order
+pnpm build              # tsc -b across all packages, in dependency order
 pnpm test               # every package's test suite
-pnpm test:integration   # tb init end-to-end against fixture git repos
+pnpm test:integration   # end-to-end suites against fixture git repos
 pnpm lint               # eslint + prettier --check
 pnpm bench              # retrieval performance budgets (p95, rebuild, recall)
 ```
 
-CI runs all four on Node 20 and 22 (`.github/workflows/ci.yml`).
+CI runs build/test/lint/bench on Node 20 and 22 (`.github/workflows/ci.yml`).
 
-## Roadmap
+## Status
 
-Currently heading into **M5 — capture hooks + redaction**. Done so far:
+The full V1 loop is implemented and covered by an end-to-end release test
+(`tb init → serve → distill → merge → memory_search → retire`):
 
-- **M0 — scaffold:** pnpm monorepo, shared strict TS config, vitest,
-  eslint/prettier, CI on Node 20/22.
-- **M1 — brain format (`packages/core`):** zod schemas for memory files,
-  brain config, and session events; ULIDs; byte-exact markdown+front-matter
-  round-trip; `tb lint` with a prompt-injection heuristics table; structured
-  logger with 7-day rotation and privacy redaction; typed errors mapped to
-  CLI exit codes.
-- **M2 — `tb init`:** scanner/importer (CLAUDE.md, .cursorrules,
-  .cursor/rules, AGENTS.md, docs/adr, README architecture sections →
-  classed candidate memories, ≥90% text preservation), a gap-driven
-  interview (≤10 skippable questions), and output as a PR-ready
-  `teambrain/init` branch written through a temporary git worktree — your
-  current branch and working tree are never touched.
-- **M3 — retrieval (`packages/index`):** SQLite index with an FTS5 mirror
-  and sqlite-vec embeddings, checksum-based auto-reindex, local fastembed
-  (bge-small) with a lexical-only fallback, and a hybrid BM25 ∪ vector →
-  reciprocal-rank-fusion pipeline; `pnpm bench` enforces p95, rebuild, and
-  recall budgets on a synthetic 5k-memory brain.
-- **M4 — MCP server + daemon (`packages/mcp`):** a stdio MCP server exposing
-  `memory_context` / `memory_search` / `memory_propose` / `memory_feedback`
-  (bodies rendered as attributed data-not-instructions blocks), and
-  `tb serve` — a daemon that watches the brain, keeps the index fresh, and
-  answers agents over a local socket; `tb install claude-code` wires it into
-  a project idempotently, and `tb doctor` reports health.
+- **core** — memory schemas, byte-exact parse/serialize, `tb lint` (incl.
+  prompt-injection heuristics), logger, typed errors.
+- **index** — SQLite FTS5 + sqlite-vec hybrid retrieval, checksum auto-reindex,
+  local fastembed (bge-small) with a lexical-only fallback.
+- **mcp** — stdio MCP server (the four C3 tools) + `tb serve` daemon;
+  `tb install claude-code`; `tb doctor`.
+- **hooks + redact** — privacy-first capture hooks and an on-device redaction
+  engine gated by a public adversarial corpus.
+- **distill** — the collect → cluster → draft → dedup → gate pipeline and
+  `tb distill` (opens a proposals PR).
+- **digest / doctor / CI** — `tb digest`, `tb doctor --json`, and the
+  `ci-templates/` workflows.
 
-The full milestone-by-milestone plan lives in `docs/internal/BUILD_PLAN.md`
-(see [Contributing](#contributing)).
+The milestone-by-milestone plan lives in `docs/internal/BUILD_PLAN.md`.
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for local setup, project conventions,
-and where to find the engineering principles and architecture docs guiding
-this build.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for local setup, conventions, and the
+engineering principles guiding this build.
 
 ## License
 

@@ -1,0 +1,2 @@
+# Memory files are parsed byte-exactly (LF-only).
+* text eol=lf

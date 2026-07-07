@@ -1,0 +1,6 @@
+version: 1
+capture:
+  level: metadata
+redaction:
+  level: strict
+required_tags: []

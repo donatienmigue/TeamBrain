@@ -381,3 +381,18 @@ had no implementation and no test.
 Tradeoffs: the guarantee is structural (module boundary) + behavioral (object
 walk), not OS-enforced; that matches C7's "separate module without that path
 in scope" wording exactly.
+
+## M8.3 — grouped CLI help + exit-code docs
+What: tb.ts now delegates to program.ts's buildProgram() (extracted from the
+old monolithic entrypoint); help-text.ts centralizes root/per-command help
+copy; commands are grouped (Setup/Daemon/Quality/Capture) via helpGroup(),
+with mcp/hook hidden from the root listing but still fully documented via
+their own --help. Root help lists exit codes and getting-started/day-to-day/
+CI example blocks.
+Why: `tb --help` was a flat, ungrouped list; new contributors and CI authors
+need exit-code semantics and command grouping at a glance.
+Tradeoffs: root help intentionally avoids the words "hook"/"mcp" (both
+internal implementation details) — reworded "capture hooks" → "capture
+wiring" and "hook heartbeats" → "capture heartbeats" in install/doctor's
+descriptions and the getting-started block; the `hook` subcommand's own
+--help still documents all four events in full.

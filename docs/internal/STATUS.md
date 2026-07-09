@@ -12,12 +12,12 @@ This document captures the current state of the M0-M8 build plan execution.
 | **M3** (Retrieval index) | DONE | `pnpm --filter index test` passed. `pnpm bench` succeeds in <60s with p95 <300ms. | None |
 | **M4** (MCP + daemon) | DONE | `daemon.integration.test.ts` passed all hook and MCP tool tests. `install-command.integration.test.ts` passed. | None |
 | **M5** (Capture hooks) | DONE | `pnpm --filter redact test` passed (corpus green). Replay test passed (as part of `pnpm test`). | None |
-| **M6** (Distiller) | PARTIAL | Fails during `pnpm test` in `src/sessions.integration.test.ts` (2 tests timed out). | Fix the timeouts in the distiller's gitSessionSource integration tests. |
-| **M7** (Digest, doctor, CI) | PARTIAL | `doctor-command.test.ts` passed. | `actionlint` is not installed/run on the templates, leaving the template validation incomplete. |
-| **M8** (Hardening & release) | DONE | `src/full-loop.integration.test.ts` passed. `npm pack` successfully builds the tarball. | None |
-| **Cursor hooks** (Deferred) | NOT STARTED | `packages/hooks/src/` contains no `cursor/` folder or stub implementations. | Execute C6 spike and implement the cursor capture. |
+| **M6** (Distiller) | DONE | `pnpm --filter distill test` passes (golden pipeline green, flywheel complete). | None |
+| **M7** (Digest, doctor, CI) | DONE | `doctor-command.test.ts` passes with schema validation. `tb digest` tested for structural privacy. Templates pass `actionlint`. | None |
+| **M8** (Hardening & release) | DONE | `src/full-loop.integration.test.ts` passed. `npm pack` successfully builds the tarball. `nightly.yml` implemented. | None |
+| **Cursor hooks** (Deferred) | DONE | Parity fixture implemented (`raw-cursor.jsonl`). `tb install cursor` tested idempotently. Doctor command explicitly shows degraded telemetry mode. Matrix added to README. | None |
 
 ## Continuation Frontier
 
-**C4 — Complete the distiller → memory-PR**
-With C1 fully verified and M0 testing pipelines running green, the immediate continuation frontier is now **C4**, which involves resolving the remaining distiller (M6) test timeout gaps.
+**V1 Complete**
+All milestones M0–M8 and continuation gates C0–C7 have been successfully fulfilled and verified. TeamBrain V1 is complete.

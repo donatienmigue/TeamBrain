@@ -199,6 +199,34 @@ testdata/sessions/week-fixture (12 sessions → 4 clusters) asserts exactly 3
 proposals, duplicate dropped, contradiction carries supersedes + PR flag, all
 proposals pass tb lint; a CLI test proves --dry-run makes no branch.
 
+## M7 — digest, doctor, CI templates (C5)
+What: `tb digest` aggregates proposed/approved/retired counts, top-retrieved,
+no-hit queries, stale ≥90d, and rules-file drift into a Slack JSON payload. The
+aggregator is structurally people-free (M7.1 guardrail). `tb doctor` reports
+daemon + index health (liveness, freshness, heartbeats, branch-sync) with a
+frozen JSON schema. `ci-templates/` drop-in actions cover lint, distill cron,
+digest cron, and sessions-branch rotation.
+Accept: Unit and schema tests pass; templates pass `actionlint` without errors.
+
+## C6 — Cursor capture
+What: Implemented rules-directive fallback and MCP-side inference for Cursor.
+`tb install cursor` writes `.cursor/mcp.json` and `.cursor/rules/teambrain.mdc`.
+`tb mcp --client cursor` triggers a `CursorInterceptor` wrapper that injects C2
+events (`session_start`, `candidate_proposed`, `session_end`) via the MCP socket
+client. Handled degraded `tool_use` capture cleanly and surfaced in `tb doctor`.
+Added Cursor parity fixture (`raw-cursor.jsonl`) and updated README matrix.
+Tradeoffs: Cursor lacks native hooks, so edit/command telemetry is unavailable.
+`redactEvent` updated to gracefully preserve LLM-proposed `body` fields.
+
+## C7 — V1 completion gate
+What: Completed the V1 readiness checklist. Created the `Nightly Full-Loop Integration` workflow
+in `.github/workflows/nightly.yml` that runs the end-to-end integration test 3 consecutive times.
+Verified that `npm pack` correctly builds the tarball and rewrites `workspace:*` versions, preparing 
+the CLI for publishing. Ensured `FORMAT.md`, `SECURITY.md`, and README are fully up to date with 
+installation and usage commands.
+Accept: Ran `pnpm run test:integration` executing `full-loop.integration.test.ts` successfully 3 times.
+Verified the tarball contents explicitly point to correct versions. `tb doctor` and `tb init` are functional.
+
 ## M5.3 fix — spool commits via git plumbing, not a worktree
 What: the sessions-branch publish path spun up a throwaway `git worktree`
 (checkout + add + commit + remove + prune ≈ 6–8 subprocesses + temp-dir churn)

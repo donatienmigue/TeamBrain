@@ -2,7 +2,9 @@
   "mcpServers": {
     "teambrain": {
       "command": "tb",
-      "args": ["mcp"]
+      "args": [
+        "mcp"
+      ]
     }
   }
 }

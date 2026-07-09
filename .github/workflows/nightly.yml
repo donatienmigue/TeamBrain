@@ -1,0 +1,29 @@
+name: Nightly Full-Loop Integration
+
+on:
+  schedule:
+    - cron: '0 2 * * *' # Every day at 02:00 UTC
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - run: corepack enable
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm build
+
+      - name: Run full-loop integration 3 times consecutively
+        run: |
+          pnpm vitest run packages/cli/src/full-loop.integration.test.ts
+          pnpm vitest run packages/cli/src/full-loop.integration.test.ts
+          pnpm vitest run packages/cli/src/full-loop.integration.test.ts

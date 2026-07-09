@@ -57,9 +57,9 @@ verified faithful.
 | ID | Sev | Finding | Contract/Principle | Owner |
 |----|-----|---------|--------------------|-------|
 | **F1** | **Critical** | `renderMemoryBlock` uses a fixed ` ``` ` fence and never neutralizes back-ticks in the body. A memory body containing ` ``` ` closes the fence early; everything after it renders as ordinary markdown/instructions to the agent — in `memory_search`, `memory_context`, **and** the SessionStart bundle. `tb lint` has no back-tick heuristic, so a poisoned (or even innocent code-quoting) body sails through. This defeats the C3 injection-mitigation guarantee that the code comment itself claims ("a payload that slipped past `tb lint` still cannot pose as a live instruction"). | C3 | **I0 (fixed)** |
-| **F2** | High | `tb propose` and `tb reindex` — both enumerated in the frozen C6 CLI surface — are not implemented. Agents can propose via MCP and the index auto-rebuilds on checksum mismatch, so there are alternative paths, but the contracted CLI surface is incomplete. | C6 | I1 (propose) / I4 (reindex) |
+| **F2** | High | ~~`tb propose` and `tb reindex` — both enumerated in the frozen C6 CLI surface — are not implemented.~~ **Fixed**: `tb reindex` force-rebuilds via the backend and resets an unreadable index.db first (recovery path; its negative test exposed and fixed a leaked db handle in `SqliteIndex.open`); `tb propose` queues a zod-validated draft to the local candidate spool with last-session evidence, C3-identical trust model. Negative tests: missing brain → 2, invalid/empty draft → 3, nothing queued. | C6 | **Fixed** (`fd81608`, `2dfbb79`) |
 | **F3** | High | ~~The guardrail-4 release-gating test — "a CI test greps the bundle for fetch/http usage outside git/Provider/webhook" — is absent.~~ **Fixed in I0**: `packages/cli/src/egress-guard.test.ts` scans all shipped package source for network syntax with a three-module allowlist, a negative control, and a scan-breadth floor. Surfaced F8 on its first run. | Guardrail 4 / Principle 3 | ~~I3~~ **I0 (fixed)** |
-| **F4** | Medium | C7's user-scope guarantee ("the sync code must be physically unable to read `~/.teambrain/user/` … asserted by test") is unimplemented and untested. Vacuously satisfied today (nothing reads/writes a `user/` dir), but the required assertion test does not exist, so the guarantee is unguarded once user-scope lands. | C7 | I3 |
+| **F4** | Medium | ~~C7's user-scope guarantee is unimplemented and untested.~~ **Fixed**: `user-paths.ts` is the only module naming `~/.teambrain/user/` (never `paths.ts`, which the sync code imports); `tb serve` materializes the dir from the CLI layer. Two-layer negative test: (1) spool.ts's transitive import graph must not reference the user path (verified to bite via perturbation), (2) seeded user/ content absent from every reachable git object in both the local repo and a pushed bare remote. SECURITY.md's scope-leakage claim is now true as written. | C7 | **Fixed** (`2a21dff`) |
 | **F5** | Low | The versioned distill prompt lives in `packages/distill/prompts/distill-v1.md`, not the brain's `prompts/` dir that C7 lists as part of the brain layout; `tb init` scaffolds no `prompts/`. Teams cannot version/customize the distill prompt in their own brain repo. | C7 | I1 |
 | **F6** | Low | ~~M7 Accept could not fully run `actionlint` in the audit environment.~~ **Fixed in I0**: all seven workflow files verified green against actionlint 1.7.1 locally, and CI now runs the same pinned version as a job in `ci.yml` (shellcheck/pyflakes off to match the verified surface; enabling them is I3/I4). | BUILD_PLAN M7 Accept | ~~I0.3 / I4~~ **I0 (fixed)** |
 | **F7** | Medium | ~~I0.3 compat fixture is not yet created.~~ **Fixed in I0**: `testdata/compat/v1-brain/` generated from current main (all classes, retired, evidence/supersedes/ttl exercised, C2 session record) + `packages/core/src/compat-v1.test.ts` asserting byte-exact reads. Gate verified to bite: a single-byte perturbation fails it. | I0.3 | **I0 (fixed)** |
@@ -79,10 +79,9 @@ are routed to their owning milestone above.
 
 ## Not fixed in I0 (tracked)
 
-**F2** (C6 `propose`/`reindex`, owner I1/I4), **F4** (user-scope separation
-test, owner I3), **F5** (distill prompt not in the brain's `prompts/`, owner
-I1), and **F8** (guardrail-4 vs M3.2 egress wording, owner I3) remain open.
-F3, F6, and F7 were closed inside I0 — see the table.
+**F5** (distill prompt not in the brain's `prompts/`, owner I1) and **F8**
+(guardrail-4 vs M3.2 egress wording, owner I3) remain open. F2 and F4 were
+closed post-I0 (see the table); F3, F6, and F7 were closed inside I0.
 
 With F1 fixed and F7 landed, the I0 Accept ("AUDIT.md committed; all
 BUILD_PLAN Accept commands green or captured as Critical findings and fixed;

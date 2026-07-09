@@ -356,3 +356,28 @@ match the locally-verified surface.
 Why: the M7 accept was unverifiable during the audit (F6) and unenforced.
 Tradeoffs: shellcheck/pyflakes stay off until I3/I4 triage their findings —
 a deliberately narrower gate that is actually known-green.
+
+## F2 — tb reindex + tb propose (C6 surface complete)
+What: the two commands C6 lists that were never built. `tb reindex` forces a
+full rebuild through openBackend and, when index.db is unreadable, deletes the
+cache and rebuilds from the brain tree; its negative test exposed a real bug —
+SqliteIndex.open leaked the db handle on a corrupt file, which on Windows
+locks the file and blocks exactly this recovery (fixed in open()). `tb
+propose` queues a zod-validated draft to the local candidate spool (identical
+trust model to C3 memory_propose), body from --body/stdin, most recent
+session cited as evidence.
+Why: AUDIT.md F2 — the frozen CLI surface was incomplete.
+Tradeoffs: propose does not run injection lint at queue time (parity with the
+MCP tool; `tb lint` gates at PR time, where it belongs).
+
+## F4 — user-scope physical separation (C7)
+What: user-paths.ts is now the only module that names ~/.teambrain/user/;
+tb serve materializes the dir from the CLI layer. Two-layer negative test:
+spool.ts's transitive import graph must never reference the user path
+(perturbation-verified), and seeded user/ content is absent from every
+reachable git object in both the local repo and a pushed bare remote.
+Why: AUDIT.md F4 — C7's separation guarantee (and SECURITY.md's claim of it)
+had no implementation and no test.
+Tradeoffs: the guarantee is structural (module boundary) + behavioral (object
+walk), not OS-enforced; that matches C7's "separate module without that path
+in scope" wording exactly.

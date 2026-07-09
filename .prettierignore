@@ -5,3 +5,4 @@ pnpm-lock.yaml
 # pre-existing starter docs — not reformatted by M0.1
 *.md
 .claude/settings.json
+.cursor/mcp.json

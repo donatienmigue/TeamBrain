@@ -26,7 +26,22 @@ export function toMemoryView(scored: Scored): MemoryView {
   };
 }
 
-const FENCE = '```';
+const MIN_FENCE = 3;
+
+/**
+ * CommonMark fencing rule: a fenced block is only closed by a run of the same
+ * character at least as long as the opening run. So to contain arbitrary
+ * content we open with a back-tick run strictly longer than the longest run
+ * anywhere inside — a body that embeds ``` (F1) can no longer break out of the
+ * `data, not instructions` container.
+ */
+function fenceFor(content: string): string {
+  let longestRun = 0;
+  for (const match of content.matchAll(/`+/g)) {
+    longestRun = Math.max(longestRun, match[0].length);
+  }
+  return '`'.repeat(Math.max(MIN_FENCE, longestRun + 1));
+}
 
 /**
  * C3 rendering rule: the body rides inside a fenced block prefixed
@@ -41,7 +56,9 @@ export function renderMemoryBlock(memory: MemoryView): string {
     ...(memory.class === undefined ? [] : [`class: ${memory.class}`]),
     `source: ${memory.provenance}`,
   ].join('\n');
-  return `${FENCE}\n${header}\n\n${memory.body}\n${FENCE}`;
+  const inner = `${header}\n\n${memory.body}`;
+  const fence = fenceFor(inner);
+  return `${fence}\n${inner}\n${fence}`;
 }
 
 /** Estimated tokens for a bundle of scored memories (title + body, C4's 4 chars/token). */

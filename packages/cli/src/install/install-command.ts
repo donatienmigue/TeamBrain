@@ -93,7 +93,7 @@ export async function runInstallCommand(
   try {
     if (!(SUPPORTED_TOOLS as readonly string[]).includes(tool)) {
       throw new UserError(
-        `unsupported tool '${tool}' — supported: ${SUPPORTED_TOOLS.join(', ')} (cursor is deferred)`,
+        `unsupported tool '${tool}' — supported: ${SUPPORTED_TOOLS.join(', ')}`,
       );
     }
     const root = resolve(targetDir);

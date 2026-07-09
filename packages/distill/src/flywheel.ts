@@ -11,7 +11,7 @@ export interface FlywheelExamples {
 export function extractProposedTitles(prBody: string): string[] {
   const titles: string[] = [];
   const lines = prBody.split('\n');
-  
+
   let inTable = false;
   for (const line of lines) {
     if (line.startsWith('| Class | Title |')) {
@@ -21,7 +21,7 @@ export function extractProposedTitles(prBody: string): string[] {
     if (inTable && line.startsWith('| --- | --- |')) {
       continue;
     }
-    
+
     if (inTable && line.startsWith('|')) {
       const parts = line.split(/(?<!\\)\|/); // Split by unescaped pipe
       if (parts.length >= 3) {
@@ -34,24 +34,24 @@ export function extractProposedTitles(prBody: string): string[] {
       inTable = false;
     }
   }
-  
+
   return titles;
 }
 
 /**
  * Derives few-shot examples from past PR bodies and currently active memories.
- * 
+ *
  * - Accepted examples: The titles of active existing memories.
  * - Rejected examples: Proposed titles from past PRs that are NOT in existing memories.
- * 
+ *
  * To prevent the prompt from blowing up, we cap both lists (e.g. 5 of each).
  */
 export function deriveFlywheelExamples(
   prBodies: string[],
   existingMemories: ExistingMemory[],
 ): FlywheelExamples {
-  const existingTitles = new Set(existingMemories.map(m => m.title));
-  
+  const existingTitles = new Set(existingMemories.map((m) => m.title));
+
   const rejected = new Set<string>();
   for (const body of prBodies) {
     const proposed = extractProposedTitles(body);
@@ -61,7 +61,7 @@ export function deriveFlywheelExamples(
       }
     }
   }
-  
+
   return {
     accepted: Array.from(existingTitles).slice(0, 5),
     rejected: Array.from(rejected).slice(0, 5),

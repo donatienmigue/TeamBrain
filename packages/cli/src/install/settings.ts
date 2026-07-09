@@ -100,7 +100,10 @@ export function ensureCaptureHooks(existing: Json): MergeResult {
     : { value: existing, changed: false };
 }
 
-export function ensureCursorRules(existingRaw: string): { value: string; changed: boolean } {
+export function ensureCursorRules(existingRaw: string): {
+  value: string;
+  changed: boolean;
+} {
   const desired = `---
 description: TeamBrain memory capture
 globs: *

@@ -63,20 +63,27 @@ export function loadDistillPrompt(): string {
 
 export function renderFlywheelPrompt(flywheel?: FlywheelExamples): string {
   if (!flywheel) return '';
-  if (flywheel.accepted.length === 0 && flywheel.rejected.length === 0) return '';
-  
+  if (flywheel.accepted.length === 0 && flywheel.rejected.length === 0)
+    return '';
+
   const lines: string[] = ['', '## Per-team calibration'];
-  
+
   if (flywheel.accepted.length > 0) {
-    lines.push('', 'The following are titles of recently ACCEPTED memories by this team (use as good examples):');
+    lines.push(
+      '',
+      'The following are titles of recently ACCEPTED memories by this team (use as good examples):',
+    );
     for (const t of flywheel.accepted) lines.push(`- ${t}`);
   }
-  
+
   if (flywheel.rejected.length > 0) {
-    lines.push('', 'The following are titles of recently REJECTED memories by this team (do NOT propose these):');
+    lines.push(
+      '',
+      'The following are titles of recently REJECTED memories by this team (do NOT propose these):',
+    );
     for (const t of flywheel.rejected) lines.push(`- ${t}`);
   }
-  
+
   return lines.join('\n');
 }
 

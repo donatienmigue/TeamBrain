@@ -82,7 +82,7 @@ describe('tb install claude-code (M4.3 accept)', () => {
     expect(first.output).toContain('Installed TeamBrain for cursor');
     expect(existsSync(mcpPath)).toBe(true);
     expect(existsSync(rulesPath)).toBe(true);
-    
+
     // Assert cursor is added to mcp.json args
     const mcpContent = JSON.parse(await readFile(mcpPath, 'utf8'));
     expect(mcpContent.mcpServers.teambrain.args).toContain('--client');

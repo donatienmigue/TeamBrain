@@ -41,7 +41,7 @@ describe('CursorInterceptor (C6.1 parity)', () => {
     for (const event of events) {
       expect(() => sessionEventSchema.parse(event)).not.toThrow();
     }
-    
+
     expect(events.map((e) => e.ev)).toEqual([
       'session_start',
       'candidate_proposed',

@@ -4,7 +4,10 @@ import { sendHookEvent } from '@teambrain/mcp/hook-client';
 import type { ToolContext } from '@teambrain/mcp';
 import { buildHookContext } from '@teambrain/hooks';
 
-export function wrapCursorContext(context: ToolContext, repoDir: string): ToolContext {
+export function wrapCursorContext(
+  context: ToolContext,
+  repoDir: string,
+): ToolContext {
   const hookCtx = buildHookContext({
     cwd: repoDir,
     sid: 'placeholder', // not used, CursorInterceptor sets its own
@@ -26,4 +29,3 @@ export function wrapCursorContext(context: ToolContext, repoDir: string): ToolCo
     },
   };
 }
-

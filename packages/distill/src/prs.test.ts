@@ -57,7 +57,9 @@ describe('ghPullRequestSource', () => {
         { body: 'Table of proposed memories 2' },
       ]);
       const exec: ExecFn = () => output;
-      const bodies = ghPullRequestSource('/repo', { exec }).readTeamBrainPRBodies();
+      const bodies = ghPullRequestSource('/repo', {
+        exec,
+      }).readTeamBrainPRBodies();
       expect(bodies).toEqual([
         'Table of proposed memories 1',
         'Table of proposed memories 2',
@@ -71,7 +73,9 @@ describe('ghPullRequestSource', () => {
         return '[]';
       };
       ghPullRequestSource('/repo', { exec }).readTeamBrainPRBodies();
-      expect(seen.join(' ')).toContain('is:pr is:closed "TeamBrain: proposed memories" in:title');
+      expect(seen.join(' ')).toContain(
+        'is:pr is:closed "TeamBrain: proposed memories" in:title',
+      );
       expect(seen).toContain('body');
     });
 
@@ -79,7 +83,9 @@ describe('ghPullRequestSource', () => {
       const exec: ExecFn = () => {
         throw new Error('gh: not found');
       };
-      expect(ghPullRequestSource('/repo', { exec }).readTeamBrainPRBodies()).toEqual([]);
+      expect(
+        ghPullRequestSource('/repo', { exec }).readTeamBrainPRBodies(),
+      ).toEqual([]);
     });
   });
 });

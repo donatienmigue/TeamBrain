@@ -35,7 +35,7 @@ describe('deriveFlywheelExamples', () => {
       { id: '1', title: 'Accepted memory 1' } as ExistingMemory,
       { id: '2', title: 'Accepted memory 2' } as ExistingMemory,
     ];
-    
+
     const prBodies = [
       `| Class | Title |
 | --- | --- |
@@ -43,12 +43,18 @@ describe('deriveFlywheelExamples', () => {
 | class | Accepted memory 1 |`, // Accepted memory 1 was merged!
       `| Class | Title |
 | --- | --- |
-| class | Rejected memory 2 |`
+| class | Rejected memory 2 |`,
     ];
 
     const examples = deriveFlywheelExamples(prBodies, existing);
-    expect(examples.accepted).toEqual(['Accepted memory 1', 'Accepted memory 2']);
+    expect(examples.accepted).toEqual([
+      'Accepted memory 1',
+      'Accepted memory 2',
+    ]);
     // Rejected memories are the ones in PRs that don't appear in existing.
-    expect(examples.rejected).toEqual(['Rejected memory 1', 'Rejected memory 2']);
+    expect(examples.rejected).toEqual([
+      'Rejected memory 1',
+      'Rejected memory 2',
+    ]);
   });
 });

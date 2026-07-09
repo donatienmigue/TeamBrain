@@ -62,7 +62,10 @@ function readJson(path: string): Record<string, unknown> {
 function planFor(
   label: string,
   path: string,
-  merge: (existing: Record<string, unknown>, tool?: string) => {
+  merge: (
+    existing: Record<string, unknown>,
+    tool?: string,
+  ) => {
     value: Record<string, unknown>;
   },
   tool?: string,
@@ -98,13 +101,31 @@ export async function runInstallCommand(
 
     if (tool === 'claude-code') {
       plans.push(
-        planFor('MCP server (.mcp.json)', join(root, '.mcp.json'), ensureMcpServer, tool),
-        planFor('Capture hooks (.claude/settings.json)', join(root, '.claude', 'settings.json'), ensureCaptureHooks)
+        planFor(
+          'MCP server (.mcp.json)',
+          join(root, '.mcp.json'),
+          ensureMcpServer,
+          tool,
+        ),
+        planFor(
+          'Capture hooks (.claude/settings.json)',
+          join(root, '.claude', 'settings.json'),
+          ensureCaptureHooks,
+        ),
       );
     } else if (tool === 'cursor') {
       plans.push(
-        planFor('MCP server (.cursor/mcp.json)', join(root, '.cursor', 'mcp.json'), ensureMcpServer, tool),
-        planForText('Cursor rules (.cursor/rules/teambrain.mdc)', join(root, '.cursor', 'rules', 'teambrain.mdc'), ensureCursorRules)
+        planFor(
+          'MCP server (.cursor/mcp.json)',
+          join(root, '.cursor', 'mcp.json'),
+          ensureMcpServer,
+          tool,
+        ),
+        planForText(
+          'Cursor rules (.cursor/rules/teambrain.mdc)',
+          join(root, '.cursor', 'rules', 'teambrain.mdc'),
+          ensureCursorRules,
+        ),
       );
     }
 

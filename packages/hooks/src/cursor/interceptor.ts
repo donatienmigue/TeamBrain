@@ -23,7 +23,7 @@ export class CursorInterceptor {
   processCall(call: CursorMcpCall): SessionEvent[] {
     const events: SessionEvent[] = [];
     this.turns += 1;
-    
+
     if (call.method === 'memory_context') {
       if (this.sid === null) {
         this.sid = ulid();
@@ -36,7 +36,7 @@ export class CursorInterceptor {
           repo: this.ctx.repo,
           branch: this.ctx.branch,
           ev: 'session_start',
-          data: {}
+          data: {},
         });
       }
     } else if (call.method === 'memory_search') {
@@ -52,7 +52,7 @@ export class CursorInterceptor {
           repo: this.ctx.repo,
           branch: this.ctx.branch,
           ev: 'candidate_proposed',
-          data: { draft: call.args?.draft as CandidateDraft }
+          data: { draft: call.args?.draft as CandidateDraft },
         });
         events.push({
           v: 1,
@@ -63,19 +63,20 @@ export class CursorInterceptor {
           repo: this.ctx.repo,
           branch: this.ctx.branch,
           ev: 'session_end',
-          data: { 
-            outcome: 'unknown', 
-            duration_s: 0, 
-            turns: this.turns, 
-            commit_shas: [] 
-          }
+          data: {
+            outcome: 'unknown',
+            duration_s: 0,
+            turns: this.turns,
+            commit_shas: [],
+          },
         });
         this.sid = null;
         this.turns = 0;
       }
     }
-    
-    return events.map(e => redactEvent(e, this.ctx.redactionLevel).event as SessionEvent);
+
+    return events.map(
+      (e) => redactEvent(e, this.ctx.redactionLevel).event as SessionEvent,
+    );
   }
 }
-

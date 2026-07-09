@@ -59,8 +59,8 @@ export async function distill(input: DistillInput): Promise<DistillOutcome> {
   );
 
   const existing = input.existing ?? loadExistingMemories(brainDir);
-  
-  const prBodies = input.prs ? input.prs.readTeamBrainPRBodies?.() ?? [] : [];
+
+  const prBodies = input.prs ? (input.prs.readTeamBrainPRBodies?.() ?? []) : [];
   const flywheel = deriveFlywheelExamples(prBodies, existing);
 
   const drafted = await draftCandidates(clusters, input.provider, {

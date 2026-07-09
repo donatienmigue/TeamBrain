@@ -1,4 +1,4 @@
-import { ulid, type SessionEvent } from '@teambrain/core';
+import { ulid, type SessionEvent, type CandidateDraft } from '@teambrain/core';
 import type { HookContext } from '../map.js';
 import { redactEvent } from '../redact-event.js';
 
@@ -52,7 +52,7 @@ export class CursorInterceptor {
           repo: this.ctx.repo,
           branch: this.ctx.branch,
           ev: 'candidate_proposed',
-          data: { draft: call.args?.draft as any }
+          data: { draft: call.args?.draft as CandidateDraft }
         });
         events.push({
           v: 1,

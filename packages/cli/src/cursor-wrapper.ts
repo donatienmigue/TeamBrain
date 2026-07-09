@@ -1,5 +1,5 @@
 import { CursorInterceptor } from '@teambrain/hooks/cursor';
-import { resolveRuntimeDir, daemonSocketPath } from '@teambrain/mcp';
+import { resolveRuntimeDir } from '@teambrain/mcp';
 import { sendHookEvent } from '@teambrain/mcp/hook-client';
 import type { ToolContext } from '@teambrain/mcp';
 import { buildHookContext } from '@teambrain/hooks';

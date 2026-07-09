@@ -1,4 +1,4 @@
-import { sessionEventSchema, type SessionEvent } from '@teambrain/core';
+import { sessionEventSchema, type SessionEvent, type CandidateDraft } from '@teambrain/core';
 import { redactString, type RedactionLevel } from '@teambrain/redact';
 
 // M5.2 event sanitization: the last gate before an event leaves the hook.
@@ -68,9 +68,9 @@ export function redactEvent(
   // Exception: candidate_proposed events carry an explicit proposed 'body',
   // which is safe because it is LLM-generated distillation, not raw user content.
   if (event.ev === 'candidate_proposed') {
-    const draft = (event.data as any).draft;
+    const draft = (event.data as { draft?: CandidateDraft }).draft;
     if (draft && typeof draft.body === 'string') {
-      (data as any).draft.body = redactString(draft.body, level).text;
+      (data as { draft?: CandidateDraft }).draft!.body = redactString(draft.body, level).text;
     }
   }
 

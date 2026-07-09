@@ -9,10 +9,12 @@ import { loadGoldenQueries } from '../golden-queries.js';
 import { generateSyntheticBrain, writeSyntheticBrain } from '../synthetic.js';
 
 // M3.4 `pnpm bench`. Performance budgets are tests: this script exits
-// non-zero when search p95 ≥ 300ms, index rebuild ≥ 60s, or recall@8 <
-// 0.85 on the golden query set. Runs fully offline (HashingEmbedder), so
-// CI needs no model download and no network.
+// non-zero when search p50 ≥ 80ms, p95 ≥ 300ms, index rebuild ≥ 60s, or
+// recall@8 < 0.85 on the golden query set (TECH_BRIEF §1 NFR table). Runs
+// fully offline (HashingEmbedder), so CI needs no model download and no
+// network.
 
+const SEARCH_P50_BUDGET_MS = 80;
 const SEARCH_P95_BUDGET_MS = 300;
 const REBUILD_BUDGET_MS = 60_000;
 const RECALL_AT_8_FLOOR = 0.85;
@@ -95,15 +97,22 @@ async function main(): Promise<void> {
         }
       }
       const recall = hits / golden.queries.length;
+      const p50 = percentile(latencies, 0.5);
       const p95 = percentile(latencies, 0.95);
       console.log(
-        `search: p95 ${p95.toFixed(1)}ms over ${latencies.length} runs ` +
-          `(budget ${SEARCH_P95_BUDGET_MS}ms)`,
+        `search: p50 ${p50.toFixed(1)}ms (budget ${SEARCH_P50_BUDGET_MS}ms), ` +
+          `p95 ${p95.toFixed(1)}ms (budget ${SEARCH_P95_BUDGET_MS}ms) over ` +
+          `${latencies.length} runs`,
       );
       console.log(
         `recall@8: ${recall.toFixed(2)} (${hits}/${golden.queries.length}, ` +
           `floor ${RECALL_AT_8_FLOOR})`,
       );
+      if (p50 >= SEARCH_P50_BUDGET_MS) {
+        failures.push(
+          `search p50 ${p50.toFixed(1)}ms ≥ ${SEARCH_P50_BUDGET_MS}ms`,
+        );
+      }
       if (p95 >= SEARCH_P95_BUDGET_MS) {
         failures.push(
           `search p95 ${p95.toFixed(1)}ms ≥ ${SEARCH_P95_BUDGET_MS}ms`,

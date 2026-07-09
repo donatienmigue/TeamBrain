@@ -1,11 +1,35 @@
 {
   "name": "@teambrain/cli",
   "version": "0.0.1",
+  "description": "tb — git-native, human-governed shared memory for AI coding agents (CLI, daemon, MCP server)",
+  "keywords": [
+    "ai",
+    "agents",
+    "memory",
+    "mcp",
+    "claude-code",
+    "cursor",
+    "cli"
+  ],
+  "homepage": "https://github.com/donatienmigue/TeamBrain#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/donatienmigue/TeamBrain.git",
+    "directory": "packages/cli"
+  },
+  "license": "Apache-2.0",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
     "tb": "./dist/tb.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
   },
   "scripts": {
     "build": "tsc -b",
@@ -21,18 +45,5 @@
     "commander": "^15.0.0",
     "yaml": "^2.9.0",
     "zod": "^4.4.3"
-  },
-  "license": "Apache-2.0",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/donatienmigue/TeamBrain.git",
-    "directory": "packages/cli"
-  },
-  "publishConfig": {
-    "access": "public",
-    "provenance": true
-  },
-  "files": [
-    "dist"
-  ]
+  }
 }

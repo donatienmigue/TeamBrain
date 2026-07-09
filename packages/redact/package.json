@@ -1,24 +1,33 @@
 {
   "name": "@teambrain/redact",
   "version": "0.0.1",
-  "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "scripts": {
-    "build": "tsc -b",
-    "test": "vitest run"
-  },
-  "license": "Apache-2.0",
+  "description": "On-device redaction for TeamBrain capture: secrets, entropy, PII — with a public release-gating corpus",
+  "keywords": [
+    "redaction",
+    "secrets",
+    "security",
+    "privacy",
+    "gitleaks"
+  ],
+  "homepage": "https://github.com/donatienmigue/TeamBrain#readme",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/donatienmigue/TeamBrain.git",
     "directory": "packages/redact"
   },
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "publishConfig": {
     "access": "public",
     "provenance": true
   },
-  "files": [
-    "dist"
-  ]
+  "scripts": {
+    "build": "tsc -b",
+    "test": "vitest run"
+  }
 }

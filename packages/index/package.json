@@ -1,9 +1,32 @@
 {
   "name": "@teambrain/index",
   "version": "0.0.1",
+  "description": "TeamBrain hybrid retrieval: SQLite FTS5 + sqlite-vec + RRF behind a RetrievalBackend interface",
+  "keywords": [
+    "ai",
+    "retrieval",
+    "sqlite",
+    "fts5",
+    "embeddings",
+    "rrf"
+  ],
+  "homepage": "https://github.com/donatienmigue/TeamBrain#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/donatienmigue/TeamBrain.git",
+    "directory": "packages/index"
+  },
+  "license": "Apache-2.0",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "scripts": {
     "build": "tsc -b",
     "test": "vitest run",
@@ -20,18 +43,5 @@
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13"
-  },
-  "license": "Apache-2.0",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/donatienmigue/TeamBrain.git",
-    "directory": "packages/index"
-  },
-  "publishConfig": {
-    "access": "public",
-    "provenance": true
-  },
-  "files": [
-    "dist"
-  ]
+  }
 }

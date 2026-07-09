@@ -1,19 +1,32 @@
 {
   "name": "@teambrain/hooks",
   "version": "0.0.1",
-  "type": "module",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    },
-    "./cursor": {
-      "types": "./dist/cursor/index.d.ts",
-      "import": "./dist/cursor/index.js"
-    }
+  "description": "TeamBrain capture adapters: agent tool events → redacted, metadata-only session records",
+  "keywords": [
+    "ai",
+    "agents",
+    "hooks",
+    "claude-code",
+    "cursor",
+    "telemetry"
+  ],
+  "homepage": "https://github.com/donatienmigue/TeamBrain#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/donatienmigue/TeamBrain.git",
+    "directory": "packages/hooks"
   },
+  "license": "Apache-2.0",
+  "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "scripts": {
     "build": "tsc -b",
     "test": "vitest run"
@@ -24,17 +37,14 @@
     "@teambrain/redact": "workspace:*",
     "zod": "^4.4.3"
   },
-  "license": "Apache-2.0",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/donatienmigue/TeamBrain.git",
-    "directory": "packages/hooks"
-  },
-  "publishConfig": {
-    "access": "public",
-    "provenance": true
-  },
-  "files": [
-    "dist"
-  ]
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./cursor": {
+      "types": "./dist/cursor/index.d.ts",
+      "import": "./dist/cursor/index.js"
+    }
+  }
 }

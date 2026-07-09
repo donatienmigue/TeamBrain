@@ -1,9 +1,31 @@
 {
   "name": "@teambrain/distill",
   "version": "0.0.1",
+  "description": "TeamBrain distiller: cluster agent sessions and propose new memories as pull requests",
+  "keywords": [
+    "ai",
+    "llm",
+    "distillation",
+    "agents",
+    "memory"
+  ],
+  "homepage": "https://github.com/donatienmigue/TeamBrain#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/donatienmigue/TeamBrain.git",
+    "directory": "packages/distill"
+  },
+  "license": "Apache-2.0",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "scripts": {
     "build": "tsc -b",
     "test": "vitest run"
@@ -13,18 +35,5 @@
     "@teambrain/core": "workspace:*",
     "yaml": "^2.9.0",
     "zod": "^4.4.3"
-  },
-  "license": "Apache-2.0",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/donatienmigue/TeamBrain.git",
-    "directory": "packages/distill"
-  },
-  "publishConfig": {
-    "access": "public",
-    "provenance": true
-  },
-  "files": [
-    "dist"
-  ]
+  }
 }

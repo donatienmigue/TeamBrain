@@ -1,18 +1,30 @@
 {
   "name": "@teambrain/mcp",
   "version": "0.0.1",
+  "description": "TeamBrain MCP server + local daemon: serve team memories to any MCP-capable coding agent",
+  "keywords": [
+    "ai",
+    "mcp",
+    "model-context-protocol",
+    "agents",
+    "memory"
+  ],
+  "homepage": "https://github.com/donatienmigue/TeamBrain#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/donatienmigue/TeamBrain.git",
+    "directory": "packages/mcp"
+  },
+  "license": "Apache-2.0",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
-    },
-    "./hook-client": {
-      "types": "./dist/hook-client.d.ts",
-      "default": "./dist/hook-client.js"
-    }
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
   },
   "scripts": {
     "build": "tsc -b",
@@ -24,17 +36,14 @@
     "@teambrain/index": "workspace:*",
     "zod": "^4.4.3"
   },
-  "license": "Apache-2.0",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/donatienmigue/TeamBrain.git",
-    "directory": "packages/mcp"
-  },
-  "publishConfig": {
-    "access": "public",
-    "provenance": true
-  },
-  "files": [
-    "dist"
-  ]
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./hook-client": {
+      "types": "./dist/hook-client.d.ts",
+      "default": "./dist/hook-client.js"
+    }
+  }
 }

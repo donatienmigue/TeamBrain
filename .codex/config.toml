@@ -1,0 +1,3 @@
+[mcp_servers.teambrain]
+command = "tb"
+args = ["mcp"]

@@ -1,0 +1,24 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "tb hook session-start"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "INPUT=$(cat); ACTIVE=$(printf '%s' \"$INPUT\" | node -e \"console.log(JSON.parse(require('fs').readFileSync(0,'utf8')).stop_hook_active)\"); [ \"$ACTIVE\" = \"true\" ] && exit 0; cd \"$CLAUDE_PROJECT_DIR\" && pnpm -s test:changed || exit 2"
+          }
+        ]
+      }
+    ]
+  }
+}

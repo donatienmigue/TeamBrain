@@ -6,6 +6,28 @@ on:
   pull_request:
 
 jobs:
+  actionlint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # M7 accept gate (AUDIT.md F6), pinned to the version verified in the
+      # I0 audit. shellcheck/pyflakes are explicitly disabled so CI enforces
+      # exactly the rule set that verification covered; turning them on is
+      # I3/I4 hardening once their findings are triaged.
+      - name: actionlint over workflows and ci-templates
+        uses: docker://rhysd/actionlint:1.7.1
+        with:
+          args: >-
+            -shellcheck= -pyflakes=
+            .github/workflows/ci.yml
+            .github/workflows/nightly.yml
+            .github/workflows/release.yml
+            ci-templates/digest.yml
+            ci-templates/distill.yml
+            ci-templates/lint.yml
+            ci-templates/sessions-rotation.yml
+
   test:
     runs-on: ubuntu-latest
     strategy:

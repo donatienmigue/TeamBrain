@@ -326,3 +326,33 @@ Why: C3's injection-mitigation guarantee — a payload past `tb lint` still can'
 pose as a live instruction — was bypassable; this was the audit's only Critical.
 Tradeoffs: fence length is now content-dependent; `tb lint` deliberately keeps
 allowing back-ticks (legit code snippets), the fence is the correct defense.
+## I0.3/F7 — v1-brain compat fixture + byte-correct gate
+What: testdata/compat/v1-brain/ generated from current main via the shipped
+serializers (one memory per class exercising evidence/supersedes/ttl/required,
+one retired, brain.yaml, a 5-event C2 session record); packages/core
+compat-v1.test.ts asserts parse→serialize byte-equality on every file, field
+survival, and per-line C2 round-trips. Fixture committed before the test
+(fixture-first guardrail); gate verified to fail on a 1-byte perturbation.
+Why: I0 Accept requires future code to read the v1 formats byte-correctly.
+Tradeoffs: fixture is frozen — never regenerate it to appease the test.
+
+## I0/F3 — guardrail-4 egress guard
+What: cli/src/egress-guard.test.ts scans every packages/*/src (minus tests,
+helpers, bench) for network syntax (fetch(, node:http(s) imports, http-client
+deps, websockets, the Anthropic SDK) against an explicit allowlist:
+digest/slack.ts, distill/anthropic.ts, index/embeddings.ts. Negative control
+asserts the allowlisted files DO trip the patterns; a breadth floor prevents
+vacuous passes.
+Why: guardrail 4's "CI test greps the bundle" was mandated but absent (F3).
+Tradeoffs: first run caught embeddings.ts — the M3.2 model download is a
+legitimate fourth egress point guardrail 4's wording omits; logged as F8
+rather than silently allowlisted.
+
+## I0/F6 — actionlint verified and enforced
+What: all seven workflow files (ci, nightly, release + 4 ci-templates) pass
+actionlint 1.7.1 locally; ci.yml gains an actionlint job pinned to that same
+version (docker://rhysd/actionlint:1.7.1), shellcheck/pyflakes disabled to
+match the locally-verified surface.
+Why: the M7 accept was unverifiable during the audit (F6) and unenforced.
+Tradeoffs: shellcheck/pyflakes stay off until I3/I4 triage their findings —
+a deliberately narrower gate that is actually known-green.

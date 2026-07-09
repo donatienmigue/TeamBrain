@@ -58,6 +58,7 @@ export {
   exitCodeForError,
 } from './errors.js';
 export type { ErrorExitCode } from './errors.js';
+export { formatZodIssues } from './zod-issues.js';
 export {
   LOG_LEVELS,
   LOG_RETENTION_DAYS,

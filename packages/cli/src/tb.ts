@@ -14,6 +14,7 @@ import { runDistillCommand } from './distill/distill-command.js';
 import { runDigestCommand } from './digest/digest-command.js';
 import { runRetireCommand } from './retire/retire-command.js';
 import { runReindexCommand } from './reindex-command.js';
+import { runProposeCommand } from './propose-command.js';
 
 /** Reads a single y/N answer from a TTY for `tb install`'s confirm step. */
 function promptConfirm(question: string): Promise<boolean> {
@@ -47,9 +48,11 @@ Quick start:
 
 Everyday:
   $ tb audit --last-session     what was recorded, post-redaction
+  $ tb propose --class ... --title ...   queue a candidate memory by hand
   $ tb distill                  (CI) cluster sessions → open a memory PR
   $ tb retire <id> "reason"     open a PR retiring a memory
   $ tb digest                   (CI) post a people-free weekly digest
+  $ tb reindex                  rebuild the local index (recovery path)
 
 Run \`tb <command> --help\` for a command's options.`,
 );
@@ -194,6 +197,34 @@ program
     process.stdout.write(output);
     process.exitCode = exitCode;
   });
+
+program
+  .command('propose')
+  .description(
+    'manually queue a candidate memory for the next distill PR ' +
+      '(local spool only — never writes to the brain)',
+  )
+  .requiredOption('--class <class>', 'decision | convention | map | learning')
+  .requiredOption('--title <title>', 'candidate title (≤80 chars)')
+  .option('--body <text>', 'candidate body (or pipe it on stdin)')
+  .option(
+    '--tag <tag>',
+    'tag the candidate (repeatable)',
+    (value: string, all: string[]) => [...all, value],
+    [] as string[],
+  )
+  .action(
+    (opts: { class: string; title: string; body?: string; tag: string[] }) => {
+      const { exitCode, output } = runProposeCommand({
+        class: opts.class,
+        title: opts.title,
+        ...(opts.body === undefined ? {} : { body: opts.body }),
+        tags: opts.tag,
+      });
+      process.stdout.write(output);
+      process.exitCode = exitCode;
+    },
+  );
 
 program
   .command('reindex')

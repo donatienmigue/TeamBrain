@@ -13,6 +13,7 @@ import { runAuditCommand } from './audit-command.js';
 import { runDistillCommand } from './distill/distill-command.js';
 import { runDigestCommand } from './digest/digest-command.js';
 import { runRetireCommand } from './retire/retire-command.js';
+import { runReindexCommand } from './reindex-command.js';
 
 /** Reads a single y/N answer from a TTY for `tb install`'s confirm step. */
 function promptConfirm(question: string): Promise<boolean> {
@@ -190,6 +191,16 @@ program
     const { exitCode, output } = await runDigestCommand(repoDir, {
       dryRun: opts.dryRun,
     });
+    process.stdout.write(output);
+    process.exitCode = exitCode;
+  });
+
+program
+  .command('reindex')
+  .description('rebuild the SQLite index from the brain repo (recovery path)')
+  .argument('[path]', 'repository holding the brain', '.')
+  .action(async (repoDir: string) => {
+    const { exitCode, output } = await runReindexCommand(repoDir);
     process.stdout.write(output);
     process.exitCode = exitCode;
   });

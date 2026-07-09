@@ -102,8 +102,16 @@ export class SqliteIndex implements RetrievalBackend {
    */
   static async open(options: OpenIndexOptions = {}): Promise<SqliteIndex> {
     const index = new SqliteIndex(options);
-    index.initSchema();
-    await index.reconcileEmbedder();
+    try {
+      index.initSchema();
+      await index.reconcileEmbedder();
+    } catch (err) {
+      // Release the file handle before rethrowing: a corrupt index.db must
+      // stay deletable so `tb reindex` can reset it (on Windows an open
+      // handle locks the file and would block the recovery path).
+      index.db.close();
+      throw err;
+    }
     return index;
   }
 

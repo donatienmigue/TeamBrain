@@ -67,9 +67,30 @@ describe('tb install claude-code (M4.3 accept)', () => {
 
   it('rejects an unsupported tool', async () => {
     const dir = await tempProject();
-    const result = await runInstallCommand('cursor', dir, { yes: true });
+    const result = await runInstallCommand('unknown-tool', dir, { yes: true });
     expect(result.exitCode).toBe(1);
     expect(result.output).toContain('unsupported tool');
+  });
+
+  it('installs cursor specific configurations cleanly and idempotently', async () => {
+    const dir = await tempProject();
+    const mcpPath = join(dir, '.cursor', 'mcp.json');
+    const rulesPath = join(dir, '.cursor', 'rules', 'teambrain.mdc');
+
+    const first = await runInstallCommand('cursor', dir, { yes: true });
+    expect(first.exitCode).toBe(0);
+    expect(first.output).toContain('Installed TeamBrain for cursor');
+    expect(existsSync(mcpPath)).toBe(true);
+    expect(existsSync(rulesPath)).toBe(true);
+    
+    // Assert cursor is added to mcp.json args
+    const mcpContent = JSON.parse(await readFile(mcpPath, 'utf8'));
+    expect(mcpContent.mcpServers.teambrain.args).toContain('--client');
+    expect(mcpContent.mcpServers.teambrain.args).toContain('cursor');
+
+    const second = await runInstallCommand('cursor', dir, { yes: true });
+    expect(second.exitCode).toBe(0);
+    expect(second.output).toContain('already installed');
   });
 
   it('errors on a malformed existing config instead of clobbering it', async () => {

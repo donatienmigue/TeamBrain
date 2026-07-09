@@ -270,6 +270,9 @@ function renderHuman(report: DoctorReport): string {
     out += '  hooks:\n';
     for (const hook of hooks) {
       out += `    - ${hook.tool}: ${hook.count} event(s), last ${hook.lastEventAt}\n`;
+      if (hook.tool === 'cursor') {
+        out += `      (degraded mode: Cursor lacks native hooks; edit/command telemetry unavailable)\n`;
+      }
     }
   }
   if (!report.ok) {

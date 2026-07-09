@@ -100,7 +100,7 @@ program
 program
   .command('install')
   .description('write MCP + hook config for an agent tool (idempotent)')
-  .argument('<tool>', 'claude-code (cursor is deferred)')
+  .argument('<tool>', 'claude-code or cursor')
   .argument('[path]', 'project directory to install into', '.')
   .option('--yes', 'apply without confirmation (for CI)', false)
   .action(async (tool: string, targetDir: string, opts: { yes: boolean }) => {
@@ -127,8 +127,9 @@ program
   .command('mcp')
   .description('run the stdio MCP server (launched by the agent tool)')
   .argument('[path]', 'repository holding the brain', '.')
-  .action(async (repoDir: string) => {
-    await runMcpCommand(repoDir);
+  .option('--client <name>', 'which agent is connecting (e.g. cursor)')
+  .action(async (repoDir: string, opts: { client?: string }) => {
+    await runMcpCommand(repoDir, { client: opts.client });
   });
 
 program

@@ -7,6 +7,7 @@ import {
 } from '@teambrain/core';
 import {
   ensureCaptureHooks,
+  ensureCursorRules,
   ensureMcpServer,
   lineDiff,
   serializeSettings,
@@ -16,7 +17,7 @@ import {
 // a pure ensure* function, and rewritten only when its serialized form
 // changes — so a second run is a genuine no-op (the M4.3 accept criterion).
 
-export const SUPPORTED_TOOLS = ['claude-code'] as const;
+export const SUPPORTED_TOOLS = ['claude-code', 'cursor'] as const;
 export type InstallTool = (typeof SUPPORTED_TOOLS)[number];
 
 export interface InstallOptions {
@@ -61,13 +62,24 @@ function readJson(path: string): Record<string, unknown> {
 function planFor(
   label: string,
   path: string,
-  merge: (existing: Record<string, unknown>) => {
+  merge: (existing: Record<string, unknown>, tool?: string) => {
     value: Record<string, unknown>;
   },
+  tool?: string,
 ): FilePlan {
   const before = existsSync(path) ? readFileSync(path, 'utf8') : '';
-  const merged = merge(readJson(path));
+  const merged = merge(readJson(path), tool);
   return { label, path, before, after: serializeSettings(merged.value) };
+}
+
+function planForText(
+  label: string,
+  path: string,
+  merge: (existing: string) => { value: string },
+): FilePlan {
+  const before = existsSync(path) ? readFileSync(path, 'utf8') : '';
+  const merged = merge(before);
+  return { label, path, before, after: merged.value };
 }
 
 export async function runInstallCommand(
@@ -82,18 +94,19 @@ export async function runInstallCommand(
       );
     }
     const root = resolve(targetDir);
-    const plans: FilePlan[] = [
-      planFor(
-        'MCP server (.mcp.json)',
-        join(root, '.mcp.json'),
-        ensureMcpServer,
-      ),
-      planFor(
-        'Capture hooks (.claude/settings.json)',
-        join(root, '.claude', 'settings.json'),
-        ensureCaptureHooks,
-      ),
-    ];
+    const plans: FilePlan[] = [];
+
+    if (tool === 'claude-code') {
+      plans.push(
+        planFor('MCP server (.mcp.json)', join(root, '.mcp.json'), ensureMcpServer, tool),
+        planFor('Capture hooks (.claude/settings.json)', join(root, '.claude', 'settings.json'), ensureCaptureHooks)
+      );
+    } else if (tool === 'cursor') {
+      plans.push(
+        planFor('MCP server (.cursor/mcp.json)', join(root, '.cursor', 'mcp.json'), ensureMcpServer, tool),
+        planForText('Cursor rules (.cursor/rules/teambrain.mdc)', join(root, '.cursor', 'rules', 'teambrain.mdc'), ensureCursorRules)
+      );
+    }
 
     const changed = plans.filter((plan) => plan.before !== plan.after);
     if (changed.length === 0) {

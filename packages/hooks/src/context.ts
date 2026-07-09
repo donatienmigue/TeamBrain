@@ -71,6 +71,7 @@ export interface BuildHookContextOptions {
   cwd: string;
   sid: string;
   now?: () => Date;
+  tool?: string;
   model?: string;
   session?: HookContext['session'];
 }
@@ -104,7 +105,7 @@ export function buildHookContext(
     sid: options.sid,
     repo: resolveRepo(cwd),
     branch,
-    tool: 'claude-code',
+    tool: options.tool ?? 'claude-code',
     model: options.model ?? process.env['TEAMBRAIN_MODEL'] ?? 'unknown',
     redactionLevel: level,
     now: options.now ?? ((): Date => new Date()),

@@ -64,6 +64,16 @@ export function redactEvent(
     level,
     replacements,
   ) as SessionEvent['data'];
+  
+  // Exception: candidate_proposed events carry an explicit proposed 'body',
+  // which is safe because it is LLM-generated distillation, not raw user content.
+  if (event.ev === 'candidate_proposed') {
+    const draft = (event.data as any).draft;
+    if (draft && typeof draft.body === 'string') {
+      (data as any).draft.body = redactString(draft.body, level).text;
+    }
+  }
+
   const redacted = sessionEventSchema.parse({ ...event, data });
   return { event: redacted, replacements };
 }

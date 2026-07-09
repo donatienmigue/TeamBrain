@@ -42,6 +42,8 @@ export interface ToolContext {
   /** Injectable clock (spool timestamps, TTL). */
   now?: () => Date;
   logger?: Logger;
+  /** Optional interceptor for capturing tool usage (e.g., Cursor MCP-side inference). */
+  onToolCall?: (name: string, args?: Record<string, unknown>) => void;
 }
 
 // Input shapes as zod raw shapes so the MCP SDK can expose them directly.
@@ -84,6 +86,7 @@ export function createTools(context: ToolContext): Tools {
   const clock = (): Date => (context.now ? context.now() : new Date());
   return {
     memoryContext(): MemoryContext {
+      context.onToolCall?.('memory_context');
       return buildMemoryContext(context.backend, {
         ...(context.scope === undefined ? {} : { scope: context.scope }),
         now: clock(),
@@ -91,6 +94,7 @@ export function createTools(context: ToolContext): Tools {
     },
 
     async memorySearch(input): Promise<MemoryView[]> {
+      context.onToolCall?.('memory_search', input);
       const k = input.k ?? DEFAULT_SEARCH_K;
       const results = await context.backend.searchWithOptions(input.query, k, {
         ...(context.scope === undefined ? {} : { scope: context.scope }),
@@ -100,6 +104,7 @@ export function createTools(context: ToolContext): Tools {
     },
 
     memoryPropose(input): ProposeResult {
+      context.onToolCall?.('memory_propose', input);
       // Re-validate: the SDK already parsed, but the hook path and other
       // callers hit this directly with untrusted drafts.
       const draft = candidateDraftSchema.parse(input.draft);

@@ -47,10 +47,13 @@ export interface MergeResult {
  * Ensures `.mcp.json` registers the teambrain server. Idempotent: a second
  * call with the already-registered server reports changed=false.
  */
-export function ensureMcpServer(existing: Json): MergeResult {
+export function ensureMcpServer(existing: Json, tool?: string): MergeResult {
+  const args: string[] = [...MCP_SERVER_ARGS];
+  if (tool === 'cursor') args.push('--client', 'cursor');
+
   const desired = {
     command: MCP_SERVER_COMMAND,
-    args: [...MCP_SERVER_ARGS],
+    args,
   };
   const servers = asObject(existing['mcpServers']);
   const current = servers[MCP_SERVER_KEY];
@@ -95,6 +98,19 @@ export function ensureCaptureHooks(existing: Json): MergeResult {
   return changed
     ? { value: { ...existing, hooks }, changed: true }
     : { value: existing, changed: false };
+}
+
+export function ensureCursorRules(existingRaw: string): { value: string; changed: boolean } {
+  const desired = `---
+description: TeamBrain memory capture
+globs: *
+---
+# TeamBrain Memory Rules
+Always call \`mcp__teambrain__memory_context\` at the start of your work.
+Always call \`mcp__teambrain__memory_propose\` at the end of your work if you learned something new.
+`;
+  if (existingRaw === desired) return { value: existingRaw, changed: false };
+  return { value: desired, changed: true };
 }
 
 /** Canonical JSON serialization used for both writing and diffing. */

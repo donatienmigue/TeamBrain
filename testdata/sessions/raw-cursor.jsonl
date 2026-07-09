@@ -1,0 +1,3 @@
+{"method":"memory_context"}
+{"method":"memory_search","args":{"query":"auth"}}
+{"method":"memory_propose","args":{"draft":{"class":"learning","title":"A new learning","body":"Never do this.","tags":[]}}}

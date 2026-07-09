@@ -35,6 +35,8 @@ export interface DraftResult {
   discarded: number;
 }
 
+import type { FlywheelExamples } from './flywheel.js';
+
 export interface DraftOptions {
   /** Injectable clock; the candidate's `created` date. Default now. */
   now?: Date;
@@ -42,6 +44,8 @@ export interface DraftOptions {
   newId?: () => string;
   /** Override the system prompt (tests); default is `prompts/distill-v1.md`. */
   systemPrompt?: string;
+  /** Few-shot calibration examples. */
+  flywheel?: FlywheelExamples;
 }
 
 let cachedSystemPrompt: string | undefined;
@@ -55,6 +59,25 @@ export function loadDistillPrompt(): string {
     cachedSystemPrompt = readFileSync(promptPath, 'utf8');
   }
   return cachedSystemPrompt;
+}
+
+export function renderFlywheelPrompt(flywheel?: FlywheelExamples): string {
+  if (!flywheel) return '';
+  if (flywheel.accepted.length === 0 && flywheel.rejected.length === 0) return '';
+  
+  const lines: string[] = ['', '## Per-team calibration'];
+  
+  if (flywheel.accepted.length > 0) {
+    lines.push('', 'The following are titles of recently ACCEPTED memories by this team (use as good examples):');
+    for (const t of flywheel.accepted) lines.push(`- ${t}`);
+  }
+  
+  if (flywheel.rejected.length > 0) {
+    lines.push('', 'The following are titles of recently REJECTED memories by this team (do NOT propose these):');
+    for (const t of flywheel.rejected) lines.push(`- ${t}`);
+  }
+  
+  return lines.join('\n');
 }
 
 /**
@@ -85,7 +108,8 @@ export async function draftCandidates(
   provider: Provider,
   options: DraftOptions = {},
 ): Promise<DraftResult> {
-  const system = options.systemPrompt ?? loadDistillPrompt();
+  const baseSystem = options.systemPrompt ?? loadDistillPrompt();
+  const system = baseSystem + renderFlywheelPrompt(options.flywheel);
   const created = isoDate(options.now ?? new Date());
   const newId = options.newId ?? ulid;
 

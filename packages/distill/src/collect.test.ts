@@ -39,6 +39,7 @@ describe('collect (M6.1)', () => {
       readMergedPRs: () => [
         { number: 5, title: 'PR', files: ['src/a.ts'], commits: ['c1'] },
       ],
+      readTeamBrainPRBodies: () => [],
     };
 
     const result = collect({ repoRoot: '/repo', brainDir, sessions, prs });
@@ -63,7 +64,7 @@ describe('collect (M6.1)', () => {
       repoRoot: '/repo',
       brainDir,
       sessions,
-      prs: { readMergedPRs: () => [] },
+      prs: { readMergedPRs: () => [], readTeamBrainPRBodies: () => [] },
     });
     expect(askedWatermark).toBeNull();
     expect(result.fromWatermark).toBeNull();

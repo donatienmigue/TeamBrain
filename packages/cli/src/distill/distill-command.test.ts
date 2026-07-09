@@ -95,7 +95,7 @@ describe('tb distill --dry-run (M6.4)', () => {
       provider,
       embed: constEmbed,
       sessions,
-      prs: { readMergedPRs: () => [] },
+      prs: { readMergedPRs: () => [], readTeamBrainPRBodies: () => [] },
       brainDir,
       now: new Date('2026-07-06T00:00:00Z'),
       newId: () => `01JD01${'0'.repeat(20)}`,

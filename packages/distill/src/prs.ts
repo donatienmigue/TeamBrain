@@ -8,6 +8,7 @@ import type { PullRequest } from './types.js';
 
 export interface PullRequestSource {
   readMergedPRs(): PullRequest[];
+  readTeamBrainPRBodies(): string[];
 }
 
 export type ExecFn = (command: string, args: string[]) => string;
@@ -31,6 +32,7 @@ interface GhPr {
   files?: GhFile[];
   commits?: GhCommit[];
   mergedAt?: string;
+  body?: string;
 }
 
 /** Normalizes one `gh` PR record into our PullRequest shape. */
@@ -89,6 +91,35 @@ export function ghPullRequestSource(
       return parsed
         .map((pr) => toPullRequest(pr as GhPr))
         .filter((pr): pr is PullRequest => pr !== null);
+    },
+    readTeamBrainPRBodies(): string[] {
+      let raw: string;
+      try {
+        raw = exec('gh', [
+          'pr',
+          'list',
+          '--repo',
+          repoRoot,
+          '--search',
+          'is:pr is:closed "TeamBrain: proposed memories" in:title',
+          '--limit',
+          '10',
+          '--json',
+          'body',
+        ]);
+      } catch {
+        return [];
+      }
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(raw);
+      } catch {
+        return [];
+      }
+      if (!Array.isArray(parsed)) return [];
+      return parsed
+        .map((pr) => (pr as GhPr).body)
+        .filter((body): body is string => typeof body === 'string');
     },
   };
 }

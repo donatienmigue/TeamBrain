@@ -145,7 +145,7 @@ describe('full loop (M8.1)', () => {
       provider,
       embed: (texts) => embedder.embedDocs(texts),
       sessions: replaySource(),
-      prs: { readMergedPRs: () => [] },
+      prs: { readMergedPRs: () => [], readTeamBrainPRBodies: () => [] },
       now: NOW,
       newId: () => NEW_ID,
     });

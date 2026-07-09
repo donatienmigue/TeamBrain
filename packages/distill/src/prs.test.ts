@@ -49,4 +49,37 @@ describe('ghPullRequestSource', () => {
     const exec: ExecFn = () => 'not json';
     expect(ghPullRequestSource('/repo', { exec }).readMergedPRs()).toEqual([]);
   });
+
+  describe('readTeamBrainPRBodies', () => {
+    it('parses gh pr list JSON and extracts bodies', () => {
+      const output = JSON.stringify([
+        { body: 'Table of proposed memories 1' },
+        { body: 'Table of proposed memories 2' },
+      ]);
+      const exec: ExecFn = () => output;
+      const bodies = ghPullRequestSource('/repo', { exec }).readTeamBrainPRBodies();
+      expect(bodies).toEqual([
+        'Table of proposed memories 1',
+        'Table of proposed memories 2',
+      ]);
+    });
+
+    it('requests only closed TeamBrain memory PRs', () => {
+      let seen: string[] = [];
+      const exec: ExecFn = (_command, args) => {
+        seen = args;
+        return '[]';
+      };
+      ghPullRequestSource('/repo', { exec }).readTeamBrainPRBodies();
+      expect(seen.join(' ')).toContain('is:pr is:closed "TeamBrain: proposed memories" in:title');
+      expect(seen).toContain('body');
+    });
+
+    it('degrades to an empty list when gh fails', () => {
+      const exec: ExecFn = () => {
+        throw new Error('gh: not found');
+      };
+      expect(ghPullRequestSource('/repo', { exec }).readTeamBrainPRBodies()).toEqual([]);
+    });
+  });
 });

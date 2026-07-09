@@ -10,6 +10,7 @@ import {
   type EmbedFn,
 } from './dedup.js';
 import { gateCandidates, renderPrBody, DEFAULT_MAX_PROPOSALS } from './gate.js';
+import { deriveFlywheelExamples } from './flywheel.js';
 import type { Provider } from './provider.js';
 import type { Proposal } from './gate.js';
 
@@ -57,15 +58,20 @@ export async function distill(input: DistillInput): Promise<DistillOutcome> {
     input.clusterOptions ?? DEFAULT_CLUSTER_OPTIONS,
   );
 
+  const existing = input.existing ?? loadExistingMemories(brainDir);
+  
+  const prBodies = input.prs ? input.prs.readTeamBrainPRBodies?.() ?? [] : [];
+  const flywheel = deriveFlywheelExamples(prBodies, existing);
+
   const drafted = await draftCandidates(clusters, input.provider, {
     ...(input.now === undefined ? {} : { now: input.now }),
     ...(input.newId === undefined ? {} : { newId: input.newId }),
     ...(input.systemPrompt === undefined
       ? {}
       : { systemPrompt: input.systemPrompt }),
+    flywheel,
   });
 
-  const existing = input.existing ?? loadExistingMemories(brainDir);
   const deduped = await dedupCandidates(drafted.candidates, {
     embed: input.embed,
     provider: input.provider,

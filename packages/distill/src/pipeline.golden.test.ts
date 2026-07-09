@@ -63,7 +63,7 @@ async function runPipeline() {
     provider: fakeProvider(responder),
     embed: lexicalEmbedder(),
     sessions: fixtureSessionSource(join(FIXTURE, 'sessions')),
-    prs: { readMergedPRs: () => [] },
+    prs: { readMergedPRs: () => [], readTeamBrainPRBodies: () => [] },
     now: new Date('2026-07-06T00:00:00Z'),
     newId,
   });

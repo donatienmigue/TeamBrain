@@ -97,7 +97,7 @@ TeamBrain provides cross-vendor support with a graceful degradation model. Captu
 
 *Note: Cursor lacks native lifecycle and post-tool hooks. Edit and command telemetry are unavailable, so Cursor sessions will lack `tool_use` events. Sessions and their resulting commits are still captured via the MCP-side inference wrapper.*
 
-## For Contributors
+## Status & limits
 
 v1. Claude Code fully supported; Cursor capture in progress (context serving
 already works via MCP); Codex/Kiro adapters next. macOS/Linux, Windows via WSL.
@@ -105,5 +105,16 @@ Honest limits: distiller quality depends on your session volume (it needs ~5+
 sessions/week to propose anything useful), and multi-repo org brains aren't
 built yet. Milestone-by-milestone plan in `docs/internal/BUILD_PLAN.md`.
 
-Apache-2.0. Contributions welcome — start with [CONTRIBUTING.md](CONTRIBUTING.md)
-and the public redaction corpus (adversarial cases especially appreciated).
+## Documentation
+
+| For | Read |
+|---|---|
+| Using TeamBrain in your repo | This README + `tb --help` (grouped commands, exit codes, examples) |
+| The memory file format | [FORMAT.md](FORMAT.md) |
+| Threat model & privacy guarantees | [SECURITY.md](SECURITY.md) |
+| **Contributing / developing TeamBrain itself** | [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) — setup, repo map, architecture, test recipes — then [CONTRIBUTING.md](CONTRIBUTING.md) |
+| CI wiring for the distiller/digest/lint | [ci-templates/](ci-templates/) |
+
+Apache-2.0. Contributions welcome — [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)
+gets you from clone to first PR; the public redaction corpus is a great entry
+point (adversarial cases especially appreciated).

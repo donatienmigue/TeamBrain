@@ -1,19 +1,37 @@
 # Contributing to TeamBrain
 
+**New here? Start with [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)** — setup in
+5 minutes, a repo map, the 60-second architecture, test/bench recipes, recipes
+for the most common changes, and troubleshooting. This file covers policy and
+reading order; that one covers how to actually get things done.
+
 ## Local setup
 
-Requirements: Node >= 20, [pnpm](https://pnpm.io). The `gh` CLI (authenticated)
-is needed once you're working on milestones that automate pull requests
-(brain import, distiller, digest) — not required for the current scaffold.
+Requirements: Node >= 20, [pnpm](https://pnpm.io) (`corepack enable`). The
+`gh` CLI (authenticated) is only needed for the PR-opening paths (distiller,
+digest, init against a real remote).
 
 ```
 pnpm install
 pnpm build && pnpm test && pnpm lint && pnpm bench
 ```
 
+All four are CI gates — green before and after your change.
+
 A `Stop` hook (`.claude/settings.json`) runs `pnpm test:changed` at the end
 of every Claude Code turn in this repo, so a turn can't end with failing
-tests.
+tests. The repo also dogfoods TeamBrain on itself — see
+[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md#dogfooding-this-repo-runs-teambrain-on-itself).
+
+## Good first contributions
+
+- **Redaction corpus cases** (`packages/redact/corpus/`) — adversarial true
+  positives and tricky negatives are always welcome, and the corpus is
+  release-gating so every case has teeth.
+- **Injection-lint patterns** (`packages/core/src/injection-patterns.ts`) —
+  each new pattern ships with one positive and one negative test.
+- Low-severity findings in [docs/internal/AUDIT.md](docs/internal/AUDIT.md)
+  are pre-triaged, scoped work items.
 
 ## Engineering docs
 
@@ -40,7 +58,11 @@ read in this order:
 
 ## Conventions
 
-- One task per commit, matching the tasks in `docs/internal/BUILD_PLAN.md`.
+- One task per commit, matching the tasks in `docs/internal/BUILD_PLAN.md`
+  (or an AUDIT.md finding ID); append a ≤5-line DEVLOG entry per task.
+- Every new capability ships a negative test (see the testing rules in
+  `CLAUDE.md`); schemas in `docs/internal/CONTRACTS.md` are frozen — propose
+  in the DEVLOG and ask before touching them.
 - Each commit that adds a dependency justifies it in the commit body (see
   `CLAUDE.md` §"Boring dependencies").
 - After a milestone's Accept criteria are all green, it gets tagged `m<N>`.

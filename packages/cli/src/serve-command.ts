@@ -6,6 +6,7 @@ import {
   exitCodeForError,
 } from '@teambrain/core';
 import {
+  ensureUserScopeDir,
   resolveRuntimeDir,
   startDaemon,
   type DaemonHandle,
@@ -41,8 +42,12 @@ export async function runServeCommand(
   }
 
   const logger = createLogger().child({ component: 'serve' });
+  const runtimeDir = resolveRuntimeDir();
+  // Materialize the C7 layout's user/ store here in the CLI layer — the
+  // daemon's sync code must never know this path exists (F4 separation).
+  ensureUserScopeDir(runtimeDir);
   const daemon = await startDaemon({
-    runtimeDir: resolveRuntimeDir(),
+    runtimeDir,
     brainDir,
     logger,
   });

@@ -9,6 +9,10 @@ export {
   sessionSpoolDir,
   sessionRecordPath,
 } from './paths.js';
+// User-scope paths live in their own module (never in paths.ts): the sync
+// code imports paths.js, and the C7 separation test asserts its import
+// graph cannot name the user/ store.
+export { userScopeDir, ensureUserScopeDir } from './user-paths.js';
 export {
   Spool,
   SESSIONS_BRANCH,

@@ -80,3 +80,30 @@ are routed to their owning milestone above.
 
 F2, F3, F4, F5, F6 are logged above with owners. **F7 (compat fixture)** is the
 remaining I0 sub-task (I0.3) and is done next within I0, not deferred.
+
+---
+
+## I0.2 addendum — deeper adversarial pass
+
+The first I0.2 pass (above) worked mostly at the interface/schema layer. This
+addendum goes one level deeper into the write-path implementations that layer
+sits on, treating each as guilty until proven innocent rather than trusting
+the interface to imply correctness underneath:
+
+| File | Adversarial question asked | Result |
+|------|------------------------------|--------|
+| `packages/index/src/store.ts` | Does the SQL actually implement C4's fuse→filter→force-include→trim order, or just the pure helpers checked the first time? | ✅ Confirmed: RRF runs over unfiltered top-40∪top-40, filters apply on hydrate, required force-include is a separate query merged in ordered-first and exempt from the `k` cut, token trim last. |
+| `packages/index/src/brain.ts` | How does a retired memory actually disappear — a tombstone, or something racier? | ✅ Retirement leaves no tombstone: the brain-tree checksum changes (file moved to `retired/`), the next sync does a full `replaceSource('memory', …)`, and the moved file is simply absent from the new doc set. No special-cased retire path to get wrong. |
+| `packages/mcp/src/daemon.ts` | Does the watcher cycle actually rebuild the index, or just claim to? Any path that could wedge the daemon open on bad input? | ✅ Checksum poll (default 1500ms) is the source of truth; `fs.watch` is best-effort only (documented Linux recursive-watch gap). All reindex/gitFetch/heartbeat failures are caught and logged at debug, never thrown. Timers are `.unref()`'d so they can't keep the process alive. |
+| `packages/mcp/src/spool.ts` | Does the sessions-branch commit ever risk touching the working tree or `main`? Is the orphan branch really isolated? | ✅ Pure plumbing (`hash-object`/`read-tree`/`write-tree`/`commit-tree`/`update-ref` against a scratch `GIT_INDEX_FILE`) — no checkout, no worktree. Seeded from the well-known empty-tree SHA so the sessions branch never carries the project tree. Push failure keeps the record local (principle 2). |
+| `packages/cli/src/hook-command.ts` | Does every code path really exit 0, including malformed stdin or a JSON parse throw? | ✅ `readStdin` swallows read errors to `''`; the capture branch wraps the whole map→redact→emit chain in try/catch that drops the event silently on any failure. Only an unrecognized hook name returns non-zero (correct — that's a `tb hook` invocation bug, not a session-capture failure). |
+| `packages/cli/src/retire/retire-branch.ts` | Could a failed retire ever leave `main` dirty or a half-written branch behind? | ✅ Runs entirely in a throwaway worktree off a fresh branch; on any failure the branch and worktree are force-removed in a `finally`. `main`/the caller's checkout is never touched. |
+| `packages/cli/src/install/install-command.ts` + `settings.ts` | Can a second `tb install` ever produce a non-empty diff (duplicate hook entries, key reordering)? | ✅ Both merges are pure functions gated on `JSON.stringify` / `groupHasCommand` equality checks before mutating; a file is only rewritten when its serialized form actually changed. The M4.3-vs-`.mcp.json` split is a pre-existing, already-documented deviation (DEVLOG, guardrail 2) — not new. |
+| `packages/redact/src/engine.ts` + `entropy.ts` | Does the entropy scanner's negative-case reasoning ("hex tops out at 4.0 bits/char") actually hold, or is it asserted without proof? | ✅ Holds by construction: a 16-symbol alphabet (hex) has a maximum Shannon entropy of log₂16 = 4.0 bits/char regardless of string content, which is under the 4.5 threshold — this is a mathematical ceiling, not a heuristic that could regress. |
+| `packages/hooks/src/redact-event.ts`, `run.ts`, `dispatch.ts` | Is redaction actually applied before the daemon socket write, or could a code path emit first and redact second (a TOCTOU-style privacy bug)? | ✅ Traced the call chain: `captureAndEmit` → `processHookPayload` (map → `redactEvent`) → `emitEvent`. Redaction is structurally unreachable to skip; it happens inside the same synchronous function that produces the event, entirely before `emitEvent` is called. |
+
+**Outcome: no new Critical or High findings.** This pass increases confidence
+that F1–F7 are the real gap list rather than a surface-level skim — the
+underlying write paths for retirement, session capture, install, and
+redaction all hold up under adversarial reading of the actual git-plumbing
+and SQL, not just their type signatures.

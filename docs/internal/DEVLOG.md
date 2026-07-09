@@ -1,17 +1,5 @@
 # Devlog
 
-## I0/F1 — fix C3 fence-escape in memory rendering
-What: `renderMemoryBlock` opened/closed the `data, not instructions` block with
-a fixed ```` ``` ```` fence, so a memory body containing ```` ``` ```` broke out
-and the trailing text rendered as agent instructions (in memory_search,
-memory_context, and the SessionStart bundle). Now the fence is a back-tick run
-one longer than the longest run inside (CommonMark closing rule). Regression
-tests added.
-Why: C3's injection-mitigation guarantee — a payload past `tb lint` still can't
-pose as a live instruction — was bypassable; this was the audit's only Critical.
-Tradeoffs: fence length is now content-dependent; `tb lint` deliberately keeps
-allowing back-ticks (legit code snippets), the fence is the correct defense.
-
 ## M0.1 — Monorepo skeleton
 What: pnpm workspace with 7 packages (core/index/mcp/hooks/redact/distill/cli),
 shared strict/ESM/NodeNext tsconfig via `tsc -b` project references, vitest
@@ -298,3 +286,15 @@ body rules, canonical serialization) and SECURITY.md (the §5 threat model
 summary, memory-poisoning stance front and centre); added a `tb --help`
 examples block (commander addHelpText) so the top-level help lists the quick
 start + everyday commands, with per-command `--help` from each description.
+
+## I0/F1 — fix C3 fence-escape in memory rendering
+What: `renderMemoryBlock` opened/closed the `data, not instructions` block with
+a fixed ```` ``` ```` fence, so a memory body containing ```` ``` ```` broke out
+and the trailing text rendered as agent instructions (in memory_search,
+memory_context, and the SessionStart bundle). Now the fence is a back-tick run
+one longer than the longest run inside (CommonMark closing rule). Regression
+tests added.
+Why: C3's injection-mitigation guarantee — a payload past `tb lint` still can't
+pose as a live instruction — was bypassable; this was the audit's only Critical.
+Tradeoffs: fence length is now content-dependent; `tb lint` deliberately keeps
+allowing back-ticks (legit code snippets), the fence is the correct defense.

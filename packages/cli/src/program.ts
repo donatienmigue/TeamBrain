@@ -10,6 +10,7 @@ import { runDoctorCommand } from './doctor-command.js';
 import { runHookCommand } from './hook-command.js';
 import { runAuditCommand } from './audit-command.js';
 import { runDistillCommand } from './distill/distill-command.js';
+import { runCodemapCommand } from './distill/codemap-command.js';
 import {
   ghGovernanceFriction,
   runDigestCommand,
@@ -176,14 +177,21 @@ export function buildProgram(): Command {
       'print the would-be PR without git writes or gh calls',
       false,
     )
+    .option(
+      '--codemap',
+      'update .teambrain/codemap/ instead (requires codemap.enabled)',
+      false,
+    )
     .addHelpText('after', commandHelpAfter(HELP.distill))
-    .action(async (repoDir: string, opts: { dryRun: boolean }) => {
-      const { exitCode, output } = await runDistillCommand(repoDir, {
-        dryRun: opts.dryRun,
-      });
-      process.stdout.write(output);
-      process.exitCode = exitCode;
-    });
+    .action(
+      async (repoDir: string, opts: { dryRun: boolean; codemap: boolean }) => {
+        const { exitCode, output } = opts.codemap
+          ? await runCodemapCommand(repoDir)
+          : await runDistillCommand(repoDir, { dryRun: opts.dryRun });
+        process.stdout.write(output);
+        process.exitCode = exitCode;
+      },
+    );
 
   program
     .command('retire')

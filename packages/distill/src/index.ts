@@ -63,3 +63,17 @@ export {
   type Proposal,
 } from './gate.js';
 export { distill, type DistillInput, type DistillOutcome } from './pipeline.js';
+export {
+  updateCodemap,
+  readCodemapEntries,
+  readCodemapManifest,
+  listSourceFiles,
+  CODEMAP_DIR,
+  CODEMAP_SYSTEM_PROMPT,
+  DEFAULT_EXTENSIONS,
+} from './codemap/generate.js';
+export type {
+  CodemapUpdateOptions,
+  CodemapUpdateResult,
+  CodemapManifest,
+} from './codemap/generate.js';

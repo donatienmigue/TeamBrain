@@ -1,0 +1,43 @@
+# TeamBrain — incremental CodeMap update (R16, opt-in)
+#
+# On merge to the default branch, re-summarize only the files that changed
+# (hash-manifest diff) and commit the refreshed .teambrain/codemap/ tree
+# directly — CodeMap is a derived artifact, not PR-gated (Tech Brief §4.8).
+# Requires codemap.enabled: true in .teambrain/brain.yaml and an LLM key.
+name: teambrain-codemap
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: teambrain-codemap
+  cancel-in-progress: false
+
+jobs:
+  codemap:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm install -g @teambrain/cli
+
+      - name: Update the codemap
+        run: tb distill --codemap
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+      - name: Commit the refreshed map
+        run: |
+          git config user.name "teambrain-codemap"
+          git config user.email "codemap@teambrain.invalid"
+          git add .teambrain/codemap
+          git diff --cached --quiet && exit 0
+          git commit -m "chore(teambrain): incremental codemap update"
+          git push

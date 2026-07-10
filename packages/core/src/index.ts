@@ -1,4 +1,12 @@
-export const CORE_VERSION = '0.0.1';
+import { createRequire } from 'node:module';
+
+// The version `tb --version` and the MCP server report. Read from
+// package.json at runtime so it can never drift from what npm publishes —
+// v0.2.0 shipped printing a stale hardcoded '0.0.1' and the release smoke
+// gate caught it. All @teambrain/* packages version in lockstep.
+export const CORE_VERSION: string = (
+  createRequire(import.meta.url)('../package.json') as { version: string }
+).version;
 
 export { ulid, isUlid, ULID_REGEX } from './ulid.js';
 export { slugify } from './slug.js';

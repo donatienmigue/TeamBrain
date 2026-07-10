@@ -1,6 +1,6 @@
 {
   "name": "@teambrain/index",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "TeamBrain hybrid retrieval: SQLite FTS5 + sqlite-vec + RRF behind a RetrievalBackend interface",
   "keywords": [
     "ai",

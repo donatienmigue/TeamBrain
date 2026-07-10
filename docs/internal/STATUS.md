@@ -100,8 +100,8 @@ header forbids regenerating the fixture to make it pass.
 | Milestone | Real remaining scope |
 |---|---|
 | D0 | **DONE** (this document). |
-| D1 | Only `v0.1.0` remains: bump versions, tag, push (human action — publishes to npm/GitHub). Install smoke gate + generated release notes landed post-D0 (`release.yml`); pipeline + binaries already existed. |
-| D2 | Reduced: decide on session-boundary inference for non-proposing Cursor sessions. README overclaims and silent catches fixed post-D0; adapter + parity test + matrix already exist. |
-| D3 | Untouched — full scope stands. The next substantial build work. |
+| D1 | **BLOCKED on the NPM_TOKEN secret.** v0.1.0 is bumped, tagged, and pushed; both publish workflows failed at "Publish to npm" (2026-07-10) with nothing reaching the registry — the token has publish rights historically (0.0.1 is live) but now fails, consistent with npm's 2025 token expiry policy. Fix: mint a new granular automation token (or configure npm trusted publishing for the 7 packages), update the GitHub secret, re-run the `release` workflow on tag v0.1.0. Everything downstream (smoke gate, notes, binaries) then runs unattended. |
+| D2 | **DONE.** Idle-timeout (30 min) session_end inference landed with negative tests; README matrix honest; parity fixture green. Cursor still cannot capture commit SHAs/outcome (inherent to no lifecycle hooks). |
+| D3 | **DONE.** Practice signals + memory-value metrics in the digest (people-free by negative test); governance friction in digest + doctor --json; PR body redesigned with byte-exact golden; PRACTICE_SIGNALS.md verdict: conditional GO on metadata-only FlightDeck (no plan_revision emitter exists; co-occurrence labeled correlation). |
 | D4–D5 | Full scope; add from D0: `core.longpaths` clone failure (D5.3), doctor repo-scoping/exit-code (D5.1), pnpm bin warning. |
 | D6 | Gated on D3, unchanged. |

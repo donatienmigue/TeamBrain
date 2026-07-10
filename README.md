@@ -90,12 +90,12 @@ TeamBrain provides cross-vendor support with a graceful degradation model. Captu
 |----------------|-------------|--------|
 | **Install Command** | `tb install claude-code` | `tb install cursor` |
 | **Session Start** | Yes (Native Hook) | Yes (MCP-side inference) |
-| **Session End** | Yes (Native Hook) | Yes (MCP-side inference) |
+| **Session End** | Yes (Native Hook) | Partial (inferred only when the session proposes a memory) |
 | **File Edits / Bash Commands** | Yes (Native Hook) | **No** (Degraded mode) |
 | **Memory Search/Retrieve** | Yes (MCP Tool) | Yes (MCP Tool) |
 | **Propose Memory** | Yes (MCP Tool) | Yes (MCP Tool) |
 
-*Note: Cursor lacks native lifecycle and post-tool hooks. Edit and command telemetry are unavailable, so Cursor sessions will lack `tool_use` events. Sessions and their resulting commits are still captured via the MCP-side inference wrapper.*
+*Note: Cursor lacks native lifecycle and post-tool hooks. Edit and command telemetry are unavailable, so Cursor sessions will lack `tool_use` events. Session boundaries are inferred from MCP tool calls: a session's end is only detected when it proposes a memory, and commit SHAs, duration, and outcome are not captured for Cursor sessions.*
 
 ## Status & limits
 

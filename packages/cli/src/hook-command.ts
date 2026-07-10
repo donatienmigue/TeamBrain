@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import {
   UserError,
+  createLogger,
   exitCodeForError,
   type ErrorExitCode,
 } from '@teambrain/core';
@@ -55,8 +56,13 @@ export async function runHookCommand(
           runtimeDir: resolveRuntimeDir(),
         });
       }
-    } catch {
-      /* graceful degradation: drop the event, keep the session healthy */
+    } catch (err) {
+      // Graceful degradation: drop the event, keep the session healthy —
+      // but logged, never silent (CLAUDE.md principle 2 + "Forbidden").
+      createLogger().debug('capture hook event dropped', {
+        hook: captureEvent,
+        reason: err instanceof Error ? err.message : String(err),
+      });
     }
     return { exitCode: 0, output: '' };
   }

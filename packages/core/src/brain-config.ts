@@ -25,6 +25,14 @@ export const brainConfigSchema = z.looseObject({
     })
     .optional(),
   required_tags: z.array(z.string()).default([]),
+  // R16 CodeMap (Tech Brief §4.8), off by default. Enabling makes the daemon
+  // index .teambrain/codemap/ under C4's reserved source and tb distill
+  // --codemap maintain it.
+  codemap: z
+    .looseObject({
+      enabled: z.boolean().default(false),
+    })
+    .default({ enabled: false }),
 });
 export type BrainConfig = z.infer<typeof brainConfigSchema>;
 

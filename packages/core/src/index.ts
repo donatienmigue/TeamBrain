@@ -66,3 +66,13 @@ export {
   defaultLogDir,
 } from './log.js';
 export type { LogLevel, LogFields, Logger, LoggerOptions } from './log.js';
+export {
+  codemapEntrySchema,
+  parseCodemapEntry,
+  serializeCodemapEntry,
+  CodemapEntryParseError,
+} from './codemap-entry.js';
+export type {
+  CodemapEntryFrontmatter,
+  ParsedCodemapEntry,
+} from './codemap-entry.js';

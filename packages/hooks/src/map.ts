@@ -33,6 +33,12 @@ const EDIT_TOOLS = new Set([
   'Update',
 ]);
 
+// C2 'explore' kind (approved 2026-07-10): repo-exploration tools, captured
+// as metadata only (path when present, never query strings or file content).
+// This is the D6/R16 measurement channel — exploration events/session is the
+// proxy for exploration token spend.
+const EXPLORE_TOOLS = new Set(['Read', 'Grep', 'Glob']);
+
 const TEST_COMMAND =
   /\b(vitest|jest|mocha|pytest|rspec|phpunit|go\s+test|cargo\s+test|gradle\s+test|dotnet\s+test|(?:npm|pnpm|yarn)\s+(?:run\s+)?test)\b/;
 
@@ -82,19 +88,25 @@ export function mapPostToolUse(
   ctx: HookContext,
 ): SessionEvent | null {
   const input = (payload.tool_input ?? {}) as Record<string, unknown>;
-  let kind: 'edit' | 'command' | 'test';
+  let kind: 'edit' | 'command' | 'test' | 'explore';
   let path: string | undefined;
 
   if (EDIT_TOOLS.has(payload.tool_name)) {
     kind = 'edit';
     const candidate = input['file_path'] ?? input['notebook_path'];
     path = typeof candidate === 'string' ? candidate : undefined;
+  } else if (EXPLORE_TOOLS.has(payload.tool_name)) {
+    kind = 'explore';
+    // Read carries file_path; Grep/Glob may carry a path scope. Query
+    // strings (pattern etc.) are deliberately never read.
+    const candidate = input['file_path'] ?? input['path'];
+    path = typeof candidate === 'string' ? candidate : undefined;
   } else if (payload.tool_name === 'Bash') {
     const command =
       typeof input['command'] === 'string' ? input['command'] : '';
     kind = TEST_COMMAND.test(command) ? 'test' : 'command';
   } else {
-    return null; // Read/Grep/Glob/WebFetch/… are not tool_use events
+    return null; // WebFetch/TodoWrite/… are not tool_use events
   }
 
   if (path !== undefined && ctx.deny?.denies(path) === true) return null;

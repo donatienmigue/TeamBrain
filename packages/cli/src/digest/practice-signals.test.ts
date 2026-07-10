@@ -148,5 +148,68 @@ describe('computePracticeSignals (D3.2/D3.3)', () => {
     expect(signals.sessions).toBe(0);
     expect(signals.retrievalRate).toBe(0);
     expect(signals.retries).toEqual({ median: 0, mean: 0, max: 0 });
+    expect(signals.explorationByCodemap).toEqual({
+      withCodemap: null,
+      withoutCodemap: null,
+      reductionPct: null,
+    });
+  });
+});
+
+describe('exploration measurement (C2 explore kind, D6 §4.8 instrument)', () => {
+  /** One session with codemap retrieval + few explores, one without + many. */
+  function explorationFixture(): SessionEvent[] {
+    const events: SessionEvent[] = [
+      ev(SID_A, 0, { ev: 'session_start', data: {} }),
+      ev(SID_A, 1, {
+        ev: 'memory_retrieved',
+        data: { ids: ['cm:src/router.ts', '01JZMEM1'] },
+      }),
+      ev(SID_A, 2, {
+        ev: 'tool_use',
+        data: { kind: 'explore', path: 'src/a.ts' },
+      }),
+      ev(SID_A, 3, { ev: 'tool_use', data: { kind: 'explore' } }),
+      ev(SID_A, 4, {
+        ev: 'tool_use',
+        data: { kind: 'edit', path: 'src/a.ts' },
+      }),
+
+      ev(SID_B, 0, { ev: 'session_start', data: {} }),
+      ev(SID_B, 1, { ev: 'memory_retrieved', data: { ids: ['01JZMEM1'] } }),
+    ];
+    for (let i = 0; i < 10; i += 1) {
+      events.push(
+        ev(SID_B, 2 + i, { ev: 'tool_use', data: { kind: 'explore' } }),
+      );
+    }
+    return events;
+  }
+
+  it('computes exploration per session and the codemap split with reduction %', () => {
+    const signals = computePracticeSignals(explorationFixture());
+    expect(signals.exploration.max).toBe(10);
+    expect(signals.explorationByCodemap).toEqual({
+      withCodemap: 2,
+      withoutCodemap: 10,
+      reductionPct: 80, // (10 - 2) / 10
+    });
+  });
+
+  it('negative: no codemap-retrieving sessions → reduction is null, never fabricated', () => {
+    const signals = computePracticeSignals(
+      explorationFixture().filter((e) => e.sid !== SID_A),
+    );
+    expect(signals.explorationByCodemap.withCodemap).toBeNull();
+    expect(signals.explorationByCodemap.reductionPct).toBeNull();
+  });
+
+  it('negative: a memory-only retrieval does not count as codemap', () => {
+    const signals = computePracticeSignals([
+      ev(SID_C, 0, { ev: 'memory_retrieved', data: { ids: ['01JZMEM9'] } }),
+      ev(SID_C, 1, { ev: 'tool_use', data: { kind: 'explore' } }),
+    ]);
+    expect(signals.explorationByCodemap.withCodemap).toBeNull();
+    expect(signals.explorationByCodemap.withoutCodemap).toBe(1);
   });
 });

@@ -78,14 +78,16 @@ describe('hook replay (M5.2 accept)', () => {
     if (event !== null) events.push(event);
   }
 
-  it('produces C2-valid events (Read + deny-listed path dropped)', () => {
-    // 10 payloads: Read and the *.env edit drop → 8 events.
-    expect(events).toHaveLength(8);
+  it('produces C2-valid events (deny-listed path dropped; Read captured as explore)', () => {
+    // 10 payloads: the *.env edit drops → 9 events (Read now maps to the
+    // approved C2 'explore' kind instead of dropping).
+    expect(events).toHaveLength(9);
     for (const event of events) {
       expect(() => sessionEventSchema.parse(event)).not.toThrow();
     }
     expect(events.map((e) => e.ev)).toEqual([
       'session_start',
+      'tool_use',
       'tool_use',
       'tool_use',
       'tool_use',
@@ -106,7 +108,15 @@ describe('hook replay (M5.2 accept)', () => {
       );
     }
     const kinds = toolUses.map((e) => (e.data as { kind: string }).kind);
-    expect(kinds).toEqual(['edit', 'edit', 'command', 'test', 'edit', 'test']);
+    expect(kinds).toEqual([
+      'edit',
+      'edit',
+      'command',
+      'test',
+      'explore',
+      'edit',
+      'test',
+    ]);
   });
 
   it('contains zero un-redacted secrets from the raw session', () => {

@@ -40,6 +40,19 @@ export interface PracticeSignals {
   outcomesByRetrieval: { retrieved: OutcomeCounts; unretrieved: OutcomeCounts };
   /** Per-session events before the first tool_use — the context-setup proxy (G1). */
   contextSetupEvents: Distribution;
+  /** Per-session `explore` tool_use events (Read/Grep/Glob) — the exploration-token proxy (D6/R16). */
+  exploration: Distribution;
+  /**
+   * The D6 acceptance instrument: median exploration events/session split by
+   * whether the session retrieved ≥1 codemap entry (`cm:`-prefixed id).
+   * `reductionPct` is the relative drop with codemap (null until both arms
+   * have sessions); the §4.8 target is ≥30.
+   */
+  explorationByCodemap: {
+    withCodemap: number | null;
+    withoutCodemap: number | null;
+    reductionPct: number | null;
+  };
 }
 
 interface SessionFeatures {
@@ -47,6 +60,8 @@ interface SessionFeatures {
   failedCommands: number;
   planRevisions: number;
   retrieved: boolean;
+  retrievedCodemap: boolean;
+  exploreEvents: number;
   eventsBeforeFirstToolUse: number;
   outcome: keyof OutcomeCounts | null;
 }
@@ -74,6 +89,8 @@ function sessionFeatures(events: SessionEvent[]): SessionFeatures {
     failedCommands: 0,
     planRevisions: 0,
     retrieved: false,
+    retrievedCodemap: false,
+    exploreEvents: 0,
     eventsBeforeFirstToolUse: 0,
     outcome: null,
   };
@@ -86,6 +103,7 @@ function sessionFeatures(events: SessionEvent[]): SessionFeatures {
       const kind = event.data.kind;
       const exitCode = (event.data as { exit_code?: unknown }).exit_code;
       const failed = typeof exitCode === 'number' && exitCode !== 0;
+      if (kind === 'explore') features.exploreEvents += 1;
       if (kind === 'command' || kind === 'test') {
         if (lastFailedKind === kind) features.retries += 1;
         lastFailedKind = failed ? kind : null;
@@ -98,7 +116,14 @@ function sessionFeatures(events: SessionEvent[]): SessionFeatures {
       features.planRevisions += 1;
     } else if (event.ev === 'memory_retrieved') {
       const ids = (event.data as { ids?: unknown }).ids;
-      if (Array.isArray(ids) && ids.length > 0) features.retrieved = true;
+      if (Array.isArray(ids) && ids.length > 0) {
+        features.retrieved = true;
+        // Codemap retrievals are identifiable by the cm:<path> id shape —
+        // still metadata-only (ids, never bodies).
+        if (ids.some((id) => typeof id === 'string' && id.startsWith('cm:'))) {
+          features.retrievedCodemap = true;
+        }
+      }
     } else if (event.ev === 'session_end') {
       features.outcome = event.data.outcome;
     }
@@ -143,6 +168,21 @@ export function computePracticeSignals(
     ] += 1;
   }
 
+  const withCodemap = sessions.filter((s) => s.retrievedCodemap);
+  const withoutCodemap = sessions.filter((s) => !s.retrievedCodemap);
+  const medianWith =
+    withCodemap.length === 0
+      ? null
+      : distribution(withCodemap.map((s) => s.exploreEvents)).median;
+  const medianWithout =
+    withoutCodemap.length === 0
+      ? null
+      : distribution(withoutCodemap.map((s) => s.exploreEvents)).median;
+  const reductionPct =
+    medianWith === null || medianWithout === null || medianWithout === 0
+      ? null
+      : Math.round(((medianWithout - medianWith) / medianWithout) * 100);
+
   return {
     sessions: sessions.length,
     ended,
@@ -158,5 +198,11 @@ export function computePracticeSignals(
     contextSetupEvents: distribution(
       sessions.map((s) => s.eventsBeforeFirstToolUse),
     ),
+    exploration: distribution(sessions.map((s) => s.exploreEvents)),
+    explorationByCodemap: {
+      withCodemap: medianWith,
+      withoutCodemap: medianWithout,
+      reductionPct,
+    },
   };
 }

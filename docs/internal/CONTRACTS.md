@@ -10,7 +10,8 @@ Body: markdown, ≤400 words hard limit (lint), imperative prose. Retirement = g
 
 ### C2. Session event (JSONL, one file per session on branch `teambrain/sessions`)
 Envelope: `{v:1, sid, t (ISO), tool, model, repo, branch, ev, data}`.
-`ev` ∈ session_start · intent (locally-summarized string ≤200 chars, never raw prompt) · memory_retrieved {ids[]} · tool_use {kind: edit|command|test, path?, exit_code?} · plan_revision · candidate_proposed {draft} · session_end {outcome: committed|abandoned|unknown, duration_s, turns, commit_shas[]}.
+`ev` ∈ session_start · intent (locally-summarized string ≤200 chars, never raw prompt) · memory_retrieved {ids[]} · tool_use {kind: edit|command|test|explore, path?, exit_code?} · plan_revision · candidate_proposed {draft} · session_end {outcome: committed|abandoned|unknown, duration_s, turns, commit_shas[]}.
+(`explore` kind added 2026-07-10 with explicit human approval — additive; captures Read/Grep/Glob metadata for the D6/R16 exploration-token measurement.)
 Join keys `sid, repo, branch, tool, model` on every event (FlightDeck design-ahead). Additive evolution only.
 
 ### C3. MCP tools (server name `teambrain`; tools appear to agents as `mcp__teambrain__*`)

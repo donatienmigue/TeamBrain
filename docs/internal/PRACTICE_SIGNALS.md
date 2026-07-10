@@ -27,6 +27,7 @@ the digest now computes (packages/cli/src/digest/practice-signals.ts, D3.2):
 | Governance friction | median proposal-PR time-to-merge via `gh pr list` (D3.1) | **Strong** — from the forge, not from capture |
 | Context-setup effort (G2) | events before the first `tool_use` per session | **Thin** — a proxy. Metadata cannot see "turns spent pasting context"; it sees event counts. Directionally useful, not a headline number |
 | Plan revisions/session | `plan_revision` count | **Absent in practice** — C2 defines the event but *no capture path emits it* (Claude Code hooks expose no plan signal; Cursor capture is MCP-inference only). The aggregate is wired and will light up if a source appears |
+| Exploration events/session (D6 §4.8) | `tool_use` with `kind: explore` (Read/Grep/Glob, path-only metadata) — added 2026-07-10 with explicit approval of the C2-additive `explore` kind | **Strong** — the digest reports median exploration/session split by codemap-retrieving vs non-retrieving sessions with a computed reduction % (target ≥30). Event *counts* proxy token spend; the split is correlational like all co-occurrence here |
 | Duration/turns distributions | `session_end` fields | **Medium** — Claude Code real; Cursor idle-inferred ends have `outcome:'unknown'` and no commits, so mixed-tool teams skew toward unknown |
 
 ## Why this is a GO

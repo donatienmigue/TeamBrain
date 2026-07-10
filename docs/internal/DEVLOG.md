@@ -460,3 +460,17 @@ Read/Grep events are never captured; adding an 'explore' kind is a C2 change
 that needs explicit approval (reported, not done). Codemap slice rides in
 C3's existing `relevant` array (shape unchanged; entries tagged by additive
 MemoryView.source).
+
+## C2 explore kind + exploration measurement (explicitly approved)
+What: C2 tool_use.kind gains 'explore' (CONTRACTS.md updated with the
+approval note); Claude Code hooks map Read/Grep/Glob to explore events with
+path-only metadata (patterns/queries never read); practice signals compute
+exploration/session and the D6 instrument — median exploration split by
+codemap-retrieving (cm:-prefixed retrieved ids) vs non-retrieving sessions,
+with reduction % against the §4.8 ≥30% target, rendered in the digest.
+Why: D6's last acceptance criterion was unmeasurable from the frozen event
+stream; the human approved the additive contract change.
+Tradeoffs: event counts proxy token spend (true token counts aren't in any
+hook payload); replay fixture expectations updated deliberately — Read now
+captures instead of dropping, still content-free (forbidden-keys test
+unchanged and green).

@@ -47,7 +47,9 @@ export const sessionEventSchema = z.discriminatedUnion('ev', [
     ...eventEnvelopeFields,
     ev: z.literal('tool_use'),
     data: z.looseObject({
-      kind: z.enum(['edit', 'command', 'test']),
+      // 'explore' added post-V1 with explicit human approval (C2 additive
+      // evolution): Read/Grep/Glob capture, the D6 exploration-token signal.
+      kind: z.enum(['edit', 'command', 'test', 'explore']),
       path: z.string().optional(),
       exit_code: z.number().int().optional(),
     }),

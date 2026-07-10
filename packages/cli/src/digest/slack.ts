@@ -76,6 +76,12 @@ export function renderSlackMessage(report: DigestReport): SlackMessage {
         `context-setup events/session: median ${practice.contextSetupEvents.median}`,
       `• With retrieval: ${co.retrieved.committed} committed / ${co.retrieved.abandoned} abandoned · ` +
         `without: ${co.unretrieved.committed} committed / ${co.unretrieved.abandoned} abandoned`,
+      `• Exploration events/session: median ${practice.exploration.median}` +
+        (practice.explorationByCodemap.reductionPct === null
+          ? ''
+          : ` · with codemap ${practice.explorationByCodemap.withCodemap} vs ` +
+            `without ${practice.explorationByCodemap.withoutCodemap} ` +
+            `(${practice.explorationByCodemap.reductionPct}% reduction; target ≥30%)`),
     ].join('\n');
     blocks.push(section(`*Practice signals (aggregate-only)*\n${lines}`));
   }

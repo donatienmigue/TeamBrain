@@ -53,10 +53,38 @@ describe('mapPostToolUse', () => {
     expect(event?.data).toEqual({ kind: 'command' });
   });
 
+  it('maps Read to an explore event with its path (C2 explore, approved)', () => {
+    const event = mapPostToolUse(
+      { tool_name: 'Read', tool_input: { file_path: 'src/store.ts' } },
+      ctx(),
+    );
+    expect(event?.data).toEqual({ kind: 'explore', path: 'src/store.ts' });
+  });
+
+  it('maps Grep to explore, never capturing the pattern', () => {
+    const event = mapPostToolUse(
+      {
+        tool_name: 'Grep',
+        tool_input: { pattern: 'SECRET_[A-Z]+', path: 'packages' },
+      },
+      ctx(),
+    );
+    expect(event?.data).toEqual({ kind: 'explore', path: 'packages' });
+    expect(JSON.stringify(event)).not.toContain('SECRET_');
+  });
+
+  it('negative: a deny-listed explore path is dropped', () => {
+    const event = mapPostToolUse(
+      { tool_name: 'Read', tool_input: { file_path: 'config/prod.env' } },
+      ctx({ deny: buildDenyMatcher(['*.env']) }),
+    );
+    expect(event).toBeNull();
+  });
+
   it('returns null for non-captured tools', () => {
     expect(
       mapPostToolUse(
-        { tool_name: 'Read', tool_input: { file_path: 'x' } },
+        { tool_name: 'WebFetch', tool_input: { url: 'https://example.com' } },
         ctx(),
       ),
     ).toBeNull();

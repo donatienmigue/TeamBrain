@@ -444,3 +444,19 @@ without content capture. Verdict: yes, scoped to the strong signals;
 plan_revision has no emitter and co-occurrence must stay labeled correlation.
 Tradeoffs: doctor's gh query wired at the CLI layer (not defaulted) to keep
 tests subprocess-free; context-setup is an events-before-first-tool proxy.
+
+## D6 — CodeMap (R16), opt-in, zero new agent surface
+What: incremental hash-manifest summarizer (packages/distill, C5 Provider,
+`tb distill --codemap`, ci-templates/codemap.yml) writing byte-stable entries
+to .teambrain/codemap/files/**; index syncs the tree under C4's reserved
+source 'codemap' (checksum-idempotent, disabled flag empties the source);
+memory_context serves a separately-budgeted 1500-token codemap slice next to
+the untouched 2000-token memory pool; memory_search returns both sources
+tagged. Bench: 500k-LOC fixture, 20-file incremental in 8.1s (<120s budget).
+Why: POSTV1_PLAN D6 — D0–D3 green and the build was explicitly requested.
+Tradeoffs: the ≥30% exploration-token acceptance is NOT measurable from
+today's stream — C2's tool_use.kind is frozen to edit|command|test, so
+Read/Grep events are never captured; adding an 'explore' kind is a C2 change
+that needs explicit approval (reported, not done). Codemap slice rides in
+C3's existing `relevant` array (shape unchanged; entries tagged by additive
+MemoryView.source).

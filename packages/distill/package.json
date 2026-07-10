@@ -28,7 +28,8 @@
   },
   "scripts": {
     "build": "tsc -b",
-    "test": "vitest run"
+    "test": "vitest run",
+    "bench": "tsc -b && node dist/bench/run.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.110.0",

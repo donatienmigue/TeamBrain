@@ -1,9 +1,12 @@
-# TeamBrain — release (npm publish + standalone binaries)
+# TeamBrain — release (npm publish + install smoke gate + standalone binaries)
 #
 # Fires on a version tag (e.g. v1.2.3). Publishes every @teambrain/* package to
 # npm with provenance (pnpm rewrites workspace:* to the real version), then
-# builds standalone `tb` binaries for mac/linux via `bun build --compile` and
-# attaches them to the GitHub Release.
+# smoke-tests the *published* package on a bare container (D1.2 — a release is
+# not allowed to stand unless `npm i -g` → tb --version/init/doctor works from
+# the registry), creates the GitHub Release with generated notes, and builds
+# standalone `tb` binaries for mac/linux via `bun build --compile` attached to
+# that release.
 name: release
 
 on:
@@ -38,8 +41,58 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-  binaries:
+  # D1.2 bare-machine gate: install the version this tag just published from
+  # the live registry on a clean container (node:20 image ≈ a user's machine,
+  # no repo checkout, no pnpm) and exercise the README quick start. Retries
+  # cover registry propagation delay after publish.
+  install-smoke:
     needs: publish
+    runs-on: ubuntu-latest
+    container: node:20
+    steps:
+      - name: Install the published CLI from the registry
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          for i in 1 2 3 4 5; do
+            npm install -g "@teambrain/cli@${version}" && exit 0
+            echo "registry not propagated yet (attempt $i); waiting 30s"
+            sleep 30
+          done
+          exit 1
+
+      - name: tb --version matches the tag
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          test "$(tb --version)" = "$version"
+
+      - name: tb init + tb doctor in a scratch repo
+        run: |
+          git config --global user.email ci@teambrain.invalid
+          git config --global user.name teambrain-ci
+          git config --global init.defaultBranch main
+          mkdir /tmp/scratch-repo && cd /tmp/scratch-repo
+          git init -q .
+          echo '# scratch' > README.md
+          git add . && git commit -qm init
+          tb init
+          tb doctor
+
+  # GitHub Release with notes generated from the conventional commits since
+  # the previous tag (github.generate_release_notes; no changelog dependency —
+  # CLAUDE.md principle 6). The binaries job attaches its assets to this.
+  release:
+    needs: install-smoke
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Create the release with generated notes
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+
+  binaries:
+    needs: release
     runs-on: ${{ matrix.os }}
     permissions:
       contents: write # attach assets to the release

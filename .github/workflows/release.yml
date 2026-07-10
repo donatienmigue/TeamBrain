@@ -65,17 +65,34 @@ jobs:
           version="${GITHUB_REF_NAME#v}"
           test "$(tb --version)" = "$version"
 
-      - name: tb init + tb doctor in a scratch repo
+      # The full README quick start: init imports a CLAUDE.md into a brain
+      # branch, the daemon serves it, and doctor must reach exit 0 (doctor
+      # exits 2 by design when no daemon is reachable, so a bare `tb doctor`
+      # can never pass — the v0.2.1 gate failed on exactly that).
+      - name: tb init + tb serve + tb doctor in a scratch repo
         run: |
           git config --global user.email ci@teambrain.invalid
           git config --global user.name teambrain-ci
           git config --global init.defaultBranch main
           mkdir /tmp/scratch-repo && cd /tmp/scratch-repo
           git init -q .
+          printf '# scratch\n\nUse pnpm for installs. The API layer lives in src/api.\n' > CLAUDE.md
           echo '# scratch' > README.md
           git add . && git commit -qm init
           tb init
-          tb doctor
+          git checkout -q teambrain/init
+          nohup tb serve > /tmp/serve.log 2>&1 &
+          ok=0
+          for i in $(seq 1 30); do
+            if tb doctor > /tmp/doctor.log 2>&1; then ok=1; break; fi
+            sleep 2
+          done
+          cat /tmp/doctor.log
+          if [ "$ok" != "1" ]; then
+            echo '--- tb serve log ---'
+            cat /tmp/serve.log
+            exit 1
+          fi
 
   # GitHub Release with notes generated from the conventional commits since
   # the previous tag (github.generate_release_notes; no changelog dependency —

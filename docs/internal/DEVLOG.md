@@ -419,3 +419,15 @@ violated CLAUDE.md; a release could previously stand without proving install.
 Tradeoffs: generate_release_notes over a committed CHANGELOG.md (no new dep,
 notes live on the Release page); tb doctor exits 0 daemon-down, so the smoke
 job doesn't yet assert daemon health (doctor exit codes are a D5.1 item).
+
+## D2 — idle-timeout session_end for Cursor
+What: CursorInterceptor now ends an open session after 30 min of inactivity —
+lazily on the next MCP call (stale end emitted before the call is interpreted,
+so a returning memory_context starts a fresh sid) and eagerly via flushIdle(),
+which cursor-wrapper arms on an unref'd timer after every call. duration_s now
+measures start→last-activity instead of always 0. Negative tests: activity
+inside the window never ends a session; flushIdle without a session is a no-op.
+Why: STATUS.md D0 finding — a Cursor session that never proposed a memory
+never emitted session_end, so outcome-mix aggregates (D3.2) would undercount.
+Tradeoffs: 30 min is a constant, not config — plumbing it into brain.yaml can
+wait for a user who needs it; idle end can't know outcome (stays 'unknown').

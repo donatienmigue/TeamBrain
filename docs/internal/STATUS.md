@@ -100,8 +100,8 @@ header forbids regenerating the fixture to make it pass.
 | Milestone | Real remaining scope |
 |---|---|
 | D0 | **DONE** (this document). |
-| D1 | Reduced: CHANGELOG generation, bare-machine install smoke CI job, cut `v0.1.0`. Pipeline + binaries already exist. |
-| D2 | Reduced: fix README overclaim; decide on session-boundary inference for non-proposing Cursor sessions; unsilence the wrapper catch. Adapter + parity test + matrix already exist. |
+| D1 | Only `v0.1.0` remains: bump versions, tag, push (human action — publishes to npm/GitHub). Install smoke gate + generated release notes landed post-D0 (`release.yml`); pipeline + binaries already existed. |
+| D2 | Reduced: decide on session-boundary inference for non-proposing Cursor sessions. README overclaims and silent catches fixed post-D0; adapter + parity test + matrix already exist. |
 | D3 | Untouched — full scope stands. The next substantial build work. |
 | D4–D5 | Full scope; add from D0: `core.longpaths` clone failure (D5.3), doctor repo-scoping/exit-code (D5.1), pnpm bin warning. |
 | D6 | Gated on D3, unchanged. |

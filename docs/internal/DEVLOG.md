@@ -407,3 +407,15 @@ capture already exist; D0 exists precisely to catch that before building.
 Tradeoffs: "clean container" approximated by a fresh npm prefix + scratch repo
 on Windows (found the core.longpaths clone failure doing so); D1/D2 scopes
 shrunk to their true residuals in STATUS.md rather than re-executed wholesale.
+
+## D1/D2 residuals — release gate + honest capture claims
+What: release.yml gained a post-publish bare-machine smoke job (npm i -g from
+the live registry on node:20 → tb --version/init/doctor, propagation retries)
+and a gated GitHub Release with generated notes; README's Cursor note/matrix
+now state that session_end is inferred only on memory_propose and commits are
+not captured; cursor-wrapper and tb hook log dropped events at debug level.
+Why: D0 findings — README overclaimed Cursor capture; two silent catches
+violated CLAUDE.md; a release could previously stand without proving install.
+Tradeoffs: generate_release_notes over a committed CHANGELOG.md (no new dep,
+notes live on the Release page); tb doctor exits 0 daemon-down, so the smoke
+job doesn't yet assert daemon health (doctor exit codes are a D5.1 item).

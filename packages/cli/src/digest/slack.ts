@@ -50,6 +50,24 @@ export function renderSlackMessage(report: DigestReport): SlackMessage {
     blocks.push(section(`*Stale (no retrieval ≥90d)*\n${lines}`));
   }
 
+  const { practice } = report;
+  if (practice.sessions > 0) {
+    const o = practice.outcomes;
+    const co = practice.outcomesByRetrieval;
+    const lines = [
+      `• Sessions: ${practice.sessions} (${practice.ended} ended) — ` +
+        `${o.committed} committed · ${o.abandoned} abandoned · ${o.unknown} unknown`,
+      `• Retries/session: median ${practice.retries.median}, max ${practice.retries.max} · ` +
+        `failed commands/session: median ${practice.failedCommands.median}`,
+      `• Plan revisions/session: median ${practice.planRevisions.median}`,
+      `• Memory retrieval rate: ${Math.round(practice.retrievalRate * 100)}% · ` +
+        `context-setup events/session: median ${practice.contextSetupEvents.median}`,
+      `• With retrieval: ${co.retrieved.committed} committed / ${co.retrieved.abandoned} abandoned · ` +
+        `without: ${co.unretrieved.committed} committed / ${co.unretrieved.abandoned} abandoned`,
+    ].join('\n');
+    blocks.push(section(`*Practice signals (aggregate-only)*\n${lines}`));
+  }
+
   const drifted = report.drift.filter((entry) => entry.changed);
   if (drifted.length > 0) {
     const lines = drifted.map((entry) => `• \`${entry.file}\``).join('\n');

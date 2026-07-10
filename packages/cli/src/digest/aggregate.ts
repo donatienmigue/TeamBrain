@@ -1,4 +1,8 @@
 import type { SessionEvent } from '@teambrain/core';
+import {
+  computePracticeSignals,
+  type PracticeSignals,
+} from './practice-signals.js';
 
 // M7.1 digest aggregation. "Aggregate-only by construction" (Tech Brief §4.7):
 // the aggregator never sees anything that could group activity by a person. It
@@ -66,6 +70,12 @@ export interface DigestReport {
   stale: Array<{ id: string; title: string; created: string }>;
   /** Rules-file drift vs the brain baseline. */
   drift: Array<{ file: string; hash: string; changed: boolean }>;
+  /**
+   * D3 practice signals. Computed by practice-signals.ts, which reads sids to
+   * group events into sessions but emits only counts/distributions — the
+   * people-free-output guarantee is its negative test, not this projection.
+   */
+  practice: PracticeSignals;
 }
 
 function retrievedIds(event: AggregateEvent): string[] {
@@ -144,5 +154,6 @@ export function aggregateDigest(input: DigestInput): DigestReport {
     noHitSearches,
     stale,
     drift,
+    practice: computePracticeSignals(input.events),
   };
 }

@@ -396,3 +396,14 @@ internal implementation details) — reworded "capture hooks" → "capture
 wiring" and "hook heartbeats" → "capture heartbeats" in install/doctor's
 descriptions and the getting-started block; the `hook` subcommand's own
 --help still documents all four events in full.
+
+## D0 — post-V1 ground-truth verification & baseline freeze
+What: POSTV1_PLAN.md committed; STATUS.md rewritten as an evidence-based D0
+baseline — clean-clone full suite green (504 unit + 43 integration, bench
+budgets met), live-registry install of @teambrain/cli@0.0.1 verified working,
+privacy/egress/join-key invariants re-audited, compat fixture gate confirmed.
+Why: the post-V1 instructions' ground truth was stale — npm publish and Cursor
+capture already exist; D0 exists precisely to catch that before building.
+Tradeoffs: "clean container" approximated by a fresh npm prefix + scratch repo
+on Windows (found the core.longpaths clone failure doing so); D1/D2 scopes
+shrunk to their true residuals in STATUS.md rather than re-executed wholesale.

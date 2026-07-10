@@ -1,4 +1,4 @@
-import type { Scored } from '@teambrain/index';
+import type { DocSource, Scored } from '@teambrain/index';
 import {
   bundleTokens,
   renderMemoryBlock,
@@ -10,8 +10,16 @@ import {
 // contextDocs orders required-first then newest and trims to the token
 // budget; here we only split by priority and estimate tokens.
 
-/** C3 budget: the assembled context stays at or under 2000 tokens. */
+/** C3 budget: the assembled memory context stays at or under 2000 tokens. */
 export const CONTEXT_TOKEN_BUDGET = 2000;
+
+/**
+ * D6/R16: the CodeMap slice rides in its own, separate budget (Tech Brief
+ * §4.8 — "2,000 tokens memories + 1,500 tokens CodeMap"), so codemap docs
+ * can never crowd governed memories out of memory_context. Budget-isolation
+ * is a gated negative test.
+ */
+export const CODEMAP_TOKEN_BUDGET = 1500;
 
 /**
  * Ceiling on the SessionStart `additionalContext` string (M4.3 caps it at
@@ -31,6 +39,7 @@ export type MemoryContext = {
 /** Anything that can supply the query-less context docs (SqliteIndex does). */
 export interface ContextBackend {
   contextDocs(options: {
+    sources?: DocSource[];
     scope?: 'team' | 'org';
     tokenBudget?: number;
     now?: Date;
@@ -41,17 +50,37 @@ export function buildMemoryContext(
   backend: ContextBackend,
   options: { scope?: 'team' | 'org'; now?: Date } = {},
 ): MemoryContext {
-  const docs = backend.contextDocs({
+  const shared = {
     ...(options.scope === undefined ? {} : { scope: options.scope }),
-    tokenBudget: CONTEXT_TOKEN_BUDGET,
     ...(options.now === undefined ? {} : { now: options.now }),
+  };
+  // Two pools, two budgets (D6 isolation): the memory pool is computed
+  // exactly as in V1 — the presence of codemap docs cannot change it.
+  const memoryDocs = backend.contextDocs({
+    ...shared,
+    sources: ['memory'],
+    tokenBudget: CONTEXT_TOKEN_BUDGET,
+  });
+  const codemapDocs = backend.contextDocs({
+    ...shared,
+    sources: ['codemap'],
+    tokenBudget: CODEMAP_TOKEN_BUDGET,
   });
   const required: MemoryView[] = [];
   const relevant: MemoryView[] = [];
-  for (const doc of docs) {
+  for (const doc of memoryDocs) {
     (doc.priority === 'required' ? required : relevant).push(toMemoryView(doc));
   }
-  return { required, relevant, token_estimate: bundleTokens(docs) };
+  // The codemap slice rides after governed memories in `relevant` — the C3
+  // shape is unchanged; entries are distinguishable by source ('codemap').
+  for (const doc of codemapDocs) {
+    relevant.push(toMemoryView(doc));
+  }
+  return {
+    required,
+    relevant,
+    token_estimate: bundleTokens([...memoryDocs, ...codemapDocs]),
+  };
 }
 
 const BUNDLE_PREAMBLE =

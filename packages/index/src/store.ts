@@ -36,6 +36,7 @@ export function defaultIndexDbPath(): string {
 const META_EMBEDDER_ID = 'embedder_id';
 const META_VECTOR_DIM = 'vector_dim';
 const META_BRAIN_CHECKSUM = 'brain_checksum';
+const META_CODEMAP_CHECKSUM = 'codemap_checksum';
 
 interface DocRow {
   rowid: number;
@@ -212,6 +213,20 @@ export class SqliteIndex implements RetrievalBackend {
 
   setBrainChecksum(checksum: string): void {
     this.setMeta(META_BRAIN_CHECKSUM, checksum);
+  }
+
+  get codemapChecksum(): string | null {
+    return this.getMeta(META_CODEMAP_CHECKSUM);
+  }
+
+  setCodemapChecksum(checksum: string | null): void {
+    if (checksum === null) {
+      this.db
+        .prepare('DELETE FROM meta WHERE key = ?')
+        .run(META_CODEMAP_CHECKSUM);
+      return;
+    }
+    this.setMeta(META_CODEMAP_CHECKSUM, checksum);
   }
 
   private async insertVectors(

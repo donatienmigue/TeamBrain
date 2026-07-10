@@ -1,8 +1,10 @@
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import type { Logger } from '@teambrain/core';
+import { parseBrainConfig, type Logger } from '@teambrain/core';
 import {
   openIndex,
   syncIndexWithBrain,
+  syncIndexWithCodemap,
   tryCreateFastEmbedEmbedder,
   type Embedder,
   type SqliteIndex,
@@ -30,6 +32,19 @@ export interface OpenBackendOptions {
    * model is unavailable). Tests pass `null` to stay offline (no download).
    */
   embedder?: Embedder | null;
+}
+
+/** codemap.enabled from brain.yaml; false when the file is absent/invalid. */
+function readCodemapEnabled(brainDir: string, logger?: Logger): boolean {
+  try {
+    return parseBrainConfig(readFileSync(join(brainDir, 'brain.yaml'), 'utf8'))
+      .codemap.enabled;
+  } catch (err) {
+    logger?.debug('brain.yaml unreadable; codemap treated as disabled', {
+      reason: (err as Error).message,
+    });
+    return false;
+  }
 }
 
 export interface BackendHandle {
@@ -60,6 +75,16 @@ export async function openBackend(
   });
   if (options.brainDir !== undefined) {
     await syncIndexWithBrain(index, options.brainDir, {
+      ...(options.forceReindex === undefined
+        ? {}
+        : { force: options.forceReindex }),
+      ...(options.logger === undefined ? {} : { logger: options.logger }),
+    });
+    // D6/R16: the codemap source follows brain.yaml's codemap.enabled.
+    // Disabled (or unreadable config) empties the source, so flipping the
+    // flag off stops serving codemap entries on the next open.
+    await syncIndexWithCodemap(index, options.brainDir, {
+      enabled: readCodemapEnabled(options.brainDir, options.logger),
       ...(options.forceReindex === undefined
         ? {}
         : { force: options.forceReindex }),

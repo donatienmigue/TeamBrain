@@ -57,3 +57,9 @@ export type {
 } from './synthetic.js';
 export { goldenQueriesSchema, loadGoldenQueries } from './golden-queries.js';
 export type { GoldenQueries } from './golden-queries.js';
+export {
+  computeCodemapChecksum,
+  loadCodemapDocs,
+  syncIndexWithCodemap,
+} from './codemap.js';
+export type { CodemapSyncResult } from './codemap.js';

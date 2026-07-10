@@ -14,6 +14,8 @@ export interface MemoryView {
   class?: MemoryClass;
   /** Repo-relative source path, or 'unknown' when the index has no path. */
   provenance: string;
+  /** C4 origin: governed memory vs machine-generated codemap (additive). */
+  source: 'memory' | 'codemap';
 }
 
 export function toMemoryView(scored: Scored): MemoryView {
@@ -23,6 +25,7 @@ export function toMemoryView(scored: Scored): MemoryView {
     body: scored.body,
     ...(scored.class === undefined ? {} : { class: scored.class }),
     provenance: scored.path ?? 'unknown',
+    source: scored.source,
   };
 }
 

@@ -26,6 +26,7 @@ describe('toMemoryView (C3)', () => {
       body: 'Parse every boundary value.',
       class: 'convention',
       provenance: 'memories/conventions/01J9MA1B2C3D4E5F6G7H8J9K0M-x.md',
+      source: 'memory',
     });
   });
 

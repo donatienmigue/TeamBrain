@@ -431,3 +431,16 @@ Why: STATUS.md D0 finding — a Cursor session that never proposed a memory
 never emitted session_end, so outcome-mix aggregates (D3.2) would undercount.
 Tradeoffs: 30 min is a constant, not config — plumbing it into brain.yaml can
 wait for a user who needs it; idle end can't know outcome (stays 'unknown').
+
+## D3 — differentiator instrumentation (practice signals, governance, PR body)
+What: practice-signals.ts (session-grouped, people-free aggregates: outcome
+mix, retries, failures, retrieval rate, co-occurrence, context-setup proxy)
+rendered in the digest; governance friction (median proposal-PR time-to-merge
+via injectable gh) in digest + doctor --json; distiller PR body redesigned for
+<60s/candidate review with a byte-exact golden; PRACTICE_SIGNALS.md records a
+conditional GO on metadata-only FlightDeck.
+Why: D3 is the strategic core — it decides whether FlightDeck is buildable
+without content capture. Verdict: yes, scoped to the strong signals;
+plan_revision has no emitter and co-occurrence must stay labeled correlation.
+Tradeoffs: doctor's gh query wired at the CLI layer (not defaulted) to keep
+tests subprocess-free; context-setup is an events-before-first-tool proxy.

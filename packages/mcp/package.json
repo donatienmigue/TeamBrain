@@ -1,6 +1,6 @@
 {
   "name": "@teambrain/mcp",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "TeamBrain MCP server + local daemon: serve team memories to any MCP-capable coding agent",
   "keywords": [
     "ai",

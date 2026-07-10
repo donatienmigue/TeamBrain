@@ -1,6 +1,6 @@
 {
   "name": "@teambrain/distill",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "TeamBrain distiller: cluster agent sessions and propose new memories as pull requests",
   "keywords": [
     "ai",

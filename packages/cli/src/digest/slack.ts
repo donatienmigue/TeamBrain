@@ -50,6 +50,18 @@ export function renderSlackMessage(report: DigestReport): SlackMessage {
     blocks.push(section(`*Stale (no retrieval ≥90d)*\n${lines}`));
   }
 
+  if (report.governance !== undefined) {
+    const g = report.governance;
+    blocks.push(
+      section(
+        `*Governance friction:* ${g.mergedProposalPRs} proposal PR(s) merged` +
+          (g.medianHoursToMerge === null
+            ? ''
+            : ` · median time-to-merge ${g.medianHoursToMerge}h`),
+      ),
+    );
+  }
+
   const { practice } = report;
   if (practice.sessions > 0) {
     const o = practice.outcomes;

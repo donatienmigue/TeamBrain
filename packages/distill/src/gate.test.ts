@@ -100,3 +100,72 @@ describe('renderPrBody (M6.4)', () => {
     expect(renderPrBody([])).toContain('No memory candidates survived');
   });
 });
+
+describe('renderPrBody golden output (D3.1 — <60s/candidate review)', () => {
+  function fixedProposal(
+    id: string,
+    title: string,
+    conflict?: { supersedesId: string; reason: string },
+  ): DedupedCandidate {
+    const memory: Memory = {
+      id,
+      class: 'learning',
+      scope: 'team',
+      status: 'active',
+      priority: 'advisory',
+      title,
+      created: '2026-07-06',
+      evidence: { sessions: ['s1', 's2'], commits: ['abc1234'] },
+      supersedes: conflict ? [conflict.supersedesId] : [],
+      tags: [],
+      ttl_days: null,
+      body: `Body for ${title}.`,
+    };
+    return {
+      memory,
+      cluster,
+      maxSim: 0.2,
+      novelty: 0.8,
+      ...(conflict === undefined ? {} : { conflict }),
+    };
+  }
+
+  it('matches the golden PR body byte for byte', async () => {
+    const { readFileSync } = await import('node:fs');
+    const { fileURLToPath } = await import('node:url');
+    const golden = readFileSync(
+      fileURLToPath(
+        new URL(
+          '../../../testdata/golden/distiller-pr-body.md',
+          import.meta.url,
+        ),
+      ),
+      'utf8',
+    ).replace(/\r\n/g, '\n');
+
+    const body = renderPrBody(
+      gateCandidates([
+        fixedProposal('01JDGOLD01000000000000000A', 'Retry the S3 client'),
+        fixedProposal(
+          '01JDGOLD02000000000000000B',
+          'Pin the sqlite-vec version',
+          {
+            supersedesId: '01J8YCTS0000000000000000',
+            reason: 'opposite rule',
+          },
+        ),
+      ]),
+    );
+    expect(body).toBe(golden);
+  });
+
+  it('has a verdict row, collapsible detail, and partial-accept command per candidate', () => {
+    const body = renderPrBody(
+      gateCandidates([fixedProposal('01JDGOLD01000000000000000A', 'One')]),
+    );
+    expect(body).toContain('| learning | One |');
+    expect(body).toContain('<details>');
+    expect(body).toContain('Body for One.');
+    expect(body).toContain('# git rm "memories/learnings/');
+  });
+});

@@ -9,6 +9,7 @@ import {
   resolveRuntimeDir,
 } from '@teambrain/mcp';
 import type { ErrorExitCode } from '@teambrain/core';
+import type { GovernanceFriction } from './digest/aggregate.js';
 
 // M7.2 `tb doctor` per Tech Brief §6: env + self-observability checks — daemon
 // liveness, index freshness, last sync/reindex, per-tool hook heartbeats,
@@ -42,6 +43,14 @@ export const doctorReportSchema = z.object({
     p95Ms: z.number().nonnegative().nullable(),
     samples: z.number().int().nonnegative(),
   }),
+  // D3.1 governance friction (additive, optional: absent when gh/remote is
+  // unavailable). Median hours from proposal-PR creation to merge.
+  governance: z
+    .object({
+      mergedProposalPRs: z.number().int().nonnegative(),
+      medianHoursToMerge: z.number().nonnegative().nullable(),
+    })
+    .optional(),
   hooks: z.array(
     z.object({
       tool: z.string(),
@@ -64,6 +73,12 @@ export interface DoctorOptions {
   json?: boolean;
   runtimeDir?: string;
   now?: () => Date;
+  /**
+   * Governance metric to include (D3.1). Deliberately not defaulted here:
+   * the CLI layer supplies the live `gh` query so this function — and every
+   * test of it — stays free of subprocess/network side effects.
+   */
+  governance?: GovernanceFriction;
 }
 
 // The daemon heartbeat file (M4.1 + M7.2 fields). Everything is optional so an
@@ -233,6 +248,7 @@ export async function runDoctorCommand(
     sync,
     checks,
   };
+  if (options.governance !== undefined) report.governance = options.governance;
 
   // Validate our own output — the report shape is a contract (Accept: schema).
   doctorReportSchema.parse(report);
@@ -258,6 +274,14 @@ function renderHuman(report: DoctorReport): string {
   out += `  index checksum:   ${index.brainChecksum ?? 'unknown'}\n`;
   out += `  last reindex:     ${index.lastReindexAt ?? 'unknown'}\n`;
   out += `  retrieval p95:    ${retrieval.p95Ms === null ? 'no samples' : `${retrieval.p95Ms}ms (n=${retrieval.samples})`}\n`;
+  if (report.governance !== undefined) {
+    const g = report.governance;
+    out += `  proposal merges:  ${g.mergedProposalPRs} PR(s)${
+      g.medianHoursToMerge === null
+        ? ''
+        : `, median ${g.medianHoursToMerge}h to merge`
+    }\n`;
+  }
   out += `  brain:            ${index.brainDir ?? 'unknown'}\n`;
   out += `  branch sync:      ${sync.branch ?? 'unknown'}${
     sync.behind === null

@@ -10,7 +10,10 @@ import { runDoctorCommand } from './doctor-command.js';
 import { runHookCommand } from './hook-command.js';
 import { runAuditCommand } from './audit-command.js';
 import { runDistillCommand } from './distill/distill-command.js';
-import { runDigestCommand } from './digest/digest-command.js';
+import {
+  ghGovernanceFriction,
+  runDigestCommand,
+} from './digest/digest-command.js';
 import { runRetireCommand } from './retire/retire-command.js';
 import { runReindexCommand } from './reindex-command.js';
 import { runProposeCommand } from './propose-command.js';
@@ -269,7 +272,13 @@ export function buildProgram(): Command {
     .option('--json', 'emit machine-readable JSON report', false)
     .addHelpText('after', commandHelpAfter(HELP.doctor))
     .action(async (opts: { json: boolean }) => {
-      const { exitCode, output } = await runDoctorCommand({ json: opts.json });
+      // Live gh query supplied here so runDoctorCommand (and its tests)
+      // stays free of subprocess side effects (D3.1).
+      const governance = ghGovernanceFriction(process.cwd());
+      const { exitCode, output } = await runDoctorCommand({
+        json: opts.json,
+        ...(governance === undefined ? {} : { governance }),
+      });
       process.stdout.write(output);
       process.exitCode = exitCode;
     });

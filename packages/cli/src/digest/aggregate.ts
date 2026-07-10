@@ -76,6 +76,19 @@ export interface DigestReport {
    * people-free-output guarantee is its negative test, not this projection.
    */
   practice: PracticeSignals;
+  /**
+   * D3.1 governance friction: how long memory-proposal PRs wait for a human.
+   * Populated by the digest command (source: `gh pr list`, injectable);
+   * absent when the query is unavailable (no gh / no remote).
+   */
+  governance?: GovernanceFriction;
+}
+
+export interface GovernanceFriction {
+  /** Merged `teambrain/proposals-*` PRs found (last 100). */
+  mergedProposalPRs: number;
+  /** Median hours from PR creation to merge, null when none merged yet. */
+  medianHoursToMerge: number | null;
 }
 
 function retrievedIds(event: AggregateEvent): string[] {

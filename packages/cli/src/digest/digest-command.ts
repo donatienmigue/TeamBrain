@@ -10,6 +10,7 @@ import {
   aggregateDigest,
   type DigestMemory,
   type DigestReport,
+  type GovernanceFriction,
   type RulesFile,
 } from './aggregate.js';
 import { postDigest, renderSlackMessage, type SlackMessage } from './slack.js';
@@ -32,6 +33,8 @@ export interface DigestCommandOptions {
   sessions?: SessionSource;
   /** Open-proposal-PR count; defaults to a best-effort `gh` query. */
   proposedCount?: number;
+  /** Governance-friction metric; defaults to a best-effort `gh` query. */
+  governance?: GovernanceFriction;
   brainDir?: string;
   now?: Date;
   /** Override the Slack poster (tests). */
@@ -124,6 +127,63 @@ function collectRules(
   return rules;
 }
 
+/**
+ * D3.1 governance-friction metric: median time-to-merge over merged
+ * `teambrain/proposals-*` PRs. Best-effort like ghProposedCount — no gh, no
+ * remote, or no merged PRs degrades to undefined/null, never an error.
+ */
+export function ghGovernanceFriction(
+  repoRoot: string,
+): GovernanceFriction | undefined {
+  let parsed: unknown;
+  try {
+    const out = execFileSync(
+      'gh',
+      [
+        'pr',
+        'list',
+        '--state',
+        'merged',
+        '--search',
+        'head:teambrain/proposals-',
+        '--limit',
+        '100',
+        '--json',
+        'createdAt,mergedAt',
+      ],
+      { cwd: repoRoot, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
+    );
+    parsed = JSON.parse(out);
+  } catch {
+    return undefined;
+  }
+  if (!Array.isArray(parsed)) return undefined;
+  const hours = parsed
+    .map((pr) => {
+      const { createdAt, mergedAt } = pr as {
+        createdAt?: string;
+        mergedAt?: string;
+      };
+      if (createdAt === undefined || mergedAt === undefined) return null;
+      const ms = new Date(mergedAt).getTime() - new Date(createdAt).getTime();
+      return Number.isFinite(ms) && ms >= 0 ? ms / (1000 * 60 * 60) : null;
+    })
+    .filter((h): h is number => h !== null)
+    .sort((a, b) => a - b);
+  if (hours.length === 0) {
+    return { mergedProposalPRs: 0, medianHoursToMerge: null };
+  }
+  const mid = hours.length / 2;
+  const median =
+    hours.length % 2 === 1
+      ? (hours[Math.floor(mid)] as number)
+      : ((hours[mid - 1] as number) + (hours[mid] as number)) / 2;
+  return {
+    mergedProposalPRs: hours.length,
+    medianHoursToMerge: Math.round(median * 10) / 10,
+  };
+}
+
 function ghProposedCount(repoRoot: string): number {
   try {
     const out = execFileSync(
@@ -185,6 +245,8 @@ export async function runDigestCommand(
     rules: collectRules(repoRoot, readRulesBaseline(brainDir)),
     ...(options.now === undefined ? {} : { now: options.now }),
   });
+  const governance = options.governance ?? ghGovernanceFriction(repoRoot);
+  if (governance !== undefined) report.governance = governance;
 
   const message = renderSlackMessage(report);
   const webhookUrl =

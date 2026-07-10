@@ -63,8 +63,12 @@ function escapeCell(text: string): string {
 }
 
 /**
- * Renders the PR body: a summary table plus a flag note for any proposal that
- * supersedes an existing memory (the M6.4 conflict flag).
+ * Renders the PR body, designed for a <60s-per-candidate review (D3.1):
+ * a one-line verdict row per candidate (the summary table — its
+ * `| Class | Title |` header is parsed by flywheel.ts, keep it stable),
+ * a collapsible full-body block per candidate so the reviewer only expands
+ * what the verdict row doesn't settle, and copy-paste partial-accept
+ * commands so dropping a candidate never blocks the rest of the batch.
  */
 export function renderPrBody(proposals: Proposal[]): string {
   if (proposals.length === 0) {
@@ -75,8 +79,8 @@ export function renderPrBody(proposals: Proposal[]): string {
     `## TeamBrain distiller — ${proposals.length} proposed ` +
       `${proposals.length === 1 ? 'memory' : 'memories'}`,
     '',
-    'Each row is one candidate memory distilled from recent sessions. ' +
-      'Review, edit, or drop individual files before merging.',
+    'One row per candidate: merge what reads true, drop the rest with the ' +
+      'commands below. Every file passes `tb lint --require-evidence`.',
     '',
     '| Class | Title | Evidence | Novelty | Score | Supersedes |',
     '| --- | --- | ---: | ---: | ---: | --- |',
@@ -91,9 +95,36 @@ export function renderPrBody(proposals: Proposal[]): string {
     );
   }
 
+  lines.push('', '### Candidate detail', '');
+  for (const proposal of proposals) {
+    const evidence = proposal.memory.evidence;
+    const evidenceLine =
+      evidence === undefined
+        ? 'none recorded'
+        : `${evidence.sessions.length} session(s) · ` +
+          `${evidence.commits.length} commit(s)` +
+          (evidence.commits.length > 0
+            ? ` (${evidence.commits.map((c) => `\`${c}\``).join(', ')})`
+            : '');
+    lines.push(
+      '<details>',
+      `<summary><b>${escapeCell(proposal.memory.title)}</b> — ` +
+        `${proposal.memory.class}` +
+        (proposal.conflict === undefined ? '' : ' · ⚠ supersedes') +
+        '</summary>',
+      '',
+      `*File:* \`${proposal.path}\` · *Evidence:* ${evidenceLine}`,
+      '',
+      proposal.memory.body.trim(),
+      '',
+      '</details>',
+      '',
+    );
+  }
+
   const conflicts = proposals.filter((p) => p.conflict !== undefined);
   if (conflicts.length > 0) {
-    lines.push('', '### ⚠ Supersedes existing memories', '');
+    lines.push('### ⚠ Supersedes existing memories', '');
     for (const proposal of conflicts) {
       const reason = proposal.conflict?.reason;
       lines.push(
@@ -102,11 +133,19 @@ export function renderPrBody(proposals: Proposal[]): string {
           (reason ? ` — ${escapeCell(reason)}` : ''),
       );
     }
+    lines.push('');
   }
 
   lines.push(
+    '### Partial accept',
     '',
-    'Every file in this PR passes `tb lint --require-evidence`.',
+    'To drop a candidate, delete its file on this branch and push; the rest',
+    'merge as-is:',
+    '',
+    '```sh',
+    ...proposals.map((proposal) => `# git rm "${proposal.path}"`),
+    'git commit -m "distill: drop declined candidates" && git push',
+    '```',
     '',
   );
   return lines.join('\n');

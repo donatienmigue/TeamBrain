@@ -92,3 +92,22 @@ describe('tb doctor (M7.2)', () => {
     ).toBe(true);
   });
 });
+
+describe('tb doctor governance metric (D3.1)', () => {
+  it('includes injected governance in JSON and human output, schema-valid', async () => {
+    const runtimeDir = await emptyRuntimeDir();
+    const governance = { mergedProposalPRs: 4, medianHoursToMerge: 18.5 };
+    const json = await runDoctorCommand({ runtimeDir, json: true, governance });
+    const report = doctorReportSchema.parse(JSON.parse(json.output));
+    expect(report.governance).toEqual(governance);
+
+    const human = await runDoctorCommand({ runtimeDir, governance });
+    expect(human.output).toContain('proposal merges:  4 PR(s), median 18.5h');
+  });
+
+  it('negative: omits governance entirely when not supplied', async () => {
+    const runtimeDir = await emptyRuntimeDir();
+    const result = await runDoctorCommand({ runtimeDir, json: true });
+    expect(JSON.parse(result.output)).not.toHaveProperty('governance');
+  });
+});

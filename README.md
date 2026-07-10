@@ -1,8 +1,9 @@
 # TeamBrain
 
 **One shared brain for your team's AI coding agents.**
-Git-native memory that Claude Code, Cursor, and Codex read from and write to —
-so your agents stop re-learning your codebase every session, per developer, per tool.
+Git-native memory that Claude Code, Cursor, and any MCP-capable agent read from
+and write to — so your agents stop re-learning your codebase every session, per
+developer, per tool.
 
 [![CI](https://github.com/donatienmigue/TeamBrain/actions/workflows/ci.yml/badge.svg)](https://github.com/donatienmigue/TeamBrain/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/%40teambrain%2Fcli)](https://www.npmjs.com/package/@teambrain/cli)
@@ -19,7 +20,7 @@ the same "don't use that library." What one agent learns on Monday dies by
 Tuesday — and never reaches a teammate at all.
 
 This isn't just annoying, it's expensive: re-sent and re-explored context is
-the dominant share of agentic token spend, and hand-maintained CLAUDE.md /
+a large share of agentic token spend, and hand-maintained CLAUDE.md /
 .cursorrules files rot, drift apart per tool, and capture nothing agents
 learn while working.
 
@@ -42,12 +43,13 @@ ways, and hand-writing `.cursorrules` or `CLAUDE.md` files that quickly go stale
 ```sh
 npm i -g @teambrain/cli
 cd your-repo
-tb init                    # imports CLAUDE.md/.cursorrules/AGENTS.md/ADRs → opens a PR
+tb init                    # imports CLAUDE.md/.cursorrules/AGENTS.md/ADRs → PR-ready branch
 tb install claude-code     # registers MCP server + hooks (shows the diff first)
 tb serve                   # start the local daemon
 ```
 
-Next Claude Code session prints: `Loaded 47 team memories.` That's it.
+Your next Claude Code session starts with the team's memories injected as
+context (silently — run `tb doctor` to confirm the daemon is serving). That's it.
 Add the distiller to CI with the templates in [`ci-templates/`](ci-templates/) to
 close the loop.
 
@@ -68,7 +70,7 @@ with your key.
 By default (`capture.level: metadata`): files touched, command exit codes,
 retries, outcomes. **Never raw prompts, file contents, or diff bodies.**
 Redaction (secrets, PII, entropy scan) runs on-device before anything is
-written; the redaction test corpus is public and release-gating.
+written; the redaction test corpus is public and gates CI.
 Run `tb audit` to see exactly what a session recorded. No individual metrics,
 no leaderboards, no phone-home — the digest is aggregate-only by construction.
 See [SECURITY.md](SECURITY.md) for the full threat model and [FORMAT.md](FORMAT.md)
@@ -99,8 +101,9 @@ TeamBrain provides cross-vendor support with a graceful degradation model. Captu
 
 ## Status & limits
 
-v1. Claude Code fully supported; Cursor capture in progress (context serving
-already works via MCP); Codex/Kiro adapters next. macOS/Linux, Windows via WSL.
+v1. Claude Code fully supported; Cursor supported with degraded capture (no
+edit/command telemetry — see the matrix above); Codex/Kiro adapters next.
+macOS/Linux, Windows via WSL.
 Honest limits: distiller quality depends on your session volume (it needs ~5+
 sessions/week to propose anything useful), and multi-repo org brains aren't
 built yet. Milestone-by-milestone plan in `docs/internal/BUILD_PLAN.md`.

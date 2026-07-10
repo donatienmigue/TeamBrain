@@ -71,7 +71,7 @@ No README or code edits were made; proposed corrections are at the end.
 | 6 | **Medium (number)** | R6 | Bare unattributed industry stat; HN will demand a source. | Soften to "a large share" or attribute. |
 | 7 | **Low (trust wording)** | R23 | "retries" are derived, not recorded fields. | "command failures (from which retries are derived)" — optional. |
 
-## Proposed README diff (NOT applied — awaiting approval)
+## Proposed README diff (APPLIED 2026-07-10 with approval — R1, R6, R15, R18, R26, R34)
 
 ```diff
 -**One shared brain for your team's AI coding agents.**

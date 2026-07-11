@@ -488,3 +488,14 @@ list is frozen; a flag is additive); brain.yaml codemap block has `enabled`
 only (no denyGlobs/granularity — behavior for them isn't built); prompt is a
 versioned code constant, not an in-repo .md file; no session-start relevance
 scoping yet (OQ-CM2).
+
+## CodeMap documentation sweep (user-facing docs)
+What: documented CodeMap everywhere it was missing beyond the README —
+ci-templates/README.md (codemap.yml row + direct-commit and source-to-LLM
+notes), FORMAT.md (codemap/ layout + entry format from codemap-entry.ts),
+SECURITY.md (CI↔LLM boundary widens to source contents when opted in; a
+CodeMap-injection threat entry — verified codemap bodies render in the same
+data-not-instructions fence), DEVELOPMENT.md repo map rows.
+Why: docs only mentioned CodeMap in the README; the security posture change
+(source leaves CI when enabled) was undisclosed.
+Tradeoffs: none — docs-only, honest about opt-in status.

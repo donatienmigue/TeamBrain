@@ -54,11 +54,11 @@ Two invariants explain most of the design (full list in [CLAUDE.md](../CLAUDE.md
 | Package | What it owns | Start reading |
 |---|---|---|
 | `packages/core` | Memory/event schemas (zod), byte-exact parse/serialize, lint + injection patterns, ULIDs, logger, typed errors → exit codes | `src/memory.ts`, `src/events.ts` |
-| `packages/index` | SQLite + FTS5 + sqlite-vec hybrid retrieval behind `RetrievalBackend`; brain-tree checksum sync; bench | `src/store.ts`, `src/search-pipeline.ts` |
+| `packages/index` | SQLite + FTS5 + sqlite-vec hybrid retrieval behind `RetrievalBackend`; brain-tree + codemap checksum sync; bench | `src/store.ts`, `src/search-pipeline.ts` |
 | `packages/mcp` | MCP server (4 tools), daemon (`tb serve`), session spool → `teambrain/sessions` branch, injection-safe rendering | `src/tools.ts`, `src/daemon.ts`, `src/spool.ts` |
 | `packages/hooks` | Agent payloads → C2 events; the privacy contract (paths + exit codes only, never content); Cursor adapter | `src/map.ts`, `src/redact-event.ts` |
 | `packages/redact` | Secret/entropy/PII detectors, deny-globs, the public release-gating corpus | `src/engine.ts`, `corpus/` |
-| `packages/distill` | Collect → cluster → LLM draft → dedup → gate → PR; the only package allowed to call an LLM | `src/pipeline.ts` |
+| `packages/distill` | Collect → cluster → LLM draft → dedup → gate → PR; the CodeMap generator (`tb distill --codemap`, opt-in); the only package allowed to call an LLM | `src/pipeline.ts`, `src/codemap/generate.ts` |
 | `packages/cli` | Every `tb` command; thin wrappers over the packages above | `src/program.ts` |
 
 Authoritative docs, in reading order:

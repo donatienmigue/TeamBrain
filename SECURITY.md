@@ -15,7 +15,12 @@ version is in `docs/internal/TECH_BRIEF.md` §5.
   memories. Raw prompts, file contents, and diff bodies never leave.
 - **CI ↔ LLM provider.** The distiller sends clustered *metadata* summaries
   using the team's own API key under their own DPA. TeamBrain is never in the
-  data path — there is no TeamBrain server.
+  data path — there is no TeamBrain server. **Exception, opt-in:** with
+  `codemap.enabled: true`, the CodeMap CI job additionally sends the contents
+  of *changed source files* to the same provider — that is what it summarizes.
+  Same key, same DPA, but it widens what crosses this boundary from metadata
+  to source code, which is why CodeMap is off by default and never enabled
+  implicitly.
 
 ## Threats and mitigations
 
@@ -50,6 +55,19 @@ regression.
 
 CI could draft a malicious memory. It goes through the same human review as any
 code PR, the distiller cannot merge, and its prompts are in-repo and reviewed.
+
+### CodeMap injection (opt-in surface)
+
+CodeMap entries are LLM-generated from source and indexed *without* the
+memory PR gate, so a poisoned entry would reach agents without human review.
+Mitigations: the summarizer prompt instructs description-only output and
+responses are schema-validated (size-capped) before writing; retrieval
+renders CodeMap bodies in the same fenced data-not-instructions blocks as
+memories; entries are diffable markdown committed to the repo, so a
+malicious change is visible in history; and the whole feature is off by
+default. Residual risk: an attacker who can already commit source to `main`
+could steer a summary — but that attacker can edit your code directly, which
+dominates.
 
 ### Scope leakage
 

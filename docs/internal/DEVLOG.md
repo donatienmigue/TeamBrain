@@ -474,3 +474,17 @@ Tradeoffs: event counts proxy token spend (true token counts aren't in any
 hook payload); replay fixture expectations updated deliberately — Read now
 captures instead of dropping, still content-free (forbidden-keys test
 unchanged and green).
+
+## CodeMap doc gap-fill vs the CM0–CM6 brief (audit, ADR, README)
+What: audited the CodeMap CM0–CM6 brief against the shipped D6 build — the
+feature already exists (generator, CI template, isolation/staleness/
+neutrality/e2e tests, digest instrument; 542 tests green); added the two
+missing artifacts: docs/adr/codemap-backend.md (build-vs-buy + OQ-CM4 swap
+threshold) and a README "CodeMap (v1.1, opt-in)" section, honest about
+default-off. Deviations from the brief's letter left for a human decision
+(reported, not done): no packages/codemap (generation lives in distill, the
+sole LLM boundary); `tb distill --codemap` not `tb codemap build` (C6 verb
+list is frozen; a flag is additive); brain.yaml codemap block has `enabled`
+only (no denyGlobs/granularity — behavior for them isn't built); prompt is a
+versioned code constant, not an in-repo .md file; no session-start relevance
+scoping yet (OQ-CM2).

@@ -99,6 +99,29 @@ TeamBrain provides cross-vendor support with a graceful degradation model. Captu
 
 *Note: Cursor lacks native lifecycle and post-tool hooks. Edit and command telemetry are unavailable, so Cursor sessions will lack `tool_use` events. Session boundaries are inferred from MCP tool calls: a session ends when it proposes a memory or after 30 minutes of inactivity. Commit SHAs and outcome are not captured for Cursor sessions.*
 
+## CodeMap (v1.1, opt-in)
+
+CodeMap is a machine-generated map of your codebase — per-file structural
+summaries, built incrementally in CI and served through the same
+`memory_context`/`memory_search` tools (no new tools, no new commands to
+learn). Agents start sessions oriented to the code instead of re-exploring
+it from scratch.
+
+- **Off by default.** Enable with `codemap.enabled: true` in
+  `.teambrain/brain.yaml` plus the [`ci-templates/codemap.yml`](ci-templates/codemap.yml)
+  workflow; the map builds on the next merge and updates incrementally
+  (only changed files are re-summarized, via `tb distill --codemap`).
+- **Derived, not governed.** Entries live in `.teambrain/codemap/` as
+  readable, diffable markdown — regenerable from source at any commit, so
+  they are indexed directly rather than PR-gated like memories.
+- **Budget-isolated.** The CodeMap slice rides in its own 1,500-token
+  context budget; it can never crowd a governed memory out of
+  `memory_context` (enforced by a gated negative test).
+
+Honest status: shipped and tested, but the value target (≥30% fewer
+code-exploration actions per session) is still being measured in dogfooding —
+which is why the default stays off.
+
 ## Status & limits
 
 v1. Claude Code fully supported; Cursor supported with degraded capture (no

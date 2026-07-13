@@ -75,6 +75,8 @@ describe('tb doctor (M7.2)', () => {
         tool: 'claude-code',
         lastEventAt: '2026-07-06T09:09:00.000Z',
         count: 7,
+        captureLevel:
+          'full native capture: session start/end, edits, commands, tests, exploration, commit SHAs',
       },
     ]);
     // uptime = generatedAt − startedAt = 630s.

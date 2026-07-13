@@ -9,6 +9,7 @@ import {
   resolveRuntimeDir,
 } from '@teambrain/mcp';
 import type { ErrorExitCode } from '@teambrain/core';
+import { ADAPTERS } from '@teambrain/hooks';
 import type { GovernanceFriction } from './digest/aggregate.js';
 
 // M7.2 `tb doctor` per Tech Brief §6: env + self-observability checks — daemon
@@ -56,6 +57,7 @@ export const doctorReportSchema = z.object({
       tool: z.string(),
       lastEventAt: z.string(),
       count: z.number().int().nonnegative(),
+      captureLevel: z.string().optional(),
     }),
   ),
   sync: z.object({
@@ -194,6 +196,7 @@ export async function runDoctorCommand(
       tool,
       lastEventAt: hb.lastEventAt,
       count: hb.count,
+      captureLevel: ADAPTERS[tool]?.describeDegradation(),
     }))
     .sort((a, b) => a.tool.localeCompare(b.tool));
 
@@ -294,8 +297,8 @@ function renderHuman(report: DoctorReport): string {
     out += '  hooks:\n';
     for (const hook of hooks) {
       out += `    - ${hook.tool}: ${hook.count} event(s), last ${hook.lastEventAt}\n`;
-      if (hook.tool === 'cursor') {
-        out += `      (degraded mode: Cursor lacks native hooks; edit/command telemetry unavailable)\n`;
+      if (hook.captureLevel !== undefined) {
+        out += `      (${hook.captureLevel})\n`;
       }
     }
   }

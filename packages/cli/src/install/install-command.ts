@@ -1,24 +1,15 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, resolve } from 'node:path';
 import {
   UserError,
   exitCodeForError,
   type ErrorExitCode,
 } from '@teambrain/core';
-import {
-  ensureCaptureHooks,
-  ensureCursorRules,
-  ensureMcpServer,
-  lineDiff,
-  serializeSettings,
-} from './settings.js';
+import { ADAPTERS, supportedTools } from '@teambrain/hooks';
 
 // Orchestrates the idempotent install. Each target file is read, merged with
 // a pure ensure* function, and rewritten only when its serialized form
 // changes — so a second run is a genuine no-op (the M4.3 accept criterion).
-
-export const SUPPORTED_TOOLS = ['claude-code', 'cursor'] as const;
-export type InstallTool = (typeof SUPPORTED_TOOLS)[number];
 
 export interface InstallOptions {
   yes?: boolean;
@@ -36,6 +27,28 @@ interface FilePlan {
   path: string;
   before: string;
   after: string;
+}
+
+/** Canonical JSON serialization used for both writing and diffing. */
+export function serializeSettings(value: Record<string, unknown>): string {
+  return `${JSON.stringify(value, null, 2)}\n`;
+}
+
+/**
+ * A minimal line-level diff (added/removed lines) — enough to show the user
+ * what `tb install` will change without pulling in a diff dependency.
+ */
+export function lineDiff(before: string, after: string): string {
+  const beforeLines = new Set(before.split('\n'));
+  const afterLines = new Set(after.split('\n'));
+  const out: string[] = [];
+  for (const line of before.split('\n')) {
+    if (!afterLines.has(line)) out.push(`- ${line}`);
+  }
+  for (const line of after.split('\n')) {
+    if (!beforeLines.has(line)) out.push(`+ ${line}`);
+  }
+  return out.join('\n');
 }
 
 function readJson(path: string): Record<string, unknown> {
@@ -91,43 +104,20 @@ export async function runInstallCommand(
   options: InstallOptions = {},
 ): Promise<InstallCommandResult> {
   try {
-    if (!(SUPPORTED_TOOLS as readonly string[]).includes(tool)) {
+    const adapter = ADAPTERS[tool];
+    if (adapter === undefined) {
       throw new UserError(
-        `unsupported tool '${tool}' — supported: ${SUPPORTED_TOOLS.join(', ')}`,
+        `unsupported tool '${tool}' — supported: ${supportedTools().join(', ')}`,
       );
     }
     const root = resolve(targetDir);
-    const plans: FilePlan[] = [];
-
-    if (tool === 'claude-code') {
-      plans.push(
-        planFor(
-          'MCP server (.mcp.json)',
-          join(root, '.mcp.json'),
-          ensureMcpServer,
-          tool,
-        ),
-        planFor(
-          'Capture hooks (.claude/settings.json)',
-          join(root, '.claude', 'settings.json'),
-          ensureCaptureHooks,
-        ),
-      );
-    } else if (tool === 'cursor') {
-      plans.push(
-        planFor(
-          'MCP server (.cursor/mcp.json)',
-          join(root, '.cursor', 'mcp.json'),
-          ensureMcpServer,
-          tool,
-        ),
-        planForText(
-          'Cursor rules (.cursor/rules/teambrain.mdc)',
-          join(root, '.cursor', 'rules', 'teambrain.mdc'),
-          ensureCursorRules,
-        ),
-      );
-    }
+    const plans: FilePlan[] = adapter.installPlan(root).map((file) => {
+      if (file.format === 'json') {
+        return planFor(file.label, file.path, file.merge);
+      } else {
+        return planForText(file.label, file.path, file.merge);
+      }
+    });
 
     const changed = plans.filter((plan) => plan.before !== plan.after);
     if (changed.length === 0) {

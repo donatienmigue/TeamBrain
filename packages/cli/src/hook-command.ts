@@ -36,6 +36,7 @@ function readStdin(): string {
 
 export async function runHookCommand(
   event: string,
+  options: { tool?: string } = {},
 ): Promise<{ exitCode: 0 | ErrorExitCode; output: string }> {
   if (event === 'session-start') {
     // Writes hookSpecificOutput to stdout itself; never throws.
@@ -54,6 +55,7 @@ export async function runHookCommand(
           hookEvent: captureEvent,
           payloadJson,
           runtimeDir: resolveRuntimeDir(),
+          ...(options.tool === undefined ? {} : { tool: options.tool }),
         });
       }
     } catch (err) {

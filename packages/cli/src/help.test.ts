@@ -57,7 +57,9 @@ describe('cli help (M8.3)', () => {
   });
 
   it('documents install targets and lint exit semantics', () => {
-    expect(commandHelp('install')).toContain('claude-code | cursor');
+    expect(commandHelp('install')).toContain(
+      'claude-code | codex | cursor | gemini-cli',
+    );
     expect(commandHelp('lint')).toContain('Exit 3 on any violation');
   });
 });

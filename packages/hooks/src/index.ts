@@ -46,3 +46,4 @@ export {
 } from './adapters/claude-code.js';
 export { cursorAdapter, ensureCursorRules } from './adapters/cursor.js';
 export { codexAdapter, ensureCodexMcpServer } from './adapters/codex.js';
+export { ensureGeminiCaptureHooks, geminiAdapter } from './adapters/gemini.js';

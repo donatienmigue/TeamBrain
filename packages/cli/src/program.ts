@@ -1,6 +1,7 @@
 import { createInterface } from 'node:readline';
 import { Command } from 'commander';
 import { CORE_VERSION, exitCodeForError } from '@teambrain/core';
+import { supportedTools } from '@teambrain/hooks';
 import { runLintCommand } from './lint-command.js';
 import { runInitCommand } from './init/init-command.js';
 import { runInstallCommand } from './install/install-command.js';
@@ -103,7 +104,7 @@ export function buildProgram(): Command {
       'register MCP server + capture wiring for an agent tool (idempotent)',
     )
     .helpGroup('Setup')
-    .argument('<tool>', 'agent tool: claude-code | cursor')
+    .argument('<tool>', `agent tool: ${supportedTools().join(' | ')}`)
     .argument('[path]', 'project directory to install into', '.')
     .option('--yes', 'apply without showing a diff (for CI)', false)
     .addHelpText('after', commandHelpAfter(HELP.install))
@@ -295,9 +296,15 @@ export function buildProgram(): Command {
     .command('hook', { hidden: true })
     .description('internal hook entrypoint invoked by the agent tool')
     .argument('<event>', 'session-start | post-tool-use | stop | session-end')
+    .option(
+      '--tool <id>',
+      'agent tool id for event labeling (default: claude-code)',
+    )
     .addHelpText('after', commandHelpAfter(HELP.hook))
-    .action(async (event: string) => {
-      const { exitCode, output } = await runHookCommand(event);
+    .action(async (event: string, opts: { tool?: string }) => {
+      const { exitCode, output } = await runHookCommand(event, {
+        ...(opts.tool === undefined ? {} : { tool: opts.tool }),
+      });
       if (output.length > 0) process.stderr.write(output);
       process.exitCode = exitCode;
     });

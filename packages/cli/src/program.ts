@@ -138,7 +138,7 @@ export function buildProgram(): Command {
     .argument('[path]', 'repository containing .teambrain/', '.')
     .option(
       '--client <name>',
-      'connecting agent id for logging (e.g. cursor, claude-code)',
+      'connecting agent id; enables MCP-side session inference for tools without native hooks (e.g. cursor, codex)',
     )
     .addHelpText('after', commandHelpAfter(HELP.mcp))
     .action(async (repoDir: string, opts: { client?: string }) => {

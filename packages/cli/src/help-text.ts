@@ -56,11 +56,16 @@ or a non-TTY stdin skips it.`,
 Examples:
   $ tb install claude-code
   $ tb install cursor .
-  $ tb install claude-code --yes
+  $ tb install codex
+  $ tb install gemini-cli --yes
 
-Shows a diff before writing agent config (.claude/settings.json or Cursor
-equivalents). Registers the MCP server and capture hooks. Idempotent — a
-second run with no config drift produces zero changes.`,
+Shows a diff before writing agent config (.claude/settings.json,
+.cursor/, .gemini/settings.json, or ~/.codex/config.toml). Registers the
+MCP server and capture wiring for the tool's tier: native hooks for
+claude-code and gemini-cli (full capture), MCP-side session inference for
+cursor and codex (no edit/command telemetry — see the README capture
+matrix). Idempotent — a second run with no config drift produces zero
+changes.`,
 
   serve: `
 Examples:
@@ -75,10 +80,14 @@ sessions. Exits cleanly on SIGINT/SIGTERM.`,
 Examples:
   $ tb mcp
   $ tb mcp --client cursor
+  $ tb mcp --client codex
 
 stdio MCP server exposing memory_search, memory_context, memory_retrieve, and
 memory_propose. Registered by \`tb install\`; agent tools spawn this process.
-Not intended for direct interactive use.`,
+For clients without native hooks (cursor, codex), --client also turns on
+MCP-side session inference: session_start on the first memory call,
+session_end on memory_propose or 30 minutes idle, events labeled with the
+client id. Not intended for direct interactive use.`,
 
   audit: `
 Examples:
@@ -141,15 +150,20 @@ Examples:
   $ tb doctor --json
 
 Reports daemon liveness, index freshness, hook heartbeats, retrieval p95, and
-brain branch sync. Exit 0 when the daemon socket is reachable; 2 otherwise.
---json emits a machine-readable report (schema-validated in tests).`,
+brain branch sync. Each tool's heartbeat includes its capture level, taken
+straight from the adapter's declared capabilities (degraded modes say so).
+Exit 0 when the daemon socket is reachable; 2 otherwise. --json emits a
+machine-readable report (schema-validated in tests).`,
 
   hook: `
 Examples:
   $ tb hook session-start
+  $ tb hook post-tool-use --tool gemini-cli
 
 Installed by \`tb install\` into agent hook config — not for direct use.
 Always exits 0 so agent sessions are never blocked (fire-and-forget capture).
+--tool labels events with the agent's id and routes the payload through that
+tool's capture adapter (default: claude-code).
 
 Events:
   session-start    inject memory_context into the agent session

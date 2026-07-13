@@ -29,7 +29,7 @@ integration run.
 ## The 60-second architecture
 
 ```
-agent (Claude Code / Cursor)
+agent (Claude Code / Cursor / Codex / Gemini CLI — any MCP client)
   │  MCP tools: memory_context · memory_search · memory_propose · memory_feedback
   ▼
 tb daemon (packages/mcp) ──reads── SQLite index (packages/index)
@@ -56,7 +56,7 @@ Two invariants explain most of the design (full list in [CLAUDE.md](../CLAUDE.md
 | `packages/core` | Memory/event schemas (zod), byte-exact parse/serialize, lint + injection patterns, ULIDs, logger, typed errors → exit codes | `src/memory.ts`, `src/events.ts` |
 | `packages/index` | SQLite + FTS5 + sqlite-vec hybrid retrieval behind `RetrievalBackend`; brain-tree + codemap checksum sync; bench | `src/store.ts`, `src/search-pipeline.ts` |
 | `packages/mcp` | MCP server (4 tools), daemon (`tb serve`), session spool → `teambrain/sessions` branch, injection-safe rendering | `src/tools.ts`, `src/daemon.ts`, `src/spool.ts` |
-| `packages/hooks` | Agent payloads → C2 events; the privacy contract (paths + exit codes only, never content); Cursor adapter | `src/map.ts`, `src/redact-event.ts` |
+| `packages/hooks` | Agent payloads → C2 events; the privacy contract (paths + exit codes only, never content); the `CaptureAdapter` registry — one adapter per vendor (claude-code, cursor, codex, gemini-cli), each = mapper + install plan + declared capabilities; the README capture matrix is generated from it | `src/adapter.ts`, `src/registry.ts`, `src/map.ts` |
 | `packages/redact` | Secret/entropy/PII detectors, deny-globs, the public release-gating corpus | `src/engine.ts`, `corpus/` |
 | `packages/distill` | Collect → cluster → LLM draft → dedup → gate → PR; the CodeMap generator (`tb distill --codemap`, opt-in); the only package allowed to call an LLM | `src/pipeline.ts`, `src/codemap/generate.ts` |
 | `packages/cli` | Every `tb` command; thin wrappers over the packages above | `src/program.ts` |
@@ -67,6 +67,31 @@ Authoritative docs, in reading order:
 change without asking) → [docs/internal/BUILD_PLAN.md](internal/BUILD_PLAN.md)
 (tasks + acceptance criteria) → [docs/internal/DEVLOG.md](internal/DEVLOG.md)
 (what/why/tradeoffs of everything done so far).
+
+## Adding a capture adapter (new agent tool)
+
+A vendor integration is three things — a payload mapper, an install plan, and
+an honest capabilities declaration — behind one interface
+(`packages/hooks/src/adapter.ts`). Everything else (envelope, redaction,
+deny-globs, transport, budgets) is shared; if you find yourself re-implementing
+any of it per vendor, the framework is being misused.
+
+1. **Spike first** (ADAPTERS_PLAN.md A1): against the *installed* tool, answer
+   "does it expose a lifecycle/tool hook that can run a command?" Record a real
+   session's payloads to `testdata/sessions/raw-<tool>.jsonl`. No verified
+   install surface → the vendor is BLOCKED and gets **no** adapter.
+2. Write `packages/hooks/src/adapters/<tool>.ts` implementing `CaptureAdapter`.
+   Tier A (native hooks): map payloads to C2 events, structurally dropping
+   content — read only a path and an exit code. Tier B (no hooks): `mapEvent`
+   returns null and the install plan registers `tb mcp --client <tool>`, which
+   turns on shared MCP-side session inference.
+3. Add it to `ADAPTERS` in `packages/hooks/src/registry.ts` — `tb install`,
+   `tb doctor`, and the docs pick it up from there.
+4. Ship the per-adapter test set (ADAPTERS_PLAN.md §D): fixture replay, privacy
+   negative, C2 validity, idempotent install, latency, doctor honesty.
+5. `pnpm build && node scripts/update-capture-matrix.mjs` — the README matrix
+   is generated from declared capabilities, and `matrix.test.ts` fails CI if
+   the docs claim more than the code declares.
 
 ## Running tests
 

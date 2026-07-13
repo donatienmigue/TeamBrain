@@ -499,3 +499,67 @@ data-not-instructions fence), DEVELOPMENT.md repo map rows.
 Why: docs only mentioned CodeMap in the README; the security posture change
 (source leaves CI when enabled) was undisclosed.
 Tradeoffs: none — docs-only, honest about opt-in status.
+
+## 2026-07-13 — Multi-Vendor Capture Adapter Framework (A0)
+
+What: extracted the registry-driven `CaptureAdapter` framework
+(packages/hooks/src/adapter.ts + registry.ts); Claude Code and Cursor
+refactored onto it — their mappers/merges moved, cli install/settings
+re-export shims keep every existing test untouched. `tb install` resolves
+from the registry; the README capture matrix is generated from
+`ADAPTERS[*].capabilities` and asserted byte-for-byte by matrix.test.ts.
+C6 reading: widening `tb install <tool>`'s argument set is additive, not a
+contract change — CONTRACTS.md untouched.
+
+## 2026-07-13 — Multi-Vendor Capture Adapters Spikes (A1)
+
+Executed spikes for Codex, Gemini CLI, Cline, Kiro, and Antigravity per ADAPTERS_PLAN.md A1.
+
+**Spike Findings:**
+1. **Codex (Tier B - MCP inference):**
+   - **Hook surface found**: a `notify` hook in global `~/.codex/config.toml` (CODEX_HOME honored), fired only on `turn-ended` (agent-turn-complete) — payload carries thread/turn ids and *message text*, no tool events, no session lifecycle. Not enough for Tier A, and the payload's `input-messages`/`last-assistant-message` fields are content we must never read.
+   - **Payload fixture**: captured from a live interactive session at `testdata/sessions/raw-codex.jsonl` (kept as evidence for the tier decision, not mapped).
+   - **Tier decision**: B — MCP-side inference via `tb mcp --client codex`.
+   - **CaptureCapabilities**: `sessionStart: true, sessionEnd: true, toolUse: false, commitShas: false, planRevision: false`.
+   
+2. **Gemini CLI (Tier A - Native Hooks):**
+   - **Hook config format**: Handled via `.gemini/settings.json`, supporting standard lifecycle hooks like `SessionStart`, `AfterTool`, and `SessionEnd` (migratable from Claude Code via `gemini hooks migrate`).
+   - **Payload format**: Handled via standard input (stdin) as a JSON-serialized string with keys `session_id`, `cwd`, `hook_event_name`, etc.
+   - **Payload fixture**: Recorded and stored at `testdata/sessions/raw-gemini-cli.jsonl`.
+   - **CaptureCapabilities**: `sessionStart: true, sessionEnd: true, toolUse: true, commitShas: true, planRevision: false`.
+
+3. **Cline (BLOCKED):**
+   - Exposes no lifecycle hooks; the tool could not be installed/run here to
+     verify an MCP config location or client connection. Per A1, a blocked
+     vendor gets **no adapter** until Tier B is verified against the real tool.
+
+4. **Kiro (BLOCKED; OQ-A1 answered):**
+   - ACP (Agent Client Protocol) is a client-host interactive messaging
+     protocol, not a process lifecycle hook executor — it is **not** a general
+     Tier-A pathway (OQ-A1: no). No verified install surface here → no adapter.
+
+5. **Antigravity (BLOCKED):**
+   - Found as an Electron desktop app in AppData; exposes no shell execution
+     hooks, and no MCP config location was verified. No adapter until a spike
+     confirms one.
+
+## 2026-07-14 — Codex + Gemini CLI adapters ship; Cline/Kiro/Antigravity BLOCKED (A2/A4/A7 + review)
+
+What: shipped the Codex (Tier B) and Gemini CLI (Tier A) adapters with the
+full per-adapter test set (fixture replay, privacy negative, C2 validity,
+idempotent install, doctor honesty, latency). Review fixes over the first
+draft: the Tier-B MCP wrapper is generalized to any `mcp-inference` adapter
+(`tb mcp --client codex` now actually captures — before, only cursor was
+wrapped, so Codex's declared session capture never fired); Codex installs
+honor CODEX_HOME (tests stay out of the real home dir); Gemini's two merges
+into .gemini/settings.json are composed into one InstallFile (two plans on
+one path clobbered the MCP-server merge on first run); Gemini hooks register
+`tb hook … --tool gemini-cli` so events carry the real vendor id instead of
+defaulting to claude-code.
+Why blocked: Cline, Kiro and Antigravity spikes found no verified install
+surface (no confirmed config location / client connection), so per the plan
+they get NO adapter — a first draft shipped them with empty install plans,
+which reported "installed" while capturing nothing; removed as dishonest.
+Tradeoffs: the README matrix shrinks to four tools but every cell is true;
+R1 (Codex tagline) is now TRUE with working `tb install codex`; the gemini
+fixture is thin (4 events) — flagged for re-recording in a longer session.

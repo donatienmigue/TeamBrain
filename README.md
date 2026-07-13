@@ -102,7 +102,7 @@ TeamBrain provides cross-vendor support with a graceful degradation model. Captu
 | Propose memory (MCP tool) | Yes | Yes | Yes | Yes |
 <!-- capture-matrix:end -->
 
-*Note: Cursor lacks native lifecycle and post-tool hooks. Edit and command telemetry are unavailable, so Cursor sessions will lack `tool_use` events. Session boundaries are inferred from MCP tool calls: a session ends when it proposes a memory or after 30 minutes of inactivity. Commit SHAs and outcome are not captured for Cursor sessions.*
+*Note: Cursor and Codex lack usable native lifecycle/post-tool hooks, so their sessions carry no `tool_use` events. Session boundaries are inferred from MCP tool calls: a session ends when it proposes a memory or after 30 minutes of inactivity; commit SHAs and outcome are not captured. Cline, Kiro, and Antigravity were spiked but have no verified install surface yet — any MCP-capable agent can still read and propose memories (serving), it just isn't captured.*
 
 ## CodeMap (v1.1, opt-in)
 
@@ -129,8 +129,10 @@ which is why the default stays off.
 
 ## Status & limits
 
-v1. Claude Code fully supported; Cursor supported with degraded capture (no
-edit/command telemetry — see the matrix above); Codex/Kiro adapters next.
+v1. Claude Code and Gemini CLI fully supported (native hooks); Cursor and
+Codex supported with degraded capture (no edit/command telemetry — see the
+matrix above); Cline/Kiro/Antigravity spiked, blocked on a verified install
+surface.
 macOS/Linux, Windows via WSL.
 Honest limits: distiller quality depends on your session volume (it needs ~5+
 sessions/week to propose anything useful), and multi-repo org brains aren't

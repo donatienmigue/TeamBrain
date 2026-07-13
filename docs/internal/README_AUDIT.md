@@ -11,7 +11,7 @@ No README or code edits were made; proposed corrections are at the end.
 
 | id | cat | claim (quote) | verification | verdict | evidence |
 |---|---|---|---|---|---|
-| R1 | C-FEATURE | "Git-native memory that Claude Code, Cursor, **and Codex** read from and write to" | capture/serving adapters per tool | **MISLEADING** | No Codex adapter anywhere (`packages/hooks/` has claude-code + cursor only; `tb install codex` → error, install-command.ts supports claude-code\|cursor). Serving is generic MCP, so a Codex MCP client *could* read — but "read from and write to" names Codex as supported today. README's own Status line says "Codex/Kiro adapters next", contradicting the tagline. |
+| R1 | C-FEATURE | "Git-native memory that Claude Code, Cursor, **and Codex** read from and write to" | capture/serving adapters per tool | **TRUE (fixed 2026-07-14)** | Codex adapter shipped as `mcp-inference` (Tier B): `tb install codex` registers the server in `~/.codex/config.toml` (idempotent, tested) and `tb mcp --client codex` wraps the inference interceptor, so `session_start`/`session_end` are actually emitted (install-codex.integration.test.ts; matrix test pins the README cells). |
 | R2 | C-LINK | CI badge → actions/workflows/ci.yml | curl + latest run state | TRUE | HTTP 200; latest CI run on main: success (GitHub API, 2026-07-10). Badge is wired to the real workflow that runs the full suite (ci.yml `pnpm test`). |
 | R3 | C-LINK | npm badge → @teambrain/cli | shields + registry | TRUE | Badge renders 0.2.2; `npm view @teambrain/cli version` → 0.2.2. (npmjs.com page returns 403 to curl — bot protection, page loads in a browser.) |
 | R4 | C-LINK | License badge Apache-2.0 → LICENSE | file + package.json | TRUE | LICENSE present at repo root; every package.json `"license": "Apache-2.0"`. |
@@ -44,7 +44,7 @@ No README or code edits were made; proposed corrections are at the end.
 | R31 | C-FEATURE | "TeamBrain syncs those [CLAUDE.md/.cursorrules] *and* adds … learning from real sessions, across tools, with review" | init import + rules drift | TRUE | Import: R15 run; drift tracking: digest-command.ts collectRules hashes CLAUDE.md/AGENTS.md/.cursorrules/.cursor/rules vs brain baseline; learning loop: R20. |
 | R32 | C-COMPAT | Matrix: Claude Code — install/session start/end/edits/search/propose all "Yes (Native Hook / MCP Tool)" | install run + hook tests | TRUE | Install run (R16) writes SessionStart/PostToolUse/Stop hooks (diff in transcript); mappers + replay tests cover all events; MCP tools live (R8). Live dogfood capture seen via `tb audit`. |
 | R33 | C-COMPAT | Matrix: Cursor — `tb install cursor`; session start "Yes (MCP-side inference)"; end "Yes (inferred: memory proposal or 30-min idle timeout)"; edits "No (Degraded)"; search/propose "Yes" | code + tests | TRUE | install-command supports cursor (idempotent, tested); CursorInterceptor infers start on memory_context, end on propose or 30-min idle (interceptor.ts:14-45, CURSOR_IDLE_TIMEOUT_MS; 5 tests incl. negatives); no tool_use for Cursor — matrix says so. Footnote states commit SHAs/outcome not captured — matches interceptor (commit_shas: [], outcome 'unknown'). |
-| R34 | C-COMPAT | Status: "Cursor capture **in progress** (context serving already works via MCP); Codex/Kiro adapters next" | vs. shipped code | **MISLEADING (stale)** | Cursor capture is *shipped* (degraded mode, R33) — "in progress" contradicts the matrix one section above. Internal inconsistency a reader will notice. |
+| R34 | C-COMPAT | Status: "Cursor capture **in progress** (context serving already works via MCP); Codex/Kiro adapters next" | vs. shipped code | **TRUE (fixed 2026-07-14)** | Status line rewritten: Claude Code + Gemini CLI native, Cursor + Codex degraded, Cline/Kiro/Antigravity explicitly blocked. It now matches the generated matrix one section above. |
 | R35 | C-COMPAT | "macOS/Linux, Windows via WSL" | ran on native Windows | TRUE (conservative) | Understatement, not overstatement: the entire quick start ran natively on Windows 11 in this audit (transcript). CI runs ubuntu; binaries ship mac/linux. Claiming only WSL is safe. |
 | R36 | C-NUMBER | "it needs ~5+ sessions/week to propose anything useful" | heuristic | UNVERIFIABLE (acceptable) | Product's own honest-limits guidance; framed as such ("Honest limits"). No change needed, cannot be falsified by a reader. |
 | R37 | C-FEATURE | "multi-repo org brains aren't built yet" | code | TRUE | No multi-repo code exists; scope field is design-ahead only. Honest limit. |
@@ -55,7 +55,7 @@ No README or code edits were made; proposed corrections are at the end.
 | Verdict | Count | Items |
 |---|---|---|
 | TRUE | 31 | — |
-| MISLEADING | 4 | R1 (Codex in tagline), R15 (init "opens a PR"), R26 (corpus "release-gating"), R34 (stale Status line) |
+| MISLEADING | 2 | R15 (init "opens a PR"), R26 (corpus "release-gating") |
 | FALSE | 1 | R18 ("prints: Loaded 47 team memories.") |
 | UNVERIFIABLE | 2 | R6 (unattributed token-spend stat), R36 (sessions/week heuristic — acceptable as framed) |
 
@@ -64,8 +64,8 @@ No README or code edits were made; proposed corrections are at the end.
 | Rank | Sev | Id | Problem | Minimal fix |
 |---|---|---|---|---|
 | 1 | **Critical (install/first-run)** | R18 | The README's only "what you'll see" promise is a string the product never prints. First thing a tester checks. | Describe the real behavior: context is injected silently; verify with `tb doctor`. |
-| 2 | **High (compat)** | R1 | Tagline names Codex as reading *and writing* today; no Codex adapter exists. | "Claude Code, Cursor, and any MCP-capable agent" (Codex stays in roadmap line). |
-| 3 | **High (compat)** | R34 | Status says Cursor capture "in progress" while the matrix above says it ships (degraded). Internal contradiction. | "Cursor capture shipped in degraded mode (no edit/command telemetry)". |
+| 2 | **High (compat)** | R1 | (FIXED) Tagline names Codex as reading *and writing* today; no Codex adapter exists. | "Claude Code, Cursor, and any MCP-capable agent" (Codex stays in roadmap line). |
+| 3 | **High (compat)** | R34 | (FIXED) Status says Cursor capture "in progress" while the matrix above says it ships (degraded). Internal contradiction. | "Cursor capture shipped in degraded mode (no edit/command telemetry)". |
 | 4 | **Medium (command)** | R15 | `tb init` does not open a PR; it creates a PR-ready branch and tells you to open one. | "→ creates a PR-ready branch". |
 | 5 | **Medium (trust)** | R26 | "Release-gating" is true for pushes (CI + publish.yml) but the tag-release job doesn't run tests. | Preferred: add `pnpm test` to release.yml publish job (separate approved change). README fallback: "CI-gating". |
 | 6 | **Medium (number)** | R6 | Bare unattributed industry stat; HN will demand a source. | Soften to "a large share" or attribute. |

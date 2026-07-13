@@ -141,14 +141,20 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
 
+      # package.json isn't bundled into the binary, so the version is baked
+      # in at compile time (CORE_VERSION falls back to TEAMBRAIN_VERSION).
       - name: Compile the tb binary
-        run: >
-          bun build packages/cli/dist/tb.js
-          --compile --target=${{ matrix.target }}
-          --outfile ${{ matrix.asset }}
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          bun build packages/cli/dist/tb.js \
+            --compile --target=${{ matrix.target }} \
+            --define "process.env.TEAMBRAIN_VERSION='${version}'" \
+            --outfile ${{ matrix.asset }}
 
       - name: Smoke-test the binary
-        run: ./${{ matrix.asset }} --version
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          test "$(./${{ matrix.asset }} --version)" = "$version"
 
       - name: Attach to the release
         uses: softprops/action-gh-release@v2

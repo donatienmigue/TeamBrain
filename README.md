@@ -89,17 +89,17 @@ for the memory file spec.
 TeamBrain provides cross-vendor support with a graceful degradation model. Capture hooks intercept agent activity and distill it into proposed memories without compromising privacy.
 
 <!-- capture-matrix:start -->
-| Capability | Claude Code | Cursor |
-| --- | --- | --- |
-| Install command | `tb install claude-code` | `tb install cursor` |
-| Capture tier | Native hooks | MCP-side inference |
-| Session start | Yes (native hook) | Yes (MCP-side inference) |
-| Session end | Yes (native hook) | Yes (MCP-side inference) |
-| Tool use (edits / commands / tests / exploration) | Yes (native hook) | No |
-| Commit SHAs & outcome | Yes (native hook) | No |
-| Plan revisions | No | No |
-| Memory search / retrieve (MCP tool) | Yes | Yes |
-| Propose memory (MCP tool) | Yes | Yes |
+| Capability | Claude Code | Codex | Cursor |
+| --- | --- | --- | --- |
+| Install command | `tb install claude-code` | `tb install codex` | `tb install cursor` |
+| Capture tier | Native hooks | MCP-side inference | MCP-side inference |
+| Session start | Yes (native hook) | Yes (MCP-side inference) | Yes (MCP-side inference) |
+| Session end | Yes (native hook) | Yes (MCP-side inference) | Yes (MCP-side inference) |
+| Tool use (edits / commands / tests / exploration) | Yes (native hook) | No | No |
+| Commit SHAs & outcome | Yes (native hook) | No | No |
+| Plan revisions | No | No | No |
+| Memory search / retrieve (MCP tool) | Yes | Yes | Yes |
+| Propose memory (MCP tool) | Yes | Yes | Yes |
 <!-- capture-matrix:end -->
 
 *Note: Cursor lacks native lifecycle and post-tool hooks. Edit and command telemetry are unavailable, so Cursor sessions will lack `tool_use` events. Session boundaries are inferred from MCP tool calls: a session ends when it proposes a memory or after 30 minutes of inactivity. Commit SHAs and outcome are not captured for Cursor sessions.*

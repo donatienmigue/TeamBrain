@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { createLogger } from '@teambrain/core';
 import { openBackend, resolveRuntimeDir, runMcpServer } from '@teambrain/mcp';
+import { ADAPTERS } from '@teambrain/hooks';
 
 // `tb mcp` (M4.2 entry): the stdio MCP server Claude Code launches per
 // session (registered by `tb install`). stdout is the MCP transport, so this
@@ -20,10 +21,12 @@ export async function runMcpCommand(
     logger,
   });
 
-  if (opts.client === 'cursor') {
-    // Intercept MCP tools to emit Cursor capture hooks.
-    const { wrapCursorContext } = await import('./cursor-wrapper.js');
-    backend.context = wrapCursorContext(backend.context, root);
+  // Tier-B capture: any registered mcp-inference client (cursor, codex, …)
+  // gets its MCP tool calls intercepted to infer session boundaries.
+  const adapter = opts.client === undefined ? undefined : ADAPTERS[opts.client];
+  if (adapter !== undefined && adapter.tier === 'mcp-inference') {
+    const { wrapInferenceContext } = await import('./inference-wrapper.js');
+    backend.context = wrapInferenceContext(backend.context, root, adapter.tool);
   }
 
   await runMcpServer(backend.context);

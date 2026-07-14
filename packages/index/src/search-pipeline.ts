@@ -25,16 +25,24 @@ export function toFtsMatchExpression(query: string): string | null {
 /**
  * Reciprocal-rank fusion: each ranked list contributes 1/(k+rank) per item,
  * rank starting at 1. Items appearing in both lists sum both contributions.
+ * Optional per-list `weights` (default 1 each — plain RRF, the shipped
+ * behavior) exist for the R10 eval harness's weighted-fusion ablation.
  */
 export function rrfFuse(
   rankedLists: ReadonlyArray<ReadonlyArray<number>>,
   k = RRF_K,
+  weights?: ReadonlyArray<number>,
 ): Map<number, number> {
   const fusedScores = new Map<number, number>();
-  for (const list of rankedLists) {
+  for (let listIndex = 0; listIndex < rankedLists.length; listIndex++) {
+    const list = rankedLists[listIndex] as ReadonlyArray<number>;
+    const weight = weights?.[listIndex] ?? 1;
     for (let rank = 1; rank <= list.length; rank++) {
       const item = list[rank - 1] as number;
-      fusedScores.set(item, (fusedScores.get(item) ?? 0) + 1 / (k + rank));
+      fusedScores.set(
+        item,
+        (fusedScores.get(item) ?? 0) + weight * (1 / (k + rank)),
+      );
     }
   }
   return fusedScores;

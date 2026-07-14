@@ -359,9 +359,17 @@ export class SqliteIndex implements RetrievalBackend {
     const includeRequired =
       options.includeRequired ?? options.tokenBudget !== undefined;
 
-    const lexicalRowids = this.lexicalTopN(q, sources);
-    const vectorRowids = await this.vectorTopN(q);
-    const fusedScores = rrfFuse([lexicalRowids, vectorRowids]);
+    const useLexical = options.channels?.lexical ?? true;
+    const useVector = options.channels?.vector ?? true;
+    const lexicalRowids = useLexical ? this.lexicalTopN(q, sources) : [];
+    const vectorRowids = useVector ? await this.vectorTopN(q) : [];
+    const fusedScores = rrfFuse(
+      [lexicalRowids, vectorRowids],
+      undefined,
+      options.fusionWeights === undefined
+        ? undefined
+        : [options.fusionWeights.lexical, options.fusionWeights.vector],
+    );
 
     const passesFilters = (row: DocRow): boolean =>
       sources.includes(row.source as DocSource) &&

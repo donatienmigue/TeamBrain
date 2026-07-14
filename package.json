@@ -14,7 +14,8 @@
     "test:changed": "vitest run --changed",
     "test:integration": "vitest run integration",
     "lint": "eslint . && prettier --check .",
-    "bench": "pnpm -r --if-present run bench"
+    "bench": "pnpm -r --if-present run bench",
+    "eval": "pnpm --filter @teambrain/index run eval"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",

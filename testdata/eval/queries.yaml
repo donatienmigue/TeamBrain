@@ -1,0 +1,276 @@
+# R10 retrieval-eval query set over testdata/eval/corpus/ (a real brain:
+# the dogfood .teambrain/ plus the repo's hand-written fixture memories).
+#
+# Authoring rules (Tech Brief §3.2): queries are phrased from the agent's /
+# developer's perspective and deliberately paraphrased AWAY from the target
+# memory's vocabulary. `relevant` lists every memory id that should surface;
+# an empty list marks a negative — the correct answer is "nothing relevant".
+#
+# Provenance (honest): written_by is `assistant` — these were authored by an
+# AI assistant that had read the corpus, then paraphrased. That is weaker
+# than the brief's human-blind standard; treat absolute numbers as
+# directional and replace/extend with human-written queries from real
+# sessions as they accumulate (tracked in docs/RETRIEVAL.md).
+#
+# kind: structural | decision | convention | gotcha | negative
+
+queries:
+  # --- migrations / git discipline ---
+  - id: q_migration_pileup
+    query: 'my PR ended up with a dozen schema change files, is that OK to merge?'
+    relevant: [01J8YC12B3C4D5E6F7G8H9J0K1]
+    kind: convention
+    written_by: assistant
+  - id: q_failed_deploy_schema
+    query: 'deploy went red halfway through a schema change — what is the recovery procedure?'
+    relevant: [01J8YC12B3C4D5E6F7G8H9J0K1]
+    kind: gotcha
+    written_by: assistant
+  - id: q_edit_old_migration
+    query: 'can I fix a typo in a migration that is already live in prod?'
+    relevant: [01J8YC12B3C4D5E6F7G8H9J0K1]
+    kind: convention
+    written_by: assistant
+  - id: q_push_broke_ci
+    query: 'CI went red on main right after my push — how do we avoid this happening?'
+    relevant: [01J8YCTS000000000000000000]
+    kind: convention
+    written_by: assistant
+  - id: q_precommit_checks
+    query: 'what checks am I expected to run before pushing my branch?'
+    relevant: [01J8YCTS000000000000000000]
+    kind: convention
+    written_by: assistant
+
+  # --- input validation ---
+  - id: q_untrusted_json
+    query: 'is it safe to trust the shape of JSON arriving on the socket?'
+    relevant: [01J9MA1B2C3D4E5F6G7H8J9K0M]
+    kind: convention
+    written_by: assistant
+  - id: q_boundary_types
+    query: 'reviewer said my API layer types are too loose — what is the actual rule?'
+    relevant: [01J9MA1B2C3D4E5F6G7H8J9K0M, 01KWZCBRHA7RPP78CS2VASHS9N]
+    kind: convention
+    written_by: assistant
+  - id: q_webhook_input
+    query: 'do I need to check payloads from third-party webhooks before using them?'
+    relevant: [01J9MA1B2C3D4E5F6G7H8J9K0M]
+    kind: convention
+    written_by: assistant
+
+  # --- tooling / monorepo decisions ---
+  - id: q_new_package_manager
+    query: 'can I switch one of the packages over to yarn?'
+    relevant: [01J8YC01A2B3C4D5E6F7G8H9J0, 01KWZCBRHAPSWBF84GVW37H3HY]
+    kind: decision
+    written_by: assistant
+  - id: q_lockfile_question
+    query: 'why does my sub-package lockfile keep getting rejected in review?'
+    relevant: [01J8YC01A2B3C4D5E6F7G8H9J0]
+    kind: gotcha
+    written_by: assistant
+  - id: q_vector_db_choice
+    query: 'why do we not use a hosted vector database like pinecone or qdrant?'
+    relevant: [01JZCP0A1B2C3D4E5F6G7H8J9K]
+    kind: decision
+    written_by: assistant
+  - id: q_embeddings_storage
+    query: 'where do the embedding vectors actually live on disk?'
+    relevant: [01JZCP0A1B2C3D4E5F6G7H8J9K]
+    kind: decision
+    written_by: assistant
+
+  # --- gotchas from real sessions ---
+  - id: q_webhook_trace
+    query: 'chasing a bug in an old webhook handler and the import names do not line up with the files'
+    relevant: [01J8YC23C4D5E6F7G8H9J0K1M2]
+    kind: gotcha
+    written_by: assistant
+  - id: q_find_handler
+    query: 'what is the trick for locating webhook code when the filenames lie?'
+    relevant: [01J8YC23C4D5E6F7G8H9J0K1M2]
+    kind: gotcha
+    written_by: assistant
+  - id: q_registry_timeouts
+    query: 'downloads from our package mirror keep flaking in CI'
+    relevant: [01J8YC45E6F7G8H9J0K1M2N3P4]
+    kind: gotcha
+    written_by: assistant
+  - id: q_proxy_flake
+    query: 'fetching tarballs fails randomly behind the office network, any workaround?'
+    relevant: [01J8YC45E6F7G8H9J0K1M2N3P4]
+    kind: gotcha
+    written_by: assistant
+  - id: q_search_word_forms
+    query: "will searching for 'retrying' find notes that only say 'retry'?"
+    relevant: [01J9MD4E5F6G7H8J9K0M1N2P3Q]
+    kind: structural
+    written_by: assistant
+  - id: q_embedding_recompute
+    query: 'how do we avoid paying to embed identical content twice?'
+    relevant: [01J9ME5F6G7H8J9K0M1N2P3Q4R]
+    kind: structural
+    written_by: assistant
+  - id: q_bigint_rowid
+    query: 'inserting vectors blows up with a datatype error on the row id'
+    relevant: [01JZCP3D4E5F6G7H8J9KAMBNCP]
+    kind: gotcha
+    written_by: assistant
+
+  # --- architecture / map ---
+  - id: q_direct_db_read
+    query: 'can my tool just open index.db directly and run SQL against it?'
+    relevant: [01J8YC34D5E6F7G8H9J0K1M2N3, 01J9MC3D4E5F6G7H8J9K0M1N2P]
+    kind: structural
+    written_by: assistant
+  - id: q_memory_tools_server
+    query: 'which process actually serves the memory tools to the agent?'
+    relevant: [01J8YC34D5E6F7G8H9J0K1M2N3, 01J9MC3D4E5F6G7H8J9K0M1N2P]
+    kind: structural
+    written_by: assistant
+  - id: q_offline_reads
+    query: 'does looking up team knowledge ever leave the machine?'
+    relevant: [01J9MC3D4E5F6G7H8J9K0M1N2P, 01J8YC34D5E6F7G8H9J0K1M2N3]
+    kind: structural
+    written_by: assistant
+  - id: q_what_is_project
+    query: 'give me the one-paragraph overview of what this system is and its parts'
+    relevant: [01KWZCBRH96QQWCB99QWYKGG56]
+    kind: structural
+    written_by: assistant
+
+  # --- principles / operational rules ---
+  - id: q_index_corruption
+    query: 'the local database file got corrupted — did we lose anything permanent?'
+    relevant: [01KWZCBRHAEBQNW3ESM6HNJYFN, 01JZCP0A1B2C3D4E5F6G7H8J9K]
+    kind: gotcha
+    written_by: assistant
+  - id: q_hook_latency
+    query: 'how slow can a capture handler be before it is a problem?'
+    relevant: [01KWZCBRHAEBQNW3ESM6HNJYFN]
+    kind: convention
+    written_by: assistant
+  - id: q_daemon_down
+    query: 'what happens to an agent session when the background service is not running?'
+    relevant: [01KWZCBRHAEBQNW3ESM6HNJYFN]
+    kind: structural
+    written_by: assistant
+  - id: q_log_prompts
+    query: 'are we allowed to record what the user actually typed to the agent?'
+    relevant: [01KWZCBRHAEBQNW3ESM6HNJYFN]
+    kind: convention
+    written_by: assistant
+  - id: q_add_dependency
+    query: 'what is the bar for pulling a new npm library into the repo?'
+    relevant: [01KWZCBRHAEBQNW3ESM6HNJYFN]
+    kind: convention
+    written_by: assistant
+  - id: q_orm_allowed
+    query: 'can I use prisma for the database layer?'
+    relevant: [01KWZCBRHAEBQNW3ESM6HNJYFN]
+    kind: decision
+    written_by: assistant
+  - id: q_writes_to_main
+    query: 'is any automated process allowed to change the knowledge base without review?'
+    relevant: [01KWZCBRHAEBQNW3ESM6HNJYFN]
+    kind: convention
+    written_by: assistant
+
+  # --- forbidden list ---
+  - id: q_console_logging
+    query: 'can I drop a quick print statement into a library package while debugging?'
+    relevant: [01KWZCBRHA7RPP78CS2VASHS9N]
+    kind: convention
+    written_by: assistant
+  - id: q_swallow_errors
+    query: 'is an empty catch block acceptable when the failure genuinely does not matter?'
+    relevant: [01KWZCBRHA7RPP78CS2VASHS9N]
+    kind: convention
+    written_by: assistant
+  - id: q_home_dir_tests
+    query: "my test writes into the user's actual config directory — is that fine?"
+    relevant: [01KWZCBRHA7RPP78CS2VASHS9N, 01KWZCBRHAXFQQFXRN2Z0KFJGE]
+    kind: convention
+    written_by: assistant
+
+  # --- testing rules ---
+  - id: q_network_in_tests
+    query: 'can a unit test download something from the internet?'
+    relevant: [01KWZCBRHAXFQQFXRN2Z0KFJGE]
+    kind: convention
+    written_by: assistant
+  - id: q_llm_in_tests
+    query: 'how does the test suite cover the AI-calling code without an API key?'
+    relevant: [01KWZCBRHAXFQQFXRN2Z0KFJGE]
+    kind: structural
+    written_by: assistant
+
+  # --- process ---
+  - id: q_merge_checklist
+    query: 'what has to be true before I can call a task finished?'
+    relevant: [01KWZCBRHARSPBP3GQFQBFFTS6]
+    kind: convention
+    written_by: assistant
+  - id: q_blocked_acceptance
+    query: 'an acceptance criterion looks impossible — should I just adjust it?'
+    relevant: [01KWZCBRHARSPBP3GQFQBFFTS6]
+    kind: convention
+    written_by: assistant
+  - id: q_frozen_docs
+    query: 'which internal documents am I not allowed to touch without asking?'
+    relevant: [01KWZCBRHAY3PSQYTHFE8GZNEG, 01KWZCBRHA7RPP78CS2VASHS9N]
+    kind: convention
+    written_by: assistant
+  - id: q_run_integration
+    query: 'how do I run the end-to-end tests locally?'
+    relevant: [01KWZCBRHA7Y4YX2CKWJ3MB1GJ]
+    kind: structural
+    written_by: assistant
+  - id: q_default_exports
+    query: 'should new modules use export default?'
+    relevant: [01KWZCBRHAPSWBF84GVW37H3HY]
+    kind: convention
+    written_by: assistant
+
+  # --- negatives: the correct answer is "nothing relevant" (§3.2) ---
+  - id: q_neg_jwt
+    query: 'what is a JWT and how does token verification work?'
+    relevant: []
+    kind: negative
+    written_by: assistant
+  - id: q_neg_css
+    query: 'how do I center a div vertically with flexbox?'
+    relevant: []
+    kind: negative
+    written_by: assistant
+  - id: q_neg_k8s
+    query: 'why does my kubernetes pod keep restarting with CrashLoopBackOff?'
+    relevant: []
+    kind: negative
+    written_by: assistant
+  - id: q_neg_react
+    query: 'does this React useEffect need a cleanup function?'
+    relevant: []
+    kind: negative
+    written_by: assistant
+  - id: q_neg_pg_vacuum
+    query: 'recommended autovacuum settings for a large postgres table?'
+    relevant: []
+    kind: negative
+    written_by: assistant
+  - id: q_neg_iam
+    query: 'how often should AWS IAM access keys be rotated?'
+    relevant: []
+    kind: negative
+    written_by: assistant
+  - id: q_neg_dns
+    query: 'why is DNS propagation for my new domain taking so long?'
+    relevant: []
+    kind: negative
+    written_by: assistant
+  - id: q_neg_python
+    query: 'what is the difference between a python list and a tuple?'
+    relevant: []
+    kind: negative
+    written_by: assistant

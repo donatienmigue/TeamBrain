@@ -93,6 +93,17 @@ export interface SearchOptions {
   includeRequired?: boolean;
   /** Injectable clock for TTL filtering; default `new Date()`. */
   now?: Date;
+  /**
+   * R10 eval-harness ablation: which retrieval channels run. Default both —
+   * product paths never set this; it exists so `pnpm eval` can measure the
+   * lexical and vector arms in isolation.
+   */
+  channels?: { lexical?: boolean; vector?: boolean };
+  /**
+   * R10 eval-harness ablation: weighted RRF fusion. Default 1/1, which is
+   * exactly the shipped weightless RRF.
+   */
+  fusionWeights?: { lexical: number; vector: number };
 }
 
 export interface RetrievalBackend {

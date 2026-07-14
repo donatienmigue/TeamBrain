@@ -30,7 +30,8 @@
   "scripts": {
     "build": "tsc -b",
     "test": "vitest run",
-    "bench": "tsc -b && node dist/bench/run.js"
+    "bench": "tsc -b && node dist/bench/run.js",
+    "eval": "tsc -b && node dist/eval/run.js"
   },
   "dependencies": {
     "@teambrain/core": "workspace:*",

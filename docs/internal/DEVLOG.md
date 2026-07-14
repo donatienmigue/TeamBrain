@@ -578,3 +578,18 @@ Tradeoffs: C6 reading — `--stop`/`--fix` flags on frozen verbs are additive,
 not a contract change (same reading as `tb install`'s widened argument set).
 The real spawner refuses under VITEST so no test can ever start a real
 daemon; auto-start paths are covered by 12 injected-spawn unit tests.
+
+## 2026-07-14 — R10 retrieval eval harness (E0–E3)
+What: `pnpm eval` — real corpus (testdata/eval/corpus, 20 memories: dogfood
+brain + hand-written fixtures) + 48 paraphrased queries (8 negatives) run
+against the production bge-small embedder under four ablation modes
+(lexical / vector / hybrid RRF / weighted 0.7-0.3); memory_context
+hit-rate + latency. Knobs are additive SearchOptions fields whose defaults
+are byte-identical to shipped RRF (asserted). Results in docs/RETRIEVAL.md.
+Why: §4 verdict needed a number — got it: hybrid recall@5 = 0.95 ≥ 0.90 →
+question closed, no sophistication added; weighted fusion measured worse.
+Tradeoffs: corpus is 20 memories (below the 50–150 brief minimum) and
+queries are assistant-written, not human-blind — recorded as caveats, not
+hidden. Real findings kept: no abstention on negatives (trust gap, needs a
+similarity floor, not an RRF threshold) and real-embedder p50 185ms vs the
+synthetic 80ms budget assumption.

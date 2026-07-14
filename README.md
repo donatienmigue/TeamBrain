@@ -163,6 +163,7 @@ built yet. Milestone-by-milestone plan in `docs/internal/BUILD_PLAN.md`.
 | Using TeamBrain in your repo | This README + `tb --help` (grouped commands, exit codes, examples) |
 | The memory file format | [FORMAT.md](FORMAT.md) |
 | Threat model & privacy guarantees | [SECURITY.md](SECURITY.md) |
+| Retrieval quality, measured (real corpus + embedder, ablation) | [docs/RETRIEVAL.md](docs/RETRIEVAL.md) |
 | **Contributing / developing TeamBrain itself** | [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) — setup, repo map, architecture, test recipes — then [CONTRIBUTING.md](CONTRIBUTING.md) |
 | CI wiring for the distiller/digest/lint | [ci-templates/](ci-templates/) |
 

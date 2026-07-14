@@ -593,3 +593,10 @@ queries are assistant-written, not human-blind — recorded as caveats, not
 hidden. Real findings kept: no abstention on negatives (trust gap, needs a
 similarity floor, not an RRF threshold) and real-embedder p50 185ms vs the
 synthetic 80ms budget assumption.
+
+## 2026-07-14 — R16.1 T1: distinct codemap rendering (P3)
+What: `renderMemoryBlock` now heads codemap blocks with
+`[codemap · generated from <path> · not human-approved]`; governed memory
+rendering is byte-unchanged (inline-snapshot gated).
+Why: governance legibility — agents must be able to tell approved knowledge
+from a generated, possibly-stale map. Tradeoffs: none; purely additive branch.

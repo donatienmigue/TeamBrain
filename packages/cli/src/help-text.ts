@@ -71,10 +71,14 @@ changes.`,
 Examples:
   $ tb serve
   $ tb serve ../monorepo
+  $ tb serve --stop
 
 Watches .teambrain/ for changes, maintains the SQLite index, and accepts hook
 events on ~/.teambrain/daemon.sock. Run in the background during agent
-sessions. Exits cleanly on SIGINT/SIGTERM.`,
+sessions — or let it auto-start on first use (disable with daemon.autostart:
+false in brain.yaml or TEAMBRAIN_NO_AUTOSTART=1). Exits cleanly on
+SIGINT/SIGTERM; --stop terminates a running daemon and cleans up its files
+(exit 0 if already stopped).`,
 
   mcp: `
 Examples:
@@ -148,12 +152,14 @@ recovering from a corrupt index.db.`,
 Examples:
   $ tb doctor
   $ tb doctor --json
+  $ tb doctor --fix
 
 Reports daemon liveness, index freshness, hook heartbeats, retrieval p95, and
 brain branch sync. Each tool's heartbeat includes its capture level, taken
 straight from the adapter's declared capabilities (degraded modes say so).
 Exit 0 when the daemon socket is reachable; 2 otherwise. --json emits a
-machine-readable report (schema-validated in tests).`,
+machine-readable report (schema-validated in tests). --fix starts the daemon
+when it is down; without it doctor only reports and never spawns anything.`,
 
   hook: `
 Examples:

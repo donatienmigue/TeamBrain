@@ -45,13 +45,31 @@ npm i -g @teambrain/cli
 cd your-repo
 tb init                    # imports CLAUDE.md/.cursorrules/AGENTS.md/ADRs → PR-ready branch
 tb install claude-code     # registers MCP server + hooks (shows the diff first)
-tb serve                   # start the local daemon
 ```
 
 Your next Claude Code session starts with the team's memories injected as
 context (silently — run `tb doctor` to confirm the daemon is serving). That's it.
 Add the distiller to CI with the templates in [`ci-templates/`](ci-templates/) to
 close the loop.
+
+### The local daemon (auto-start)
+
+TeamBrain needs a small local daemon for indexing and capture. You don't have
+to manage it: it starts automatically on first use (when a session asks for
+context or an agent launches `tb mcp`), announcing itself with one stderr
+line — `TeamBrain: started local daemon (pid N). Stop with 'tb serve --stop'.`
+Plainly, so there are no surprises:
+
+- It listens on a local unix socket (a named pipe on Windows) and makes **no
+  network calls** — the same no-egress guarantee as everything else here.
+- Stop it anytime with `tb serve --stop` (idempotent).
+- Disable auto-start entirely with `daemon.autostart: false` in
+  `.teambrain/brain.yaml` or `TEAMBRAIN_NO_AUTOSTART=1` (it's also off
+  automatically when `CI` is set). With it off, run `tb serve` yourself —
+  everything degrades gracefully when the daemon is down; sessions just run
+  memory-less.
+- `tb doctor` reports the daemon's true state and never starts anything;
+  `tb doctor --fix` starts it for you.
 
 ## How it works
 

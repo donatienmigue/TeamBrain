@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { z } from 'zod';
 import {
   daemonSocketPath,
+  ensureDaemon,
   heartbeatPath,
   indexDbPath,
   pingDaemon,
@@ -75,6 +76,14 @@ export interface DoctorOptions {
   json?: boolean;
   runtimeDir?: string;
   now?: () => Date;
+  /**
+   * `--fix`: when the daemon is down, start it (daemon auto-start) and report
+   * the result. Without the flag doctor NEVER spawns — it must truthfully
+   * report "daemon down".
+   */
+  fix?: boolean;
+  /** Injected for tests; defaults to the real ensureDaemon. */
+  autostart?: (runtimeDir: string) => Promise<boolean>;
   /**
    * Governance metric to include (D3.1). Deliberately not defaulted here:
    * the CLI layer supplies the live `gh` query so this function — and every
@@ -174,6 +183,20 @@ export async function runDoctorCommand(
 ): Promise<{ exitCode: 0 | ErrorExitCode; output: string }> {
   const now = options.now ?? ((): Date => new Date());
   const runtimeDir = options.runtimeDir ?? resolveRuntimeDir();
+
+  // --fix only: attempt an auto-start before diagnosing, so the report below
+  // reflects the fixed state. Plain doctor never spawns anything.
+  let fixAttempted = false;
+  let fixResult = false;
+  if (options.fix === true && (await pingDaemon(runtimeDir)) === null) {
+    const autostart =
+      options.autostart ??
+      ((dir: string): Promise<boolean> =>
+        ensureDaemon({ runtimeDir: dir, enabled: true }));
+    fixAttempted = true;
+    fixResult = await autostart(runtimeDir);
+  }
+
   const heartbeat = readHeartbeat(heartbeatPath(runtimeDir));
 
   const pong = await pingDaemon(runtimeDir);
@@ -222,6 +245,15 @@ export async function runDoctorCommand(
           : `${sync.behind} commit(s) behind upstream`,
     },
   ];
+  if (fixAttempted) {
+    checks.push({
+      name: 'autostart-fix',
+      ok: fixResult,
+      detail: fixResult
+        ? 'daemon was down; auto-start brought it up'
+        : 'daemon was down; auto-start failed (see `tb serve`)',
+    });
+  }
 
   const report: DoctorReport = {
     ok: reachable,
@@ -272,6 +304,10 @@ function renderHuman(report: DoctorReport): string {
   let out = 'tb doctor\n';
   out += `  daemon running:   ${mark(daemon.running)}${daemon.pid === null ? '' : ` (pid ${daemon.pid})`}\n`;
   out += `  socket reachable: ${mark(daemon.reachable)} (${daemon.socket})\n`;
+  const fix = report.checks.find((check) => check.name === 'autostart-fix');
+  if (fix !== undefined) {
+    out += `  autostart fix:    ${mark(fix.ok)} (${fix.detail})\n`;
+  }
   out += `  uptime:           ${daemon.uptimeSeconds === null ? 'unknown' : `${daemon.uptimeSeconds}s`}\n`;
   out += `  index docs:       ${index.docCount ?? 'unknown'}${index.lexicalOnly === true ? ' (lexical-only)' : ''}\n`;
   out += `  index checksum:   ${index.brainChecksum ?? 'unknown'}\n`;

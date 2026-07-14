@@ -1,4 +1,5 @@
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync, rmSync } from 'node:fs';
+import { platform } from 'node:os';
 import { join, resolve } from 'node:path';
 import {
   EnvironmentError,
@@ -6,7 +7,10 @@ import {
   exitCodeForError,
 } from '@teambrain/core';
 import {
+  daemonSocketPath,
   ensureUserScopeDir,
+  heartbeatPath,
+  pidFilePath,
   resolveRuntimeDir,
   startDaemon,
   type DaemonHandle,
@@ -22,6 +26,95 @@ export interface ServeOptions {
   onReady?: (daemon: DaemonHandle) => void;
   /** Resolves the promise (test hook); production waits on SIGINT/SIGTERM. */
   signal?: AbortSignal;
+}
+
+export interface ServeStopOptions {
+  /** Injected for tests; defaults to the real ~/.teambrain. */
+  runtimeDir?: string;
+  /** How long to wait for the daemon to exit after SIGTERM. */
+  waitMs?: number;
+}
+
+function pidAlive(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Removes pidfile, heartbeat, autostart lock, and (POSIX) socket file. */
+function removeDaemonFiles(runtimeDir: string): void {
+  const files = [
+    pidFilePath(runtimeDir),
+    heartbeatPath(runtimeDir),
+    join(runtimeDir, 'daemon.lock'),
+    ...(platform() === 'win32' ? [] : [daemonSocketPath(runtimeDir)]),
+  ];
+  for (const file of files) {
+    try {
+      rmSync(file);
+    } catch {
+      /* already gone */
+    }
+  }
+}
+
+/**
+ * `tb serve --stop` — the counterpart to daemon auto-start ("nothing running
+ * you didn't ask for" needs a one-command off switch). Terminates the daemon
+ * from its pidfile and removes pidfile + heartbeat + socket + autostart lock.
+ * Idempotent: already-stopped exits 0.
+ */
+export async function runServeStopCommand(
+  options: ServeStopOptions = {},
+): Promise<{ exitCode: 0 | ErrorExitCode; output: string }> {
+  const runtimeDir = options.runtimeDir ?? resolveRuntimeDir();
+  const pidPath = pidFilePath(runtimeDir);
+
+  let pid: number | null = null;
+  if (existsSync(pidPath)) {
+    const parsed = Number.parseInt(readFileSync(pidPath, 'utf8'), 10);
+    pid = Number.isNaN(parsed) ? null : parsed;
+  }
+
+  if (pid === null || !pidAlive(pid)) {
+    removeDaemonFiles(runtimeDir);
+    return { exitCode: 0, output: 'TeamBrain daemon already stopped.\n' };
+  }
+
+  try {
+    process.kill(pid);
+  } catch (err) {
+    return {
+      exitCode: exitCodeForError(
+        new EnvironmentError(
+          `could not stop daemon pid ${pid}: ${(err as Error).message}`,
+        ),
+      ),
+      output: `tb serve --stop: could not stop daemon pid ${pid}\n`,
+    };
+  }
+
+  const deadline = Date.now() + (options.waitMs ?? 3000);
+  while (pidAlive(pid) && Date.now() < deadline) {
+    await new Promise((resolvePromise) => setTimeout(resolvePromise, 50));
+  }
+  if (pidAlive(pid)) {
+    return {
+      exitCode: exitCodeForError(
+        new EnvironmentError(`daemon pid ${pid} did not exit`),
+      ),
+      output: `tb serve --stop: daemon pid ${pid} did not exit — stop it manually\n`,
+    };
+  }
+
+  removeDaemonFiles(runtimeDir);
+  return {
+    exitCode: 0,
+    output: `TeamBrain daemon stopped (pid ${pid}).\n`,
+  };
 }
 
 export async function runServeCommand(

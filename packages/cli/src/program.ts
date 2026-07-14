@@ -5,7 +5,7 @@ import { supportedTools } from '@teambrain/hooks';
 import { runLintCommand } from './lint-command.js';
 import { runInitCommand } from './init/init-command.js';
 import { runInstallCommand } from './install/install-command.js';
-import { runServeCommand } from './serve-command.js';
+import { runServeCommand, runServeStopCommand } from './serve-command.js';
 import { runMcpCommand } from './mcp-command.js';
 import { runDoctorCommand } from './doctor-command.js';
 import { runHookCommand } from './hook-command.js';
@@ -125,9 +125,12 @@ export function buildProgram(): Command {
     )
     .helpGroup('Daemon')
     .argument('[path]', 'repository containing .teambrain/', '.')
+    .option('--stop', 'stop the running daemon (idempotent)', false)
     .addHelpText('after', commandHelpAfter(HELP.serve))
-    .action(async (repoDir: string) => {
-      const { exitCode, output } = await runServeCommand(repoDir);
+    .action(async (repoDir: string, opts: { stop: boolean }) => {
+      const { exitCode, output } = opts.stop
+        ? await runServeStopCommand()
+        : await runServeCommand(repoDir);
       process.stdout.write(output);
       process.exitCode = exitCode;
     });
@@ -279,13 +282,15 @@ export function buildProgram(): Command {
     .description('report daemon, index, capture, and sync health')
     .helpGroup('Daemon')
     .option('--json', 'emit machine-readable JSON report', false)
+    .option('--fix', 'auto-start the daemon when it is down', false)
     .addHelpText('after', commandHelpAfter(HELP.doctor))
-    .action(async (opts: { json: boolean }) => {
+    .action(async (opts: { json: boolean; fix: boolean }) => {
       // Live gh query supplied here so runDoctorCommand (and its tests)
       // stays free of subprocess side effects (D3.1).
       const governance = ghGovernanceFriction(process.cwd());
       const { exitCode, output } = await runDoctorCommand({
         json: opts.json,
+        fix: opts.fix,
         ...(governance === undefined ? {} : { governance }),
       });
       process.stdout.write(output);

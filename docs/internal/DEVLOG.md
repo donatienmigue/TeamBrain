@@ -563,3 +563,18 @@ which reported "installed" while capturing nothing; removed as dishonest.
 Tradeoffs: the README matrix shrinks to four tools but every cell is true;
 R1 (Codex tagline) is now TRUE with working `tb install codex`; the gemini
 fixture is thin (4 events) — flagged for re-recording in a longer session.
+
+## 2026-07-14 — Daemon auto-start on demand
+What: `ensureDaemon()` in @teambrain/mcp — probe → exclusive lock
+(daemon.lock, 30s TTL, stale-breaking) → detached `tb serve` spawn → poll
+until deadline (1.5s); wired into requestSessionContext and `tb mcp` boot
+only (never sendHookEvent's <20ms path; never plain pingDaemon, so doctor
+stays truthful). One stderr disclosure line on cold start; `tb serve --stop`
+(idempotent) and `tb doctor --fix` added; kill-switches: brain.yaml
+`daemon.autostart`, TEAMBRAIN_NO_AUTOSTART, CI (env beats config).
+Why: "developers never have to remember tb serve" without breaking the
+no-servers trust promise — disclosed, stoppable, disableable.
+Tradeoffs: C6 reading — `--stop`/`--fix` flags on frozen verbs are additive,
+not a contract change (same reading as `tb install`'s widened argument set).
+The real spawner refuses under VITEST so no test can ever start a real
+daemon; auto-start paths are covered by 12 injected-spawn unit tests.

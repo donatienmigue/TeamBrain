@@ -1,12 +1,28 @@
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { createLogger } from '@teambrain/core';
-import { openBackend, resolveRuntimeDir, runMcpServer } from '@teambrain/mcp';
+import { createLogger, parseBrainConfig } from '@teambrain/core';
+import {
+  ensureDaemon,
+  openBackend,
+  resolveRuntimeDir,
+  runMcpServer,
+} from '@teambrain/mcp';
 import { ADAPTERS } from '@teambrain/hooks';
 
 // `tb mcp` (M4.2 entry): the stdio MCP server Claude Code launches per
 // session (registered by `tb install`). stdout is the MCP transport, so this
 // path must never write to it — all diagnostics go to the file logger.
+
+/** brain.yaml `daemon.autostart`, or undefined when unreadable/absent. */
+function readAutostartConfig(brainDir: string): boolean | undefined {
+  try {
+    const configPath = join(brainDir, 'brain.yaml');
+    if (!existsSync(configPath)) return undefined;
+    return parseBrainConfig(readFileSync(configPath, 'utf8')).daemon.autostart;
+  } catch {
+    return undefined; // malformed config never blocks the session
+  }
+}
 
 export async function runMcpCommand(
   repoDir: string,
@@ -15,6 +31,16 @@ export async function runMcpCommand(
   const root = resolve(repoDir);
   const brainDir = join(root, '.teambrain');
   const logger = createLogger().child({ component: 'mcp' });
+
+  // Auto-start the daemon at MCP boot — the agent spawns `tb mcp` on every
+  // session, so this is the most reliable trigger across vendors. Failure →
+  // proceed exactly as today (the backend serves without the daemon).
+  const autostart = readAutostartConfig(brainDir);
+  await ensureDaemon({
+    runtimeDir: resolveRuntimeDir(),
+    ...(autostart === undefined ? {} : { enabled: autostart }),
+  });
+
   const backend = await openBackend({
     runtimeDir: resolveRuntimeDir(),
     ...(existsSync(brainDir) ? { brainDir } : {}),

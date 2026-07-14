@@ -72,6 +72,13 @@ export {
   HOOK_CLIENT_TIMEOUT_MS,
 } from './hook-client.js';
 export {
+  ensureDaemon,
+  AUTOSTART_DEADLINE_MS,
+  AUTOSTART_LOCK_TTL_MS,
+  AUTOSTART_PROBE_TIMEOUT_MS,
+  type EnsureDaemonOptions,
+} from './ensure-daemon.js';
+export {
   runSessionStartHook,
   type SessionStartHookOptions,
 } from './session-start-hook.js';

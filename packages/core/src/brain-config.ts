@@ -25,6 +25,14 @@ export const brainConfigSchema = z.looseObject({
     })
     .optional(),
   required_tags: z.array(z.string()).default([]),
+  // Daemon auto-start (Tech Brief: Daemon Auto-Start), on by default. An
+  // absent block keeps autostart on — backward compatible, the compat
+  // fixture stays green. TEAMBRAIN_NO_AUTOSTART / CI env override this.
+  daemon: z
+    .looseObject({
+      autostart: z.boolean().default(true),
+    })
+    .default({ autostart: true }),
   // R16 CodeMap (Tech Brief §4.8), off by default. Enabling makes the daemon
   // index .teambrain/codemap/ under C4's reserved source and tb distill
   // --codemap maintain it.

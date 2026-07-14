@@ -1,5 +1,6 @@
 import { createConnection } from 'node:net';
 import type { SessionEvent } from '@teambrain/core';
+import { ensureDaemon } from './ensure-daemon.js';
 import { daemonSocketPath } from './paths.js';
 import {
   daemonResponseSchema,
@@ -63,6 +64,10 @@ export async function requestSessionContext(
   options: { scope?: 'team' | 'org'; timeoutMs?: number } = {},
 ): Promise<string> {
   try {
+    // Auto-start on demand (never on the sendHookEvent hot path). ensureDaemon
+    // never throws; false means "still down" and the request below degrades
+    // to '' exactly as it did before auto-start existed.
+    if (!(await ensureDaemon({ runtimeDir }))) return '';
     const response = await requestResponse(
       daemonSocketPath(runtimeDir),
       {

@@ -600,3 +600,12 @@ What: `renderMemoryBlock` now heads codemap blocks with
 rendering is byte-unchanged (inline-snapshot gated).
 Why: governance legibility — agents must be able to tell approved knowledge
 from a generated, possibly-stale map. Tradeoffs: none; purely additive branch.
+
+## 2026-07-14 — R16.1 T2: char-budget isolation (P4)
+What: `renderContextBundle` reserves a 30% char share for codemap blocks when
+any are present (never more than what required blocks leave over); memory
+advisory fills the rest; codemap rides at the tail. Zero codemap views → the
+V1 code path, byte-identical (asserted against an inlined V1 algorithm).
+Why: codemap was appended last and truncated first — silently evicted by any
+advisory-heavy brain. Tradeoffs: chars are a shared physical cap, so unlike
+tokens the two pools can't both be maximal; codemap gets a guaranteed floor.

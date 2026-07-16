@@ -30,6 +30,7 @@ export {
   SESSION_CONTEXT_MAX_CHARS,
   CODEMAP_CHAR_SHARE,
   CODEMAP_INDEX_MAX_TOKENS,
+  CODEMAP_SCOPED_TOKEN_BUDGET,
   buildMemoryContext,
   renderContextBundle,
   renderCodemapIndexBlock,

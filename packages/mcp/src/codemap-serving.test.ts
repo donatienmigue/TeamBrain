@@ -10,6 +10,7 @@ import {
   renderContextBundle,
   renderCodemapIndexBlock,
   CODEMAP_TOKEN_BUDGET,
+  CODEMAP_SCOPED_TOKEN_BUDGET,
   CODEMAP_INDEX_MAX_TOKENS,
   SESSION_CONTEXT_MAX_CHARS,
 } from './context.js';
@@ -222,6 +223,82 @@ describe('codemap serving (D6/R16)', () => {
       ),
     ).toBe(withoutStats);
     expect(withoutStats).not.toContain('CodeMap:');
+  });
+
+  it('R16.1 P1: session paths scope the slice — payments work gets payments maps, not the newest file', async () => {
+    const index = await fixtureIndex();
+    const brainDir = codemapBrainDir();
+    writeEntry(brainDir, 'src/payments/retry.ts', 'Retries webhook deliveries.');
+    // The unrelated entry is NEWER — under V1 ordering it would win the slice.
+    const file = join(brainDir, 'codemap', 'files', 'docs-tooling.ts.md');
+    mkdirSync(dirname(file), { recursive: true });
+    writeFileSync(
+      file,
+      serializeCodemapEntry({
+        frontmatter: {
+          v: 1,
+          path: 'docs-tooling.ts',
+          hash: HASH,
+          updated: '2026-07-14',
+        },
+        body: 'Unrelated recently-changed tooling file.',
+      }),
+      'utf8',
+    );
+    await syncIndexWithCodemap(index, brainDir, { enabled: true });
+
+    const context = buildMemoryContext(index, {
+      now: new Date('2026-07-15T00:00:00Z'),
+      paths: ['src/payments/retry.ts'],
+    });
+    const codemapViews = context.relevant.filter((v) => v.source === 'codemap');
+    expect(codemapViews.map((v) => v.id)).toEqual(['cm:src/payments/retry.ts']);
+    expect(context.relevant.some((v) => v.id === 'cm:docs-tooling.ts')).toBe(
+      false,
+    );
+  });
+
+  it('R16.1 P1: no session signal (paths: []) → no slice; the bundle carries only the index block', async () => {
+    const index = await fixtureIndex();
+    const brainDir = codemapBrainDir();
+    writeEntry(brainDir, 'src/a.ts', 'Module A summary.');
+    await syncIndexWithCodemap(index, brainDir, { enabled: true });
+
+    const context = buildMemoryContext(index, { paths: [] });
+    expect(context.relevant.some((v) => v.source === 'codemap')).toBe(false);
+
+    const bundle = renderContextBundle(
+      context,
+      SESSION_CONTEXT_MAX_CHARS,
+      index.codemapStats(),
+    );
+    expect(bundle).toContain('CodeMap: this repo has a generated map');
+    expect(bundle).not.toContain('[codemap ·'); // no fenced codemap block
+    expect(bundle).not.toContain('Module A summary.');
+  });
+
+  it('R16.1 P1: session-start codemap footprint stays ≤ ~700 tokens (index + scoped slice)', async () => {
+    const index = await fixtureIndex();
+    const brainDir = codemapBrainDir();
+    const paths: string[] = [];
+    for (let i = 0; i < 20; i += 1) {
+      const path = `src/mod${i}.ts`;
+      writeEntry(brainDir, path, 'Long module summary. '.repeat(60));
+      paths.push(path);
+    }
+    await syncIndexWithCodemap(index, brainDir, { enabled: true });
+
+    const context = buildMemoryContext(index, { paths });
+    const sliceTokens = context.relevant
+      .filter((v) => v.source === 'codemap')
+      .reduce(
+        (sum, v) => sum + Math.ceil((v.title.length + v.body.length) / 4),
+        0,
+      );
+    expect(sliceTokens).toBeLessThanOrEqual(CODEMAP_SCOPED_TOKEN_BUDGET);
+    const indexBlock = renderCodemapIndexBlock(index.codemapStats());
+    const indexTokens = Math.ceil((indexBlock as string).length / 4);
+    expect(sliceTokens + indexTokens).toBeLessThanOrEqual(700);
   });
 
   it('e2e both modes: openBackend serves codemap iff brain.yaml enables it', async () => {

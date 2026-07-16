@@ -8,7 +8,7 @@ import {
 } from 'node:fs';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { createServer, type Server, type Socket } from 'node:net';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import type { Logger, SessionEvent } from '@teambrain/core';
 import {
   syncIndexWithBrain,
@@ -22,6 +22,7 @@ import {
 } from './context.js';
 import { createTools, type Tools } from './tools.js';
 import { Spool } from './spool.js';
+import { SessionPathTracker } from './session-paths.js';
 import {
   daemonRequestSchema,
   encodeMessage,
@@ -143,9 +144,16 @@ export async function startDaemon(
       });
     });
 
+  // R16.1 (P1): the daemon's codemap-scoping signal — recently touched
+  // repo paths (from tool_use hook events) ∪ the branch diff vs the default
+  // branch. brainDir is `<repo>/.teambrain` (C7), so the repo root is its
+  // parent. All best-effort; no signal → index-only fallback.
+  const sessionPaths = new SessionPathTracker(dirname(brainDir), logger);
+  sessionPaths.refreshBranchDiff();
+
   const contextBundle = (): string =>
     renderContextBundle(
-      tools.memoryContext(),
+      tools.memoryContext({ paths: sessionPaths.paths() }),
       SESSION_CONTEXT_MAX_CHARS,
       backend.index.codemapStats(),
     );
@@ -250,6 +258,12 @@ export async function startDaemon(
           lastEventAt: now().toISOString(),
           count: (prior?.count ?? 0) + 1,
         });
+        if (
+          request.event.ev === 'tool_use' &&
+          request.event.data.path !== undefined
+        ) {
+          sessionPaths.record(request.event.data.path);
+        }
         onHookEvent(request.event);
         return; // fire-and-forget: no response
       }
@@ -313,10 +327,11 @@ export async function startDaemon(
   // --- timers ---
   const heartbeatTimer = setInterval(writeHeartbeat, heartbeatIntervalMs);
   const watchTimer = setInterval(() => void reindexNow(), watchIntervalMs);
-  const fetchTimer = setInterval(
-    () => gitFetch(brainDir, logger),
-    gitFetchIntervalMs,
-  );
+  const fetchTimer = setInterval(() => {
+    gitFetch(brainDir, logger);
+    // Branch diffs move on the same cadence as remote state.
+    sessionPaths.refreshBranchDiff();
+  }, gitFetchIntervalMs);
   // Timers must not keep the process alive on their own; the socket server
   // is what holds the daemon open.
   heartbeatTimer.unref();
@@ -346,6 +361,7 @@ export async function startDaemon(
     clearInterval(watchTimer);
     clearInterval(fetchTimer);
     fsWatcher?.close();
+    await sessionPaths.close();
     await new Promise<void>((resolve) => server.close(() => resolve()));
     backend.close();
     for (const path of [pidFilePath(runtimeDir), heartbeatPath(runtimeDir)]) {

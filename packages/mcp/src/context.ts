@@ -14,12 +14,21 @@ import {
 export const CONTEXT_TOKEN_BUDGET = 2000;
 
 /**
- * D6/R16: the CodeMap slice rides in its own, separate budget (Tech Brief
- * §4.8 — "2,000 tokens memories + 1,500 tokens CodeMap"), so codemap docs
- * can never crowd governed memories out of memory_context. Budget-isolation
- * is a gated negative test.
+ * D6/R16: the CodeMap slice rides in its own, separate budget so codemap
+ * docs can never crowd governed memories out of memory_context. Budget
+ * isolation is a gated negative test. This 1500 ceiling now applies only to
+ * the legacy unscoped path (`paths` omitted — direct library callers); every
+ * serving path scopes and uses CODEMAP_SCOPED_TOKEN_BUDGET instead.
  */
 export const CODEMAP_TOKEN_BUDGET = 1500;
+
+/**
+ * R16.1 (P1): the pushed, session-scoped codemap slice — push less, pull
+ * more. Scoped paths are near-certainly relevant, everything else is one
+ * memory_search away. With the ≤200-token index block the whole session-
+ * start codemap footprint stays ≤ 700 tokens (down from 1500).
+ */
+export const CODEMAP_SCOPED_TOKEN_BUDGET = 500;
 
 /**
  * Ceiling on the SessionStart `additionalContext` string (M4.3 caps it at
@@ -43,6 +52,8 @@ export interface ContextBackend {
     scope?: 'team' | 'org';
     tokenBudget?: number;
     now?: Date;
+    /** R16.1 (P1): restrict codemap-sourced docs to these repo paths. */
+    paths?: string[];
   }): Scored[];
   /**
    * R16.1 (P2): cheap codemap overview for the session-start index block.
@@ -51,9 +62,18 @@ export interface ContextBackend {
   codemapStats?(): CodemapStats;
 }
 
+/**
+ * R16.1 (P1) scoping semantics for `paths`:
+ * - `undefined` — scoping not attempted (direct/legacy callers): the slice
+ *   is unscoped, newest-first, as in V1.
+ * - `[]` — scoping attempted, no session signal: serve NO slice. The index
+ *   block (P2) still orients the agent; "newest" is a poor relevance proxy.
+ * - non-empty — the slice is restricted to those repo paths (session-touched
+ *   files / branch diff), which are near-certainly relevant.
+ */
 export function buildMemoryContext(
   backend: ContextBackend,
-  options: { scope?: 'team' | 'org'; now?: Date } = {},
+  options: { scope?: 'team' | 'org'; now?: Date; paths?: string[] } = {},
 ): MemoryContext {
   const shared = {
     ...(options.scope === undefined ? {} : { scope: options.scope }),
@@ -66,11 +86,18 @@ export function buildMemoryContext(
     sources: ['memory'],
     tokenBudget: CONTEXT_TOKEN_BUDGET,
   });
-  const codemapDocs = backend.contextDocs({
-    ...shared,
-    sources: ['codemap'],
-    tokenBudget: CODEMAP_TOKEN_BUDGET,
-  });
+  const codemapDocs =
+    options.paths !== undefined && options.paths.length === 0
+      ? []
+      : backend.contextDocs({
+          ...shared,
+          sources: ['codemap'],
+          tokenBudget:
+            options.paths === undefined
+              ? CODEMAP_TOKEN_BUDGET
+              : CODEMAP_SCOPED_TOKEN_BUDGET,
+          ...(options.paths === undefined ? {} : { paths: options.paths }),
+        });
   const required: MemoryView[] = [];
   const relevant: MemoryView[] = [];
   for (const doc of memoryDocs) {

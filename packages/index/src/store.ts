@@ -432,6 +432,11 @@ export class SqliteIndex implements RetrievalBackend {
    * in-scope, unexpired doc, required-first then newest-first, trimmed to
    * `tokenBudget` (required docs are exempt from the trim). No FTS/vector
    * ranking runs — there is no query, so recency is the ordering signal.
+   *
+   * R16.1 (P1): `paths` restricts codemap-sourced docs to those exact repo
+   * paths — the session-scoped slice. Memory-sourced docs are never path
+   * filtered; codemap docs carry `path` already (`cm:<path>` ids), so this
+   * needs no schema change.
    */
   contextDocs(
     options: {
@@ -439,21 +444,32 @@ export class SqliteIndex implements RetrievalBackend {
       scope?: 'team' | 'org';
       tokenBudget?: number;
       now?: Date;
+      paths?: string[];
     } = {},
   ): Scored[] {
     const now = options.now ?? new Date();
     const sources = options.sources ?? [...DOC_SOURCES];
     const placeholders = sources.map(() => '?').join(', ');
+    const paths = options.paths;
+    // `IN ()` is invalid SQLite: an empty paths list means "no codemap docs".
+    const pathClause =
+      paths === undefined
+        ? ''
+        : paths.length === 0
+          ? "AND source != 'codemap'"
+          : `AND (source != 'codemap' OR path IN (${paths
+              .map(() => '?')
+              .join(', ')}))`;
     // required before advisory, then newest first; id breaks date ties so
     // the ordering is deterministic across processes.
     const rows = this.db
       .prepare(
         `SELECT rowid, * FROM docs
-         WHERE status = 'active' AND source IN (${placeholders})
+         WHERE status = 'active' AND source IN (${placeholders}) ${pathClause}
          ORDER BY CASE priority WHEN 'required' THEN 0 ELSE 1 END,
                   created DESC, id`,
       )
-      .all(...sources) as DocRow[];
+      .all(...sources, ...(paths ?? [])) as DocRow[];
     const scored = rows
       .filter(
         (row) =>

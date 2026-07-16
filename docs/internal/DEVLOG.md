@@ -620,3 +620,14 @@ memory_context text channel.
 Why: the map existed but nothing ever told an agent to use it — the
 highest-leverage line of text in the feature. Tradeoffs: it's a prompt, not
 an API; T7 measures whether it works.
+
+## 2026-07-15 — R16.1 T4: scoped codemap retrieval (P1)
+What: `contextDocs` gained a `paths` filter (codemap docs only); the daemon
+tracks session-relevant paths (tool_use hook events, bounded + normalized,
+∪ branch diff vs the default branch, best-effort) and passes them to
+`memoryContext`. paths=[] (no signal) → no slice, index block only — never
+"newest". Scoped slice budget: 500 tokens (CODEMAP_SCOPED_TOKEN_BUDGET);
+total session-start codemap footprint ≤700 (gated).
+Why: recency is a poor relevance proxy; session-touched files are near-
+certain. Tradeoffs: the legacy unscoped 1500 path survives for direct
+library callers only (frozen tests encode it); no serving path uses it.

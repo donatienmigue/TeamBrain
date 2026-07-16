@@ -65,7 +65,9 @@ export function createMcpServer(context: ToolContext): McpServer {
       },
     },
     () => {
-      const context_ = tools.memoryContext();
+      // A bare MCP call carries no session signal → index-only codemap
+      // fallback (paths: []), never the unscoped "newest" slice (R16.1 P1).
+      const context_ = tools.memoryContext({ paths: [] });
       // The text channel carries the same bundle a SessionStart hook gets,
       // including the CodeMap index block when the codemap is non-empty.
       const bundle = renderContextBundle(

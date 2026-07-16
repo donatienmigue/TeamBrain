@@ -76,7 +76,13 @@ export type FeedbackResult = {
 };
 
 export interface Tools {
-  memoryContext(): MemoryContext;
+  /**
+   * R16.1 (P1): `paths` carries the caller's session scoping signal for the
+   * codemap slice (see buildMemoryContext). The C3 tool surface is unchanged
+   * — the MCP tool still takes no input; only in-process callers (the
+   * daemon, which knows the session) pass paths.
+   */
+  memoryContext(options?: { paths?: string[] }): MemoryContext;
   memorySearch(input: { query: string; k?: number }): Promise<MemoryView[]>;
   memoryPropose(input: { draft: CandidateDraft }): ProposeResult;
   memoryFeedback(input: { id: string; useful: boolean }): FeedbackResult;
@@ -85,11 +91,12 @@ export interface Tools {
 export function createTools(context: ToolContext): Tools {
   const clock = (): Date => (context.now ? context.now() : new Date());
   return {
-    memoryContext(): MemoryContext {
+    memoryContext(options?: { paths?: string[] }): MemoryContext {
       context.onToolCall?.('memory_context');
       return buildMemoryContext(context.backend, {
         ...(context.scope === undefined ? {} : { scope: context.scope }),
         now: clock(),
+        ...(options?.paths === undefined ? {} : { paths: options.paths }),
       });
     },
 

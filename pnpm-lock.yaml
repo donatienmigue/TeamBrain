@@ -89,6 +89,10 @@ importers:
       zod:
         specifier: ^4.4.3
         version: 4.4.3
+    devDependencies:
+      '@teambrain/index':
+        specifier: workspace:*
+        version: link:../index
 
   packages/hooks:
     dependencies:

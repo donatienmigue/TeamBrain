@@ -631,3 +631,15 @@ total session-start codemap footprint ≤700 (gated).
 Why: recency is a poor relevance proxy; session-touched files are near-
 certain. Tradeoffs: the legacy unscoped 1500 path survives for direct
 library callers only (frozen tests encode it); no serving path uses it.
+
+## 2026-07-15 — R16.1 T5: orphan sweep — entry tree ≡ manifest projection
+What: after each `updateCodemap` run the entry tree is swept against the NEW
+manifest: any .md whose derived repo path isn't a manifest key is deleted
+(reported as `orphaned`), and emptied directories are pruned bottom-up.
+Delete failures are logged with path+reason (never silent) and retried next
+run. Covers: rename (file + directory), corrupt manifest (rebuild AND clean),
+stray entries from failed deletes, idempotence — all with disk, manifest,
+and retrieval-level assertions.
+Why: loadCodemapDocs walks the DISK while deletion iterated the OLD manifest
+— that asymmetry served phantom files forever (D1/D2). Tradeoffs: distill
+gains a test-only workspace devDep on @teambrain/index to assert retrieval.

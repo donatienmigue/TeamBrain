@@ -4,6 +4,7 @@ import {
   existsSync,
   readdirSync,
   readFileSync,
+  rmdirSync,
   rmSync,
   statSync,
   writeFileSync,
@@ -102,6 +103,14 @@ export interface CodemapUpdateResult {
   summarized: string[];
   /** Paths whose entries were removed (source file gone). */
   removed: string[];
+  /**
+   * R16.1 T5: entry files swept because they are not in the new manifest and
+   * the old manifest never listed them — orphans from a corrupt manifest, a
+   * previously-failed delete, or a rename that outran the delete path. The
+   * invariant after every run: the entry tree is a strict projection of the
+   * manifest.
+   */
+  orphaned: string[];
   /** Files whose hash matched the manifest (summary reused). */
   unchanged: number;
   /** Files considered (after extension/size/skip filters). */
@@ -263,15 +272,24 @@ export async function updateCodemap(
     });
   }
 
-  // Entries for files that no longer exist (or fell out of filters) go away —
-  // the staleness guarantee: nothing serves beyond one update cycle.
+  // R16.1 T5 orphan sweep — the staleness guarantee, done right: the entry
+  // tree must be a strict projection of the NEW manifest. Deleting only what
+  // the old manifest listed (the previous approach) left stale entries on
+  // disk after a failed delete or a corrupt manifest, and loadCodemapDocs
+  // walks the disk, so those orphans kept being served forever.
+  const swept = sweepOrphanEntries(
+    options.brainDir,
+    new Set(Object.keys(nextManifest.files)),
+    options.logger,
+  );
+  // `removed` keeps its manifest-diff meaning (source file gone this run);
+  // everything else the sweep caught is an orphan.
   const currentSet = new Set(currentFiles);
-  const removed: string[] = [];
-  for (const oldPath of Object.keys(manifest.files)) {
-    if (currentSet.has(oldPath)) continue;
-    rmSync(entryFilePath(options.brainDir, oldPath), { force: true });
-    removed.push(oldPath);
-  }
+  const removed = Object.keys(manifest.files)
+    .filter((oldPath) => !currentSet.has(oldPath))
+    .sort();
+  const removedSet = new Set(removed);
+  const orphaned = swept.filter((sweptPath) => !removedSet.has(sweptPath));
 
   const path = manifestPath(options.brainDir);
   mkdirSync(dirname(path), { recursive: true });
@@ -280,10 +298,90 @@ export async function updateCodemap(
   options.logger?.debug('codemap updated', {
     summarized: summarized.length,
     removed: removed.length,
+    orphaned: orphaned.length,
     unchanged,
     total: currentFiles.length,
   });
-  return { summarized, removed, unchanged, total: currentFiles.length };
+  return {
+    summarized,
+    removed,
+    orphaned,
+    unchanged,
+    total: currentFiles.length,
+  };
+}
+
+/**
+ * Deletes every entry file whose repo path is not in `keep`, then prunes
+ * directories left empty (bottom-up). Returns the swept repo paths. Delete
+ * failures are logged with a reason and left for the next run — never silent
+ * (CLAUDE.md), and the failure is visible in the log even though the stale
+ * entry keeps serving until a sweep succeeds.
+ */
+function sweepOrphanEntries(
+  brainDir: string,
+  keep: ReadonlySet<string>,
+  logger?: Logger,
+): string[] {
+  const root = join(brainDir, CODEMAP_DIR, FILES_DIR);
+  if (!existsSync(root)) return [];
+  const swept: string[] = [];
+  /** Walks one directory; returns true when it is empty afterwards. */
+  const walk = (dir: string, rel: string): boolean => {
+    let entries;
+    try {
+      entries = readdirSync(dir, { withFileTypes: true });
+    } catch (err) {
+      logger?.debug('codemap sweep could not read directory', {
+        dir: rel === '' ? '.' : rel,
+        reason: (err as Error).message,
+      });
+      return false;
+    }
+    let remaining = 0;
+    for (const entry of entries) {
+      const absolute = join(dir, entry.name);
+      const childRel = rel === '' ? entry.name : `${rel}/${entry.name}`;
+      if (entry.isDirectory()) {
+        if (walk(absolute, childRel)) {
+          try {
+            rmdirSync(absolute);
+          } catch (err) {
+            logger?.debug('codemap sweep could not prune empty directory', {
+              dir: childRel,
+              reason: (err as Error).message,
+            });
+            remaining += 1;
+          }
+        } else {
+          remaining += 1;
+        }
+        continue;
+      }
+      if (!entry.name.endsWith('.md')) {
+        remaining += 1;
+        continue;
+      }
+      const repoPath = childRel.slice(0, -'.md'.length);
+      if (keep.has(repoPath)) {
+        remaining += 1;
+        continue;
+      }
+      try {
+        rmSync(absolute);
+        swept.push(repoPath);
+      } catch (err) {
+        logger?.debug('codemap sweep failed to delete stale entry', {
+          path: repoPath,
+          reason: (err as Error).message,
+        });
+        remaining += 1;
+      }
+    }
+    return remaining === 0;
+  };
+  walk(root, '');
+  return swept.sort();
 }
 
 /** Reads every codemap entry (for indexing); unparseable files are skipped. */

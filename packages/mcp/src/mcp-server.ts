@@ -3,7 +3,10 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod';
 import { CORE_VERSION, memoryClassSchema } from '@teambrain/core';
 import { renderMemoryBlock, type MemoryView } from './render.js';
-import { renderContextBundle } from './context.js';
+import {
+  renderContextBundle,
+  SESSION_CONTEXT_MAX_CHARS,
+} from './context.js';
 import {
   createTools,
   memoryFeedbackInput,
@@ -63,7 +66,14 @@ export function createMcpServer(context: ToolContext): McpServer {
     },
     () => {
       const context_ = tools.memoryContext();
-      return textResult(renderContextBundle(context_), context_);
+      // The text channel carries the same bundle a SessionStart hook gets,
+      // including the CodeMap index block when the codemap is non-empty.
+      const bundle = renderContextBundle(
+        context_,
+        SESSION_CONTEXT_MAX_CHARS,
+        context.backend.codemapStats?.() ?? null,
+      );
+      return textResult(bundle, context_);
     },
   );
 

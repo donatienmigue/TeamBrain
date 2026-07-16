@@ -5,7 +5,14 @@ import { dirname, join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { serializeCodemapEntry } from '@teambrain/core';
 import { syncIndexWithCodemap, type SqliteIndex } from '@teambrain/index';
-import { buildMemoryContext, CODEMAP_TOKEN_BUDGET } from './context.js';
+import {
+  buildMemoryContext,
+  renderContextBundle,
+  renderCodemapIndexBlock,
+  CODEMAP_TOKEN_BUDGET,
+  CODEMAP_INDEX_MAX_TOKENS,
+  SESSION_CONTEXT_MAX_CHARS,
+} from './context.js';
 import { openBackend } from './runtime.js';
 import { createTools } from './tools.js';
 import {
@@ -165,6 +172,56 @@ describe('codemap serving (D6/R16)', () => {
     const codemapHit = results.find((view) => view.source === 'codemap');
     expect(codemapHit?.id).toBe('cm:src/zod-boundary.ts');
     expect(codemapHit?.provenance).toBe('src/zod-boundary.ts');
+  });
+
+  it('R16.1 P2: non-empty codemap → the index block + instruction ride in the preamble region', async () => {
+    const index = await fixtureIndex();
+    const brainDir = codemapBrainDir();
+    writeEntry(brainDir, 'src/payments/retry.ts', 'Retries webhooks.');
+    writeEntry(brainDir, 'src/auth/session.ts', 'Session auth.');
+    await syncIndexWithCodemap(index, brainDir, { enabled: true });
+
+    const stats = index.codemapStats();
+    expect(stats.entryCount).toBe(2);
+    expect(stats.modules.sort()).toEqual(['src/auth', 'src/payments']);
+
+    const bundle = renderContextBundle(
+      buildMemoryContext(index),
+      SESSION_CONTEXT_MAX_CHARS,
+      stats,
+    );
+    // The index block is present, with the behavioral instruction…
+    expect(bundle).toContain('CodeMap: this repo has a generated map of 2');
+    expect(bundle).toContain('search the map');
+    expect(bundle).toContain('memory_search(');
+    // …in the preamble region: before the first fenced block, never inside one.
+    const firstFence = bundle.indexOf('```');
+    expect(bundle.indexOf('CodeMap: this repo')).toBeLessThan(firstFence);
+
+    // Compact: the index block itself stays ≤ 200 tokens (4 chars/token).
+    const block = renderCodemapIndexBlock(stats);
+    expect(block).not.toBeNull();
+    expect(Math.ceil((block as string).length / 4)).toBeLessThanOrEqual(
+      CODEMAP_INDEX_MAX_TOKENS,
+    );
+  });
+
+  it('negative (R16.1 P2): empty codemap → bundle byte-identical to today', async () => {
+    const index = await fixtureIndex();
+    const context = buildMemoryContext(index);
+    const withoutStats = renderContextBundle(context);
+    // Both the "no stats supplied" and the "empty stats" paths are identical.
+    expect(
+      renderContextBundle(context, SESSION_CONTEXT_MAX_CHARS, null),
+    ).toBe(withoutStats);
+    expect(
+      renderContextBundle(
+        context,
+        SESSION_CONTEXT_MAX_CHARS,
+        index.codemapStats(),
+      ),
+    ).toBe(withoutStats);
+    expect(withoutStats).not.toContain('CodeMap:');
   });
 
   it('e2e both modes: openBackend serves codemap iff brain.yaml enables it', async () => {

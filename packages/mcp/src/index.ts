@@ -28,8 +28,11 @@ export {
 export {
   CONTEXT_TOKEN_BUDGET,
   SESSION_CONTEXT_MAX_CHARS,
+  CODEMAP_CHAR_SHARE,
+  CODEMAP_INDEX_MAX_TOKENS,
   buildMemoryContext,
   renderContextBundle,
+  renderCodemapIndexBlock,
   type MemoryContext,
   type ContextBackend,
 } from './context.js';

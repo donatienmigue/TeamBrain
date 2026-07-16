@@ -609,3 +609,14 @@ V1 code path, byte-identical (asserted against an inlined V1 algorithm).
 Why: codemap was appended last and truncated first — silently evicted by any
 advisory-heavy brain. Tradeoffs: chars are a shared physical cap, so unlike
 tokens the two pools can't both be maximal; codemap gets a guaranteed floor.
+
+## 2026-07-15 — R16.1 T3: the CodeMap index block + instruction (P2)
+What: non-empty codemap → `renderContextBundle` emits a ≤200-token index
+block (entry count, path-derived modules via `SqliteIndex.codemapStats()`,
+freshness) plus the one instruction we actually want followed: search the map
+before exploring files. Preamble region only — outside every fence. Empty
+codemap → byte-identical bundle (gated). Wired into the daemon + the
+memory_context text channel.
+Why: the map existed but nothing ever told an agent to use it — the
+highest-leverage line of text in the feature. Tradeoffs: it's a prompt, not
+an API; T7 measures whether it works.

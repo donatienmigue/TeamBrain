@@ -1,5 +1,6 @@
 export { DOC_SOURCES, indexableDocSchema } from './types.js';
 export type {
+  CodemapStats,
   DocSource,
   IndexableDoc,
   IndexStats,

@@ -60,6 +60,18 @@ export interface Scored {
   score: number;
 }
 
+/**
+ * R16.1: a cheap overview of the indexed codemap, powering the session-start
+ * CodeMap index block. Derived entirely from doc paths — no bodies read.
+ */
+export interface CodemapStats {
+  entryCount: number;
+  /** Module names derived from entry paths, most entries first. */
+  modules: string[];
+  /** ISO date of the freshest entry, or null when the codemap is empty. */
+  newestUpdated: string | null;
+}
+
 export interface IndexStats {
   docCount: number;
   bySource: Record<DocSource, number>;

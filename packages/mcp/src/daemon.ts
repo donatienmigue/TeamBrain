@@ -16,7 +16,10 @@ import {
   type SqliteIndex,
 } from '@teambrain/index';
 import { openBackend } from './runtime.js';
-import { renderContextBundle } from './context.js';
+import {
+  renderContextBundle,
+  SESSION_CONTEXT_MAX_CHARS,
+} from './context.js';
 import { createTools, type Tools } from './tools.js';
 import { Spool } from './spool.js';
 import {
@@ -141,7 +144,11 @@ export async function startDaemon(
     });
 
   const contextBundle = (): string =>
-    renderContextBundle(tools.memoryContext());
+    renderContextBundle(
+      tools.memoryContext(),
+      SESSION_CONTEXT_MAX_CHARS,
+      backend.index.codemapStats(),
+    );
 
   // --- observability state (surfaced via the heartbeat for `tb doctor`) ---
   const startedAt = now();
@@ -255,7 +262,7 @@ export async function startDaemon(
       } else {
         // Time the retrieval so `tb doctor` can report p95 over the window.
         const started = performance.now();
-        const bundle = renderContextBundle(tools.memoryContext());
+        const bundle = contextBundle();
         recordRetrieval(performance.now() - started);
         response = { kind: 'session_context_result', bundle };
       }

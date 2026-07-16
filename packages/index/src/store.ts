@@ -9,6 +9,7 @@ import type { Embedder } from './embeddings.js';
 import {
   DOC_SOURCES,
   indexableDocSchema,
+  type CodemapStats,
   type DocSource,
   type IndexableDoc,
   type IndexStats,
@@ -499,6 +500,40 @@ export class SqliteIndex implements RetrievalBackend {
       rowid: number;
     }>;
     return rows.map((row) => row.rowid);
+  }
+
+  /**
+   * R16.1: cheap codemap overview for the session-start index block. Modules
+   * are derived from entry paths (directory granularity): generic roots like
+   * `src` or `packages` descend one level (`src/payments`), root-level files
+   * group under `(root)`. Paths only — no bodies leave the store here.
+   */
+  codemapStats(): CodemapStats {
+    const rows = this.db
+      .prepare(
+        "SELECT path, created FROM docs WHERE source = 'codemap' AND status = 'active'",
+      )
+      .all() as Array<{ path: string | null; created: string | null }>;
+    const GENERIC_ROOTS = new Set(['src', 'lib', 'app', 'apps', 'packages']);
+    const counts = new Map<string, number>();
+    let newest: string | null = null;
+    for (const row of rows) {
+      const segments = (row.path ?? '').split('/');
+      let module = '(root)';
+      if (segments.length > 2 && GENERIC_ROOTS.has(segments[0] as string)) {
+        module = `${segments[0]}/${segments[1]}`;
+      } else if (segments.length > 1) {
+        module = segments[0] as string;
+      }
+      counts.set(module, (counts.get(module) ?? 0) + 1);
+      if (row.created !== null && (newest === null || row.created > newest)) {
+        newest = row.created;
+      }
+    }
+    const modules = [...counts.entries()]
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .map(([module]) => module);
+    return { entryCount: rows.length, modules, newestUpdated: newest };
   }
 
   stats(): IndexStats {

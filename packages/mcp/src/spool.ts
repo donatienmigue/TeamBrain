@@ -39,6 +39,9 @@ function git(args: string[], cwd: string, options: GitOptions = {}): string {
     cwd,
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],
+    // The spool runs inside the console-less detached daemon: without
+    // windowsHide each git call flashes a console window on Windows.
+    windowsHide: true,
     ...(options.env === undefined ? {} : { env: options.env }),
   }).trim();
 }

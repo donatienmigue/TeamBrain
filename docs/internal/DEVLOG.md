@@ -662,3 +662,11 @@ projection; the negative test still gates identity leakage.
 Why: the CM6 gate (≥30% exploration reduction) needs both arms observable:
 do agents query the map at all, and does exploration fall when they do. If
 the rate stays ~0, the answer is better map content, not more pushed tokens.
+
+## 2026-07-16 — fix: daemon spawned endless console windows on Windows
+What: `windowsHide: true` on every child spawn in console-less contexts —
+the autostart daemon spawn (detached children get their OWN visible console
+on Windows; closing it killed the daemon and the next hook resurrected it,
+window and all), plus every git child of the daemon (fetch, branch-diff
+refresh, spool push) and of the hooks. Why: user-visible console windows
+appearing indefinitely. Tradeoffs: none; display-only flag.

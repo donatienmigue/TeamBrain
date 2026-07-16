@@ -108,15 +108,20 @@ function defaultSpawnDaemon(): { pid: number | undefined } {
     throw new Error('refusing to spawn a real daemon under a test runner');
   }
   const cliEntry = resolveCliEntry();
+  // windowsHide: a detached child on Windows otherwise gets its OWN visible
+  // console window — and closing that window kills the daemon, so the next
+  // hook autostarts it and the window reappears forever.
   const child =
     cliEntry !== null
       ? spawn(process.execPath, [cliEntry, 'serve'], {
           detached: true,
           stdio: 'ignore',
+          windowsHide: true,
         })
       : spawn('tb', ['serve'], {
           detached: true,
           stdio: 'ignore',
+          windowsHide: true,
           // `tb` is tb.cmd on Windows; a shell is required to launch it.
           shell: platform() === 'win32',
         });

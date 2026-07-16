@@ -16,6 +16,9 @@ function tryGit(args: string[], cwd: string): string | null {
       cwd,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore'],
+      // Hook processes may run console-less (spawned hidden by the agent
+      // app); without windowsHide each git call flashes a console window.
+      windowsHide: true,
     }).trim();
   } catch {
     return null;

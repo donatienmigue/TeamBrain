@@ -82,7 +82,9 @@ function gitFetch(brainDir: string, logger?: Logger): void {
   execFile(
     'git',
     ['-C', brainDir, 'fetch', '--quiet'],
-    { timeout: 30_000 },
+    // windowsHide: the daemon runs detached without a console, so every git
+    // child would otherwise flash a new console window on Windows.
+    { timeout: 30_000, windowsHide: true },
     (err) => {
       if (err) {
         logger?.debug('git fetch skipped', { reason: err.message });

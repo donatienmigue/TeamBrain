@@ -79,7 +79,9 @@ export class SessionPathTracker {
       const child = execFile(
         'git',
         ['-C', this.repoRoot, ...args],
-        { timeout: GIT_TIMEOUT_MS },
+        // windowsHide: the daemon has no console; without it every git
+        // child flashes a console window on Windows.
+        { timeout: GIT_TIMEOUT_MS, windowsHide: true },
         (err, stdout) => {
           this.pending.delete(child);
           if (err) {

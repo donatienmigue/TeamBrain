@@ -139,7 +139,9 @@ export function renderCodemapIndexBlock(stats: CodemapStats): string | null {
   const shown = stats.modules.slice(0, CODEMAP_INDEX_MAX_MODULES);
   const elision = stats.modules.length > shown.length ? ', …' : '';
   const freshness =
-    stats.newestUpdated === null ? '' : `, current as of ${stats.newestUpdated}`;
+    stats.newestUpdated === null
+      ? ''
+      : `, current as of ${stats.newestUpdated}`;
   return (
     `CodeMap: this repo has a generated map of ${stats.entryCount} source ` +
     `file(s) across ${stats.modules.length} module(s) ` +
@@ -203,7 +205,10 @@ export function renderContextBundle(
       ? 0
       : Math.max(
           0,
-          Math.min(Math.floor(maxChars * CODEMAP_CHAR_SHARE), maxChars - out.length),
+          Math.min(
+            Math.floor(maxChars * CODEMAP_CHAR_SHARE),
+            maxChars - out.length,
+          ),
         );
   const codemapBlocks: string[] = [];
   let codemapChars = 0;

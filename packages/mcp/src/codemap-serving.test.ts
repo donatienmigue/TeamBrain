@@ -212,9 +212,9 @@ describe('codemap serving (D6/R16)', () => {
     const context = buildMemoryContext(index);
     const withoutStats = renderContextBundle(context);
     // Both the "no stats supplied" and the "empty stats" paths are identical.
-    expect(
-      renderContextBundle(context, SESSION_CONTEXT_MAX_CHARS, null),
-    ).toBe(withoutStats);
+    expect(renderContextBundle(context, SESSION_CONTEXT_MAX_CHARS, null)).toBe(
+      withoutStats,
+    );
     expect(
       renderContextBundle(
         context,
@@ -228,7 +228,11 @@ describe('codemap serving (D6/R16)', () => {
   it('R16.1 P1: session paths scope the slice — payments work gets payments maps, not the newest file', async () => {
     const index = await fixtureIndex();
     const brainDir = codemapBrainDir();
-    writeEntry(brainDir, 'src/payments/retry.ts', 'Retries webhook deliveries.');
+    writeEntry(
+      brainDir,
+      'src/payments/retry.ts',
+      'Retries webhook deliveries.',
+    );
     // The unrelated entry is NEWER — under V1 ordering it would win the slice.
     const file = join(brainDir, 'codemap', 'files', 'docs-tooling.ts.md');
     mkdirSync(dirname(file), { recursive: true });

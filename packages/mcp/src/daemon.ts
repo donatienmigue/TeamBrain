@@ -16,10 +16,7 @@ import {
   type SqliteIndex,
 } from '@teambrain/index';
 import { openBackend } from './runtime.js';
-import {
-  renderContextBundle,
-  SESSION_CONTEXT_MAX_CHARS,
-} from './context.js';
+import { renderContextBundle, SESSION_CONTEXT_MAX_CHARS } from './context.js';
 import { createTools, type Tools } from './tools.js';
 import { Spool } from './spool.js';
 import { SessionPathTracker } from './session-paths.js';

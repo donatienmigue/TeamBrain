@@ -73,7 +73,12 @@ describe('neighbour refresh on removed paths (R16.1 T6)', () => {
 
     rmSync(join(repoRoot, 'src', 'b.ts'));
     const { provider, calls } = countingProvider();
-    const result = await updateCodemap({ repoRoot, brainDir, provider, ...NOW });
+    const result = await updateCodemap({
+      repoRoot,
+      brainDir,
+      provider,
+      ...NOW,
+    });
 
     expect(result.removed).toEqual(['src/b.ts']);
     // a.ts was re-summarized this run despite an unchanged hash…
@@ -101,7 +106,12 @@ describe('neighbour refresh on removed paths (R16.1 T6)', () => {
 
     rmSync(join(repoRoot, 'src', 'b.ts'));
     const { provider, calls } = countingProvider();
-    const result = await updateCodemap({ repoRoot, brainDir, provider, ...NOW });
+    const result = await updateCodemap({
+      repoRoot,
+      brainDir,
+      provider,
+      ...NOW,
+    });
     // c.ts's summary ("Summary of src/c.ts.") mentions nothing dead: untouched.
     expect(result.refreshed).toEqual(['src/a.ts']);
     expect(calls).toEqual(['src/a.ts']);
@@ -112,7 +122,10 @@ describe('neighbour refresh on removed paths (R16.1 T6)', () => {
     const { repoRoot, brainDir } = scratchRepo();
     writeFileSync(join(repoRoot, 'src', 'hub.ts'), 'export const h = 1;\n');
     for (let i = 0; i < 4; i += 1) {
-      writeFileSync(join(repoRoot, 'src', `dep${i}.ts`), `export const d = ${i};\n`);
+      writeFileSync(
+        join(repoRoot, 'src', `dep${i}.ts`),
+        `export const d = ${i};\n`,
+      );
     }
     // Every dep's summary references the hub.
     const seeding = fakeProvider(({ prompt }) => {

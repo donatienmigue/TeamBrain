@@ -3,10 +3,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod';
 import { CORE_VERSION, memoryClassSchema } from '@teambrain/core';
 import { renderMemoryBlock, type MemoryView } from './render.js';
-import {
-  renderContextBundle,
-  SESSION_CONTEXT_MAX_CHARS,
-} from './context.js';
+import { renderContextBundle, SESSION_CONTEXT_MAX_CHARS } from './context.js';
 import {
   createTools,
   memoryFeedbackInput,

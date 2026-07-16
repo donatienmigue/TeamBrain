@@ -75,13 +75,27 @@ describe('renderContextBundle (M4.3 injection-safe, char-capped)', () => {
 // contexts — the exact eviction scenarios, no index needed.
 describe('renderContextBundle — char-budget isolation (R16.1 P4)', () => {
   function memoryView(id: string, body: string): MemoryView {
-    return { id, title: id, body, provenance: `memories/${id}.md`, source: 'memory' };
+    return {
+      id,
+      title: id,
+      body,
+      provenance: `memories/${id}.md`,
+      source: 'memory',
+    };
   }
   function codemapView(path: string, body: string): MemoryView {
-    return { id: `cm:${path}`, title: path, body, provenance: path, source: 'codemap' };
+    return {
+      id: `cm:${path}`,
+      title: path,
+      body,
+      provenance: path,
+      source: 'codemap',
+    };
   }
   const required = [memoryView('required-1', 'Always validate with zod.')];
-  const codemap = [codemapView('src/payments/retry.ts', 'Retries webhook deliveries.')];
+  const codemap = [
+    codemapView('src/payments/retry.ts', 'Retries webhook deliveries.'),
+  ];
 
   it('negative: flooding advisory memories cannot evict the codemap content', () => {
     const flood = Array.from({ length: 60 }, (_, i) =>

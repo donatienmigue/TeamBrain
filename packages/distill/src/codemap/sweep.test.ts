@@ -93,9 +93,9 @@ describe('updateCodemap orphan sweep (R16.1 T5 — strict projection)', () => {
 
     expect(result.removed).toEqual(['src/a.ts']);
     expect(result.summarized).toEqual(['src/b.ts']);
-    expect(existsSync(join(brainDir, 'codemap', 'files', 'src', 'a.ts.md'))).toBe(
-      false,
-    );
+    expect(
+      existsSync(join(brainDir, 'codemap', 'files', 'src', 'a.ts.md')),
+    ).toBe(false);
     expect(readCodemapEntries(brainDir).map((e) => e.path)).toEqual([
       'src/b.ts',
     ]);

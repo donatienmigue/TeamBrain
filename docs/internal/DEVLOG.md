@@ -643,3 +643,13 @@ and retrieval-level assertions.
 Why: loadCodemapDocs walks the DISK while deletion iterated the OLD manifest
 — that asymmetry served phantom files forever (D1/D2). Tradeoffs: distill
 gains a test-only workspace devDep on @teambrain/index to assert retrieval.
+
+## 2026-07-15 — R16.1 T6: neighbour refresh on removed paths
+What: when a run removes/orphans paths, entries whose stored summaries
+mention a dead path are force re-summarized (their own hash is unchanged so
+the diff would never touch them). Cheap substring scan — no import graph.
+Fan-out capped (default 20, `maxNeighbourRefresh`), cap logged.
+Why: summaries carry cross-module references; renames/deletes let the map
+accrete references to files that don't exist (D3). Tradeoffs: substring
+match can over-trigger (src/b.ts also matches src/b.tsx mentions) — worst
+case a wasted re-summary, bounded by the cap.

@@ -96,7 +96,15 @@ export interface CodemapUpdateOptions {
   maxFileBytes?: number;
   /** Parallel provider calls per batch. */
   concurrency?: number;
+  /**
+   * R16.1 T6: cap on neighbour re-summarizations per run (entries whose
+   * summaries mention a path removed this run). Bounds the LLM bill when a
+   * big directory rename invalidates many cross-references. Default 20.
+   */
+  maxNeighbourRefresh?: number;
 }
+
+const DEFAULT_MAX_NEIGHBOUR_REFRESH = 20;
 
 export interface CodemapUpdateResult {
   /** Repo-relative paths (posix) re-summarized this run. */
@@ -111,6 +119,12 @@ export interface CodemapUpdateResult {
    * manifest.
    */
   orphaned: string[];
+  /**
+   * R16.1 T6: still-existing files re-summarized because their previous
+   * summary mentioned a path removed this run (their own hash is unchanged,
+   * so the normal diff would never refresh them).
+   */
+  refreshed: string[];
   /** Files whose hash matched the manifest (summary reused). */
   unchanged: number;
   /** Files considered (after extension/size/skip filters). */
@@ -291,6 +305,71 @@ export async function updateCodemap(
   const removedSet = new Set(removed);
   const orphaned = swept.filter((sweptPath) => !removedSet.has(sweptPath));
 
+  // R16.1 T6: summaries mention "notable cross-module dependencies", so a
+  // removed/renamed path leaves neighbours' summaries wrong while their own
+  // hashes are unchanged. Force-refresh entries that mention a dead path —
+  // a cheap substring check, no import graph — bounded per run.
+  const deadPaths = [...removed, ...orphaned];
+  const refreshed: string[] = [];
+  if (deadPaths.length > 0) {
+    const limit = options.maxNeighbourRefresh ?? DEFAULT_MAX_NEIGHBOUR_REFRESH;
+    const freshThisRun = new Set(summarized);
+    const candidates: string[] = [];
+    for (const repoPath of Object.keys(nextManifest.files).sort()) {
+      if (freshThisRun.has(repoPath)) continue;
+      let entryText: string;
+      try {
+        entryText = readFileSync(
+          entryFilePath(options.brainDir, repoPath),
+          'utf8',
+        );
+      } catch (err) {
+        options.logger?.debug('neighbour scan could not read entry', {
+          path: repoPath,
+          reason: (err as Error).message,
+        });
+        continue;
+      }
+      if (deadPaths.some((dead) => entryText.includes(dead))) {
+        candidates.push(repoPath);
+      }
+    }
+    if (candidates.length > limit) {
+      options.logger?.debug('neighbour refresh capped this run', {
+        eligible: candidates.length,
+        limit,
+      });
+    }
+    const toRefresh = candidates.slice(0, limit);
+    for (let i = 0; i < toRefresh.length; i += concurrency) {
+      const batch = toRefresh.slice(i, i + concurrency);
+      const results = await Promise.all(
+        batch.map(async (repoPath) => {
+          let bytes: Buffer;
+          try {
+            bytes = readFileSync(join(options.repoRoot, repoPath));
+          } catch (err) {
+            options.logger?.debug('neighbour refresh skipped unreadable file', {
+              path: repoPath,
+              reason: (err as Error).message,
+            });
+            return false;
+          }
+          return summarizeOne(
+            options,
+            repoPath,
+            nextManifest.files[repoPath] as string,
+            bytes.toString('utf8'),
+            today,
+          );
+        }),
+      );
+      batch.forEach((repoPath, j) => {
+        if (results[j] === true) refreshed.push(repoPath);
+      });
+    }
+  }
+
   const path = manifestPath(options.brainDir);
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, `${JSON.stringify(nextManifest, null, 2)}\n`, 'utf8');
@@ -299,6 +378,7 @@ export async function updateCodemap(
     summarized: summarized.length,
     removed: removed.length,
     orphaned: orphaned.length,
+    refreshed: refreshed.length,
     unchanged,
     total: currentFiles.length,
   });
@@ -306,6 +386,7 @@ export async function updateCodemap(
     summarized,
     removed,
     orphaned,
+    refreshed,
     unchanged,
     total: currentFiles.length,
   };

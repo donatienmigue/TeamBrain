@@ -36,6 +36,13 @@ export interface PracticeSignals {
   planRevisions: Distribution;
   /** Sessions with ≥1 non-empty memory_retrieved / all sessions (G1 on-ramp proof). */
   retrievalRate: number;
+  /**
+   * R16.1 T7: sessions that retrieved ≥1 codemap entry (`cm:`-prefixed id) /
+   * all sessions — did agents actually query the map? Near-zero after
+   * CodeMap ships means the pull model failed (and the answer is better map
+   * content, not more pushed tokens).
+   */
+  codemapQueryRate: number;
   /** Outcome mix split by whether the session retrieved any memory (OQ-7 co-occurrence). */
   outcomesByRetrieval: { retrieved: OutcomeCounts; unretrieved: OutcomeCounts };
   /** Per-session events before the first tool_use — the context-setup proxy (G1). */
@@ -194,6 +201,10 @@ export function computePracticeSignals(
       sessions.length === 0
         ? 0
         : Math.round((retrievedSessions / sessions.length) * 100) / 100,
+    codemapQueryRate:
+      sessions.length === 0
+        ? 0
+        : Math.round((withCodemap.length / sessions.length) * 100) / 100,
     outcomesByRetrieval,
     contextSetupEvents: distribution(
       sessions.map((s) => s.eventsBeforeFirstToolUse),

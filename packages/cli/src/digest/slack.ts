@@ -82,6 +82,8 @@ export function renderSlackMessage(report: DigestReport): SlackMessage {
           : ` · with codemap ${practice.explorationByCodemap.withCodemap} vs ` +
             `without ${practice.explorationByCodemap.withoutCodemap} ` +
             `(${practice.explorationByCodemap.reductionPct}% reduction; target ≥30%)`),
+      `• Codemap query rate: ${Math.round(practice.codemapQueryRate * 100)}% ` +
+        'of sessions retrieved ≥1 codemap entry',
     ].join('\n');
     blocks.push(section(`*Practice signals (aggregate-only)*\n${lines}`));
   }

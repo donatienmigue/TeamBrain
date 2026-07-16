@@ -653,3 +653,12 @@ Why: summaries carry cross-module references; renames/deletes let the map
 accrete references to files that don't exist (D3). Tradeoffs: substring
 match can over-trigger (src/b.ts also matches src/b.tsx mentions) — worst
 case a wasted re-summary, bounded by the cap.
+
+## 2026-07-15 — R16.1 T7: measure the behavior (codemap query rate)
+What: `codemapQueryRate` in PracticeSignals — sessions retrieving ≥1
+`cm:`-prefixed id / all sessions — surfaced in `tb digest` next to the
+existing exploration median and by-codemap reduction %. Same people-free
+projection; the negative test still gates identity leakage.
+Why: the CM6 gate (≥30% exploration reduction) needs both arms observable:
+do agents query the map at all, and does exploration fall when they do. If
+the rate stays ~0, the answer is better map content, not more pushed tokens.

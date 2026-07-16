@@ -212,4 +212,20 @@ describe('exploration measurement (C2 explore kind, D6 §4.8 instrument)', () =>
     expect(signals.explorationByCodemap.withCodemap).toBeNull();
     expect(signals.explorationByCodemap.withoutCodemap).toBe(1);
   });
+
+  // R16.1 T7: the codemap query rate — the number that decides whether the
+  // pull model worked at all (CM6 gate companion to the reduction %).
+  it('computes the codemap query rate over sessions', () => {
+    // SID_A retrieved a cm: entry; SID_B did not → 1 of 2 sessions.
+    const signals = computePracticeSignals(explorationFixture());
+    expect(signals.codemapQueryRate).toBe(0.5);
+  });
+
+  it('negative: codemap query rate is 0 (not NaN) with no sessions, and memory-only retrievals do not count', () => {
+    expect(computePracticeSignals([]).codemapQueryRate).toBe(0);
+    const memoryOnly = computePracticeSignals([
+      ev(SID_C, 0, { ev: 'memory_retrieved', data: { ids: ['01JZMEM9'] } }),
+    ]);
+    expect(memoryOnly.codemapQueryRate).toBe(0);
+  });
 });

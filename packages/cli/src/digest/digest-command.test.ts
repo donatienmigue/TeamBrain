@@ -100,6 +100,38 @@ describe('tb digest (M7.1)', () => {
     expect(message.text).toContain('TeamBrain weekly digest');
   });
 
+  it('R16.1 T7: digest surfaces explore-actions/session and codemap query rate, with no per-person fields', async () => {
+    const brainDir = tempBrain([memory(M1, 'Cache config', '2026-07-01')]);
+    const { exitCode, output } = await runDigestCommand('.', {
+      dryRun: true,
+      brainDir,
+      proposedCount: 0,
+      sessions: sessionSource([
+        ev('memory_retrieved', { ids: ['cm:src/router.ts'] }),
+        ev('tool_use', { kind: 'explore', path: 'src/a.ts' }),
+        ev('tool_use', { kind: 'explore' }),
+      ]),
+      now: new Date('2026-07-06T00:00:00Z'),
+    });
+    expect(exitCode).toBe(0);
+    const { report, message } = JSON.parse(
+      output.slice(0, output.lastIndexOf('}') + 1),
+    ) as { report: { practice: Record<string, unknown> }; message: unknown };
+    expect(report.practice['exploration']).toEqual({
+      median: 2,
+      mean: 2,
+      max: 2,
+    });
+    expect(report.practice['codemapQueryRate']).toBe(1);
+    const rendered = JSON.stringify(message);
+    expect(rendered).toContain('Exploration events/session: median 2');
+    expect(rendered).toContain('Codemap query rate: 100%');
+    // People-free: no join keys or per-person fields in the whole output.
+    for (const forbidden of ['"sid"', 's1', 'claude-code', 'acme/web']) {
+      expect(rendered).not.toContain(forbidden);
+    }
+  });
+
   it('posts to the webhook when one is configured', async () => {
     const brainDir = tempBrain([memory(M1, 'Cache config', '2026-07-01')]);
     const calls: Array<{ url: string; message: SlackMessage }> = [];

@@ -670,3 +670,13 @@ on Windows; closing it killed the daemon and the next hook resurrected it,
 window and all), plus every git child of the daemon (fetch, branch-diff
 refresh, spool push) and of the hooks. Why: user-visible console windows
 appearing indefinitely. Tradeoffs: none; display-only flag.
+
+## 2026-07-16 — autostart circuit breaker (bounded retry + stop)
+What: ensureDaemon now records consecutive failed start attempts
+(runtimeDir/autostart-failures.json). After 3 failures it stops spawning
+and discloses once ("autostart paused for 10 min; run 'tb serve' to see
+why"); cooldown expiry allows one half-open attempt; success resets.
+Corrupt/absent record fails open. A throwing spawn counts as a failure.
+Why: a daemon that crashes on boot was respawned by every hook event,
+forever. Tradeoffs: state is per-runtimeDir and time-based, not persistent
+across cooldowns by design.

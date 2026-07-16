@@ -3,7 +3,11 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { platform, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { ensureDaemon } from './ensure-daemon.js';
+import {
+  ensureDaemon,
+  AUTOSTART_MAX_FAILURES,
+  AUTOSTART_RETRY_COOLDOWN_MS,
+} from './ensure-daemon.js';
 import { daemonSocketPath } from './paths.js';
 
 // Daemon auto-start unit tests. spawnDaemon/probe are always injected: these
@@ -257,6 +261,124 @@ describe('ensureDaemon (auto-start core)', () => {
         }),
       ),
     ).toBe(false);
+  });
+
+  it('circuit breaker: after repeated failed starts, autostart stops spawning', async () => {
+    const runtimeDir = await tempRuntimeDir();
+    let spawned = 0;
+    const lines: string[] = [];
+    const failingAttempt = (): Promise<boolean> =>
+      ensureDaemon({
+        runtimeDir,
+        enabled: true,
+        deadlineMs: 60,
+        spawnDaemon: () => {
+          spawned += 1; // spawns, but the daemon never answers
+        },
+        probe: () => Promise.resolve(null),
+        disclose: (line) => lines.push(line),
+      });
+
+    for (let i = 0; i < AUTOSTART_MAX_FAILURES; i += 1) {
+      expect(await failingAttempt()).toBe(false);
+    }
+    expect(spawned).toBe(AUTOSTART_MAX_FAILURES);
+    // The trip is disclosed exactly once…
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toContain('autostart paused');
+
+    // …and further calls are suppressed: no more spawns, still no throw.
+    for (let i = 0; i < 5; i += 1) {
+      expect(await failingAttempt()).toBe(false);
+    }
+    expect(spawned).toBe(AUTOSTART_MAX_FAILURES);
+    expect(lines).toHaveLength(1);
+  });
+
+  it('circuit breaker: a throwing spawn counts as a failed attempt', async () => {
+    const runtimeDir = await tempRuntimeDir();
+    let spawnCalls = 0;
+    const attempt = (): Promise<boolean> =>
+      ensureDaemon({
+        runtimeDir,
+        enabled: true,
+        deadlineMs: 60,
+        spawnDaemon: (): void => {
+          spawnCalls += 1;
+          throw new Error('spawn exploded');
+        },
+        probe: () => Promise.resolve(null),
+        disclose: () => undefined,
+      });
+    for (let i = 0; i < AUTOSTART_MAX_FAILURES + 3; i += 1) {
+      expect(await attempt()).toBe(false);
+    }
+    expect(spawnCalls).toBe(AUTOSTART_MAX_FAILURES);
+  });
+
+  it('circuit breaker: cooldown expiry allows one fresh attempt, success resets it', async () => {
+    const runtimeDir = await tempRuntimeDir();
+    // A tripped breaker whose last failure is older than the cooldown.
+    await writeFile(
+      join(runtimeDir, 'autostart-failures.json'),
+      `${JSON.stringify({
+        failures: AUTOSTART_MAX_FAILURES,
+        lastFailureAt: Date.now() - AUTOSTART_RETRY_COOLDOWN_MS - 1000,
+      })}\n`,
+      'utf8',
+    );
+    const daemon = fakeCold();
+    const result = await ensureDaemon({
+      runtimeDir,
+      enabled: true,
+      spawnDaemon: daemon.spawnDaemon,
+      probe: daemon.probe,
+      disclose: () => undefined,
+    });
+    expect(result).toBe(true);
+    expect(daemon.spawnCalls()).toBe(1);
+    // Success cleared the record: the breaker starts from zero again.
+    expect(existsSync(join(runtimeDir, 'autostart-failures.json'))).toBe(false);
+  });
+
+  it('circuit breaker: within the cooldown a tripped breaker never spawns', async () => {
+    const runtimeDir = await tempRuntimeDir();
+    await writeFile(
+      join(runtimeDir, 'autostart-failures.json'),
+      `${JSON.stringify({
+        failures: AUTOSTART_MAX_FAILURES,
+        lastFailureAt: Date.now(),
+      })}\n`,
+      'utf8',
+    );
+    const daemon = fakeCold();
+    const result = await ensureDaemon({
+      runtimeDir,
+      enabled: true,
+      spawnDaemon: daemon.spawnDaemon,
+      probe: () => Promise.resolve(null),
+    });
+    expect(result).toBe(false);
+    expect(daemon.spawnCalls()).toBe(0);
+  });
+
+  it('circuit breaker: a corrupt failure record fails open (spawn proceeds)', async () => {
+    const runtimeDir = await tempRuntimeDir();
+    await writeFile(
+      join(runtimeDir, 'autostart-failures.json'),
+      '{definitely not json',
+      'utf8',
+    );
+    const daemon = fakeCold();
+    const result = await ensureDaemon({
+      runtimeDir,
+      enabled: true,
+      spawnDaemon: daemon.spawnDaemon,
+      probe: daemon.probe,
+      disclose: () => undefined,
+    });
+    expect(result).toBe(true);
+    expect(daemon.spawnCalls()).toBe(1);
   });
 
   it('disclosure: exactly one stderr line on cold start, none on warm', async () => {

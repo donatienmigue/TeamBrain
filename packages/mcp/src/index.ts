@@ -80,6 +80,8 @@ export {
   AUTOSTART_DEADLINE_MS,
   AUTOSTART_LOCK_TTL_MS,
   AUTOSTART_PROBE_TIMEOUT_MS,
+  AUTOSTART_MAX_FAILURES,
+  AUTOSTART_RETRY_COOLDOWN_MS,
   type EnsureDaemonOptions,
 } from './ensure-daemon.js';
 export {

@@ -7,6 +7,7 @@ import {
   readFileSync,
   statSync,
   unlinkSync,
+  writeFileSync,
   writeSync,
 } from 'node:fs';
 import { platform } from 'node:os';
@@ -28,6 +29,70 @@ export const AUTOSTART_DEADLINE_MS = 1500;
 export const AUTOSTART_PROBE_TIMEOUT_MS = 150;
 /** A lock older than this whose owner is gone is stale and may be broken. */
 export const AUTOSTART_LOCK_TTL_MS = 30_000;
+/**
+ * Circuit breaker: after this many consecutive failed start attempts,
+ * autostart stops respawning (a daemon that crashes on boot would otherwise
+ * be relaunched by every hook event, forever)…
+ */
+export const AUTOSTART_MAX_FAILURES = 3;
+/** …until this cooldown elapses, when exactly one fresh attempt is allowed. */
+export const AUTOSTART_RETRY_COOLDOWN_MS = 10 * 60_000;
+
+const FAILURES_FILE = 'autostart-failures.json';
+
+interface FailureRecord {
+  failures: number;
+  /** Epoch ms of the last failed attempt. */
+  lastFailureAt: number;
+}
+
+/** Reads the failure record; anything unreadable/malformed counts as clean. */
+function readFailures(runtimeDir: string): FailureRecord {
+  try {
+    const parsed: unknown = JSON.parse(
+      readFileSync(join(runtimeDir, FAILURES_FILE), 'utf8'),
+    );
+    const record = parsed as { failures?: unknown; lastFailureAt?: unknown };
+    if (
+      typeof record.failures === 'number' &&
+      Number.isFinite(record.failures) &&
+      typeof record.lastFailureAt === 'number' &&
+      Number.isFinite(record.lastFailureAt)
+    ) {
+      return {
+        failures: record.failures,
+        lastFailureAt: record.lastFailureAt,
+      };
+    }
+  } catch {
+    /* absent or corrupt → clean slate; the breaker only ever fails open */
+  }
+  return { failures: 0, lastFailureAt: 0 };
+}
+
+function recordFailure(runtimeDir: string, previous: FailureRecord): void {
+  try {
+    const record: FailureRecord = {
+      failures: previous.failures + 1,
+      lastFailureAt: Date.now(),
+    };
+    writeFileSync(
+      join(runtimeDir, FAILURES_FILE),
+      `${JSON.stringify(record)}\n`,
+      'utf8',
+    );
+  } catch {
+    /* a failure we cannot record simply doesn't advance the breaker */
+  }
+}
+
+function clearFailures(runtimeDir: string): void {
+  try {
+    unlinkSync(join(runtimeDir, FAILURES_FILE));
+  } catch {
+    /* already gone */
+  }
+}
 
 export interface EnsureDaemonOptions {
   runtimeDir: string;
@@ -198,6 +263,22 @@ export async function ensureDaemon(
       return true;
     }
 
+    // Circuit breaker: a daemon that crashes on boot must not be respawned
+    // by every hook event forever. After AUTOSTART_MAX_FAILURES consecutive
+    // failed starts, suppress spawning until the cooldown elapses; then one
+    // fresh attempt is allowed (half-open) and success clears the record.
+    const failures = readFailures(opts.runtimeDir);
+    if (failures.failures >= AUTOSTART_MAX_FAILURES) {
+      const sinceMs = Date.now() - failures.lastFailureAt;
+      if (sinceMs < AUTOSTART_RETRY_COOLDOWN_MS) {
+        log.debug('autostart suppressed after repeated start failures', {
+          failures: failures.failures,
+          retryInMs: AUTOSTART_RETRY_COOLDOWN_MS - sinceMs,
+        });
+        return false;
+      }
+    }
+
     const deadlineMs = opts.deadlineMs ?? AUTOSTART_DEADLINE_MS;
     const deadline = Date.now() + deadlineMs;
     const pollUntilDeadline = async (): Promise<boolean> => {
@@ -243,14 +324,23 @@ export async function ensureDaemon(
       }
 
       let spawnedPid: number | undefined;
-      if (opts.spawnDaemon !== undefined) {
-        opts.spawnDaemon();
-      } else {
-        spawnedPid = defaultSpawnDaemon().pid;
+      let alive = false;
+      try {
+        if (opts.spawnDaemon !== undefined) {
+          opts.spawnDaemon();
+        } else {
+          spawnedPid = defaultSpawnDaemon().pid;
+        }
+        alive = await pollUntilDeadline();
+      } catch (err) {
+        // A throwing spawn is a failed attempt like any other: it advances
+        // the breaker below instead of bypassing it via the outer catch.
+        log.debug('autostart spawn failed', {
+          reason: err instanceof Error ? err.message : String(err),
+        });
       }
-
-      const alive = await pollUntilDeadline();
       if (alive) {
+        clearFailures(opts.runtimeDir);
         // Trust surface: a process the user didn't start is disclosed, once,
         // on stderr only (stdout belongs to the hook protocol).
         const pong = await probe(opts.runtimeDir, AUTOSTART_PROBE_TIMEOUT_MS);
@@ -269,8 +359,24 @@ export async function ensureDaemon(
           `TeamBrain: started local daemon (pid ${pid ?? 'unknown'}). Stop with 'tb serve --stop'.\n`,
         );
       } else {
+        recordFailure(opts.runtimeDir, failures);
+        if (failures.failures + 1 >= AUTOSTART_MAX_FAILURES) {
+          // Trust surface: tell the user we are giving up, once per trip.
+          const write =
+            opts.disclose ??
+            ((line: string): void => {
+              process.stderr.write(line);
+            });
+          write(
+            `TeamBrain: daemon failed to start ${failures.failures + 1} ` +
+              `times; autostart paused for ${Math.round(
+                AUTOSTART_RETRY_COOLDOWN_MS / 60_000,
+              )} min. Run 'tb serve' in a terminal to see why.\n`,
+          );
+        }
         log.debug('autostart: daemon did not answer before deadline', {
           deadlineMs,
+          consecutiveFailures: failures.failures + 1,
         });
       }
       return alive;

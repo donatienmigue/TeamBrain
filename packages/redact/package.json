@@ -1,6 +1,6 @@
 {
   "name": "@teambrain/redact",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "On-device redaction for TeamBrain capture: secrets, entropy, PII — with a public release-gating corpus",
   "keywords": [
     "redaction",

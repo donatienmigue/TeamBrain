@@ -137,13 +137,32 @@ it from scratch.
 - **Derived, not governed.** Entries live in `.teambrain/codemap/` as
   readable, diffable markdown — regenerable from source at any commit, so
   they are indexed directly rather than PR-gated like memories.
-- **Budget-isolated.** The CodeMap slice rides in its own 1,500-token
-  context budget; it can never crowd a governed memory out of
-  `memory_context` (enforced by a gated negative test).
+- **Budget-isolated.** At session start CodeMap costs ≤~700 tokens — a compact
+  index block (≤200) plus a session-scoped slice (≤500) targeted at the files
+  you're actually touching; the full map stays one `memory_search` away. It can
+  never crowd a governed memory out of `memory_context` (gated negative tests
+  at both the token and char level).
+- **Measured with a holdout, not a guess.** While CodeMap is in its measurement
+  phase, `codemap.holdout` (default `0.1`) randomly assigns ~10% of sessions to
+  a **control arm** that is served no CodeMap at all — no index block, no slice,
+  and `memory_search` returns no map entries — i.e. a control session behaves
+  exactly as if CodeMap were off. Assignment is deterministic per session id, so
+  a session is consistently one arm. The weekly `tb digest` reports
+  explore-actions/session and codemap query rate **split by arm**, with a 95%
+  bootstrap confidence interval on the treatment-vs-control reduction, labeled
+  `measured` only once both arms have ≥20 sessions. This gives a clean causal
+  number instead of a confounded before/after comparison. Set
+  `codemap.holdout: 0` to disable the holdout (everyone gets CodeMap); it is
+  automatically irrelevant when `codemap.enabled: false`.
 
-Honest status: shipped and tested, but the value target (≥30% fewer
-code-exploration actions per session) is still being measured in dogfooding —
-which is why the default stays off.
+Honest status: shipped and tested, but default-on is gated on a *measured*
+holdout result — ≥30% fewer code-exploration actions per session, treatment vs
+control, with a 95% CI excluding zero — not a before/after estimate. Until that
+clears in dogfooding, the default stays off. (One caveat: the control arm's
+`memory_search` exclusion depends on the MCP server receiving the session id via
+`TEAMBRAIN_SESSION_ID`; where a client doesn't provide it, control sessions
+still get the full serving bypass on session start, and only the on-demand
+search side falls back to treatment.)
 
 ## Status & limits
 

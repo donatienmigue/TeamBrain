@@ -682,6 +682,15 @@ estimate. Assignment must be deterministic per sid across every process (hook
 tag, daemon bundle, MCP search) or the arms disagree. Tradeoffs: FNV-1a hand-
 rolled (boring-deps); disabled-arm tag is meaningless-but-harmless.
 
+## 2026-07-20 — R16.1 T7e: holdout docs (README)
+What: the README CodeMap section now explains the holdout (what it is, why —
+clean causal measurement vs a confounded before/after, how to change/disable via
+`codemap.holdout: 0`, and that a control session behaves as if CodeMap were off);
+restated the default-on gate as a *measured* result; corrected the stale
+1,500-token budget line to the shipped ≤~700 (index ≤200 + scoped ≤500). Flagged
+the honest caveat that the search-side control exclusion needs TEAMBRAIN_SESSION_ID.
+Why: T7e — the holdout must be disclosed and configurable. Tradeoffs: none; docs.
+
 ## 2026-07-20 — R16.1 T7d: digest arm split with bootstrap CI
 What: `computePracticeSignals` reads each session's `codemap_arm` and emits
 `codemapHoldout` — explore-actions/session and codemap query rate per arm, plus

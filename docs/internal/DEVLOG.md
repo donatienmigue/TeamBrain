@@ -682,6 +682,19 @@ estimate. Assignment must be deterministic per sid across every process (hook
 tag, daemon bundle, MCP search) or the arms disagree. Tradeoffs: FNV-1a hand-
 rolled (boring-deps); disabled-arm tag is meaningless-but-harmless.
 
+## 2026-07-20 — PM4: tb metrics read-only local snapshot
+What: new `tb metrics [--json]` — a read-only local dump for "why is my context
+slow/noisy": index size, latency percentiles (from the daemon heartbeat via the
+doctor snapshot), injection weight, required-load, codemap utilization, served
+staleness, and the net-efficiency verdict. Reuses the digest aggregation + the
+doctor report; captures nothing, writes nothing (Acceptance §7). CONTRACTS C6
+updated to add the verb — done with explicit human approval (a new top-level
+verb is a frozen-surface change, unlike the additive flags precedent), noted
+inline in CONTRACTS as additive + people-free.
+Why: §5 — a local debugging surface for context cost/rot without waiting for the
+weekly digest. Tradeoffs: latency fields are empty when the daemon is down (same
+as doctor); no new privacy surface since it only reads existing aggregates.
+
 ## 2026-07-20 — PM3: net-efficiency composite (the question, answered)
 What: `netEfficiency` in the digest — avoided exploration (from the T7 CodeMap
 holdout arms, treatment vs randomized control, NOT before/after) paired with the

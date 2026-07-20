@@ -64,7 +64,7 @@ function* walkMarkdown(dir: string): Generator<string> {
   }
 }
 
-function loadActiveMemories(brainDir: string): DigestMemory[] {
+export function loadActiveMemories(brainDir: string): DigestMemory[] {
   const memories: DigestMemory[] = [];
   for (const file of walkMarkdown(join(brainDir, 'memories'))) {
     try {
@@ -107,7 +107,7 @@ function readRulesBaseline(brainDir: string): Record<string, string> {
  * Required-memory token budget for the §3.1 rot flag, from brain.yaml
  * `metrics.required_max_tokens`. Undefined (→ the default) when absent/invalid.
  */
-function readRequiredBudget(brainDir: string): number | undefined {
+export function readRequiredBudget(brainDir: string): number | undefined {
   const path = join(brainDir, 'brain.yaml');
   if (!existsSync(path)) return undefined;
   const parsed = parseYaml(readFileSync(path, 'utf8')) as

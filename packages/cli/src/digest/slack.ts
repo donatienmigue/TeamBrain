@@ -139,6 +139,31 @@ export function renderSlackMessage(report: DigestReport): SlackMessage {
     blocks.push(section(`*Context efficiency & rot (aggregate-only)*\n${lines}`));
   }
 
+  const ne = report.netEfficiency;
+  const verdictLabel: Record<typeof ne.verdict, string> = {
+    'net-anti-rot': '✅ net-anti-rot (memory saves more than it costs)',
+    'net-rot': '❌ net-rot (treatment explored MORE — investigate retrieval)',
+    inconclusive: '➖ inconclusive (collect more sessions; do not ship)',
+    'insufficient-data':
+      '➖ insufficient data (holdout not yet measured; collect more sessions)',
+  };
+  const n = `n=${ne.controlSessions}/${ne.treatmentSessions} (control/treatment)`;
+  const effect =
+    ne.explorationReductionPct === null
+      ? `not yet measurable, ${n}`
+      : `${ne.explorationReductionPct}% less exploration` +
+        (ne.reductionCi95 === null
+          ? ''
+          : ` (95% CI ${ne.reductionCi95[0]}%…${ne.reductionCi95[1]}%)`) +
+        ` while carrying ${ne.injectionWeightTokens} tokens of injected context, ` +
+        `${ne.label}, ${n}`;
+  blocks.push(
+    section(
+      `*Net context efficiency (the question)*\n` +
+        `Treatment sessions did ${effect}.\n${verdictLabel[ne.verdict]}`,
+    ),
+  );
+
   const drifted = report.drift.filter((entry) => entry.changed);
   if (drifted.length > 0) {
     const lines = drifted.map((entry) => `• \`${entry.file}\``).join('\n');

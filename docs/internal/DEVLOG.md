@@ -682,6 +682,19 @@ estimate. Assignment must be deterministic per sid across every process (hook
 tag, daemon bundle, MCP search) or the arms disagree. Tradeoffs: FNV-1a hand-
 rolled (boring-deps); disabled-arm tag is meaningless-but-harmless.
 
+## 2026-07-20 — PM3: net-efficiency composite (the question, answered)
+What: `netEfficiency` in the digest — avoided exploration (from the T7 CodeMap
+holdout arms, treatment vs randomized control, NOT before/after) paired with the
+injection weight it costs, with the same measured/estimated + 95% CI labeling.
+An honest verdict: insufficient-data (until the holdout is measured), net-anti-rot
+(measured, CI excludes zero, ≥30% CM6 bar), net-rot (treatment explored more), or
+inconclusive. Rendered as a plain statement in tb digest.
+Why: §3.3 — the one number that decides whether TeamBrain is worth its context
+cost. If not net-anti-rot on real data, that finding outranks every feature.
+Tradeoffs: reuses the holdout split (avoids the self-selecting codemap-retrieving
+vs not confound); verdict never claims a win without a measured, CI-excludes-zero
+result.
+
 ## 2026-07-20 — PM2: real latency percentiles in tb doctor
 What: a people-free timing channel — a `timing` daemon message ({metric, ms},
 no identity). The daemon keeps rolling p50/p95 windows for `injection` (its own

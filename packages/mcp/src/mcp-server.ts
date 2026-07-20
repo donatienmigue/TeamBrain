@@ -50,6 +50,12 @@ export interface McpServerOptions {
    * so a caller that doesn't know the session's arm is unaffected.
    */
   serveCodemap?: boolean;
+  /**
+   * PM §3.2: sink for real memory_search latencies (ms). Wired by `tb mcp` to
+   * report them to the daemon for the `tb doctor` percentiles — the number the
+   * synthetic bench can't give. People-free (a duration). Omitted → no-op.
+   */
+  onTiming?: (metric: 'search', ms: number) => void;
 }
 
 /** Builds the MCP server over an already-open backend (no transport attached). */
@@ -104,10 +110,10 @@ export function createMcpServer(
     async (args) => {
       // T7b: a control session's search excludes codemap-sourced results at
       // this one chokepoint, keyed by the session's arm.
-      const memories = filterSearchForArm(
-        await tools.memorySearch(args),
-        serveCodemap,
-      );
+      const started = performance.now();
+      const raw = await tools.memorySearch(args);
+      options.onTiming?.('search', performance.now() - started);
+      const memories = filterSearchForArm(raw, serveCodemap);
       return textResult(renderMemoryList(memories, 'No matching memories.'), {
         memories,
       });

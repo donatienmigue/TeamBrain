@@ -682,6 +682,19 @@ estimate. Assignment must be deterministic per sid across every process (hook
 tag, daemon bundle, MCP search) or the arms disagree. Tradeoffs: FNV-1a hand-
 rolled (boring-deps); disabled-arm tag is meaningless-but-harmless.
 
+## 2026-07-20 — PM2: real latency percentiles in tb doctor
+What: a people-free timing channel — a `timing` daemon message ({metric, ms},
+no identity). The daemon keeps rolling p50/p95 windows for `injection` (its own
+context render), `search` (reported by the MCP server around memory_search),
+and `hook` (reported by the capture handler around map+redact). `tb doctor
+--json` gains `latency.{injection,search,hook}` (real numbers vs the synthetic
+bench, against the 500/300/20ms NFRs) plus index bloat signals reindexCount +
+dbSizeBytes. Existing `retrieval` field kept (backward-compat) fed by injection.
+Why: §3.2 — a benchmark is a promise; this measures the kept promise in real use.
+Tradeoffs: search/hook latencies depend on the daemon being up (samples dropped
+if down); distiller cost (also §3.2 prose, not in §6 acceptance) deferred — it
+runs in CI, not the daemon.
+
 ## 2026-07-20 — PM0/PM1: injection capture + context-efficiency & rot metrics
 What: Finding — `memory_retrieved` events were NEVER emitted in the live path
 (no MCP-result hook; Cursor's memory_search branch is a no-op), so injection,

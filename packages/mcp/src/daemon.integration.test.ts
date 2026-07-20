@@ -17,6 +17,7 @@ import {
   pingDaemon,
   requestSessionContext,
   sendHookEvent,
+  sendTiming,
 } from './hook-client.js';
 import { runSessionStartHook } from './session-start-hook.js';
 import { heartbeatPath, pidFilePath, sessionRecordPath } from './paths.js';
@@ -233,6 +234,36 @@ describe('daemon (M4.1)', () => {
     const landed = await waitFor(async () => existsSync(recordPath));
     expect(landed).toBe(true);
     expect(await readFile(recordPath, 'utf8')).toContain('src/a.ts');
+  });
+
+  it('records real latency percentiles from timings + context renders (perf-metrics §3.2)', async () => {
+    const daemon = await startFixtureDaemon();
+    // A served session times the injection (context render) internally…
+    await requestSessionContext(daemon.runtimeDir, { sid: 'lat-sess' });
+    // …and callers report search + hook durations, people-free.
+    await sendTiming(daemon.runtimeDir, 'search', 42);
+    await sendTiming(daemon.runtimeDir, 'hook', 3);
+
+    const ok = await waitFor(async () => {
+      const hb = JSON.parse(
+        await readFile(heartbeatPath(daemon.runtimeDir), 'utf8'),
+      );
+      return (
+        hb.latency?.injection?.samples > 0 &&
+        hb.latency?.search?.samples === 1 &&
+        hb.latency?.hook?.samples === 1
+      );
+    });
+    expect(ok).toBe(true);
+    const hb = JSON.parse(
+      await readFile(heartbeatPath(daemon.runtimeDir), 'utf8'),
+    );
+    expect(hb.latency.search.p95Ms).toBe(42);
+    expect(hb.latency.hook.p50Ms).toBe(3);
+    expect(hb.latency.injection.p95Ms).toBeGreaterThanOrEqual(0);
+    // Bloat signals surface too.
+    expect(hb.dbSizeBytes).toBeGreaterThan(0);
+    expect(hb.reindexCount).toBeGreaterThanOrEqual(0);
   });
 
   it('cleans up pidfile, heartbeat, and socket on close', async () => {

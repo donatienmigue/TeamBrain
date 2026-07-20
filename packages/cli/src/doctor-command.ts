@@ -21,6 +21,13 @@ import type { GovernanceFriction } from './digest/aggregate.js';
 
 // --- report schema (validated on every run; the JSON output is this shape) ---
 
+/** p50/p95/samples for one latency metric (PM §3.2). */
+const latencyShape = z.object({
+  p50Ms: z.number().nonnegative().nullable(),
+  p95Ms: z.number().nonnegative().nullable(),
+  samples: z.number().int().nonnegative(),
+});
+
 export const doctorReportSchema = z.object({
   ok: z.boolean(),
   generatedAt: z.string(),
@@ -40,10 +47,22 @@ export const doctorReportSchema = z.object({
     brainDir: z.string().nullable(),
     dbPath: z.string(),
     lastReindexAt: z.string().nullable(),
+    // PM §3.2 bloat signals: reindex frequency + index.db size on disk.
+    reindexCount: z.number().int().nonnegative().nullable(),
+    dbSizeBytes: z.number().int().nonnegative().nullable(),
   }),
   retrieval: z.object({
     p95Ms: z.number().nonnegative().nullable(),
     samples: z.number().int().nonnegative(),
+  }),
+  // PM §3.2: real (not bench) latency percentiles from daemon timings.
+  // injection = context render at session start; search = memory_search in the
+  // MCP server; hook = the capture handler's map+redact. NFRs: injection <500ms,
+  // search <300ms, hook <20ms.
+  latency: z.object({
+    injection: latencyShape,
+    search: latencyShape,
+    hook: latencyShape,
   }),
   // D3.1 governance friction (additive, optional: absent when gh/remote is
   // unavailable). Median hours from proposal-PR creation to merge.
@@ -104,6 +123,8 @@ const heartbeatSchema = z
     brainChecksum: z.string().nullable().optional(),
     brainDir: z.string().optional(),
     lastReindexAt: z.string().optional(),
+    reindexCount: z.number().int().optional(),
+    dbSizeBytes: z.number().int().nullable().optional(),
     hooks: z
       .record(
         z.string(),
@@ -112,6 +133,13 @@ const heartbeatSchema = z
       .optional(),
     retrieval: z
       .object({ p95Ms: z.number().nullable(), samples: z.number().int() })
+      .optional(),
+    latency: z
+      .object({
+        injection: latencyShape,
+        search: latencyShape,
+        hook: latencyShape,
+      })
       .optional(),
   })
   .loose();
@@ -127,6 +155,10 @@ function readHeartbeat(path: string): Heartbeat {
   } catch {
     return {};
   }
+}
+
+function emptyLatency(): { p50Ms: null; p95Ms: null; samples: number } {
+  return { p50Ms: null, p95Ms: null, samples: 0 };
 }
 
 function processAlive(pid: number | null): boolean {
@@ -274,10 +306,17 @@ export async function runDoctorCommand(
       brainDir,
       dbPath: indexDbPath(runtimeDir),
       lastReindexAt: heartbeat.lastReindexAt ?? null,
+      reindexCount: heartbeat.reindexCount ?? null,
+      dbSizeBytes: heartbeat.dbSizeBytes ?? null,
     },
     retrieval: {
       p95Ms: heartbeat.retrieval?.p95Ms ?? null,
       samples: heartbeat.retrieval?.samples ?? 0,
+    },
+    latency: heartbeat.latency ?? {
+      injection: emptyLatency(),
+      search: emptyLatency(),
+      hook: emptyLatency(),
     },
     hooks,
     sync,
@@ -299,8 +338,20 @@ function mark(ok: boolean): string {
   return ok ? 'ok' : 'FAIL';
 }
 
+function latencyLine(
+  label: string,
+  m: { p50Ms: number | null; p95Ms: number | null; samples: number },
+  nfr: string,
+): string {
+  const value =
+    m.p95Ms === null
+      ? 'no samples'
+      : `p50 ${m.p50Ms}ms / p95 ${m.p95Ms}ms (n=${m.samples}, ${nfr})`;
+  return `  ${label.padEnd(16)}${value}\n`;
+}
+
 function renderHuman(report: DoctorReport): string {
-  const { daemon, index, retrieval, hooks, sync } = report;
+  const { daemon, index, latency, hooks, sync } = report;
   let out = 'tb doctor\n';
   out += `  daemon running:   ${mark(daemon.running)}${daemon.pid === null ? '' : ` (pid ${daemon.pid})`}\n`;
   out += `  socket reachable: ${mark(daemon.reachable)} (${daemon.socket})\n`;
@@ -311,8 +362,11 @@ function renderHuman(report: DoctorReport): string {
   out += `  uptime:           ${daemon.uptimeSeconds === null ? 'unknown' : `${daemon.uptimeSeconds}s`}\n`;
   out += `  index docs:       ${index.docCount ?? 'unknown'}${index.lexicalOnly === true ? ' (lexical-only)' : ''}\n`;
   out += `  index checksum:   ${index.brainChecksum ?? 'unknown'}\n`;
-  out += `  last reindex:     ${index.lastReindexAt ?? 'unknown'}\n`;
-  out += `  retrieval p95:    ${retrieval.p95Ms === null ? 'no samples' : `${retrieval.p95Ms}ms (n=${retrieval.samples})`}\n`;
+  out += `  last reindex:     ${index.lastReindexAt ?? 'unknown'}${index.reindexCount === null ? '' : ` (${index.reindexCount}x)`}\n`;
+  out += `  index size:       ${index.dbSizeBytes === null ? 'unknown' : `${Math.round(index.dbSizeBytes / 1024)}KB`}\n`;
+  out += latencyLine('injection:', latency.injection, 'NFR <500ms');
+  out += latencyLine('search:', latency.search, 'NFR <300ms');
+  out += latencyLine('hook:', latency.hook, 'NFR <20ms');
   if (report.governance !== undefined) {
     const g = report.governance;
     out += `  proposal merges:  ${g.mergedProposalPRs} PR(s)${

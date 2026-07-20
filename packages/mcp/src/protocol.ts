@@ -9,6 +9,11 @@ import { sessionEventSchema } from '@teambrain/core';
 export const HOOK_EVENT_REQUEST = 'hook_event';
 export const SESSION_CONTEXT_REQUEST = 'session_context';
 export const PING_REQUEST = 'ping';
+export const TIMING_REQUEST = 'timing';
+
+/** People-free operational metrics the daemon aggregates for `tb doctor`. */
+export const TIMING_METRICS = ['search', 'hook'] as const;
+export type TimingMetric = (typeof TIMING_METRICS)[number];
 
 export const daemonRequestSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal(HOOK_EVENT_REQUEST), event: sessionEventSchema }),
@@ -20,6 +25,14 @@ export const daemonRequestSchema = z.discriminatedUnion('kind', [
     sid: z.string().optional(),
   }),
   z.object({ kind: z.literal(PING_REQUEST) }),
+  // PM (perf-metrics §3.2): a caller reports how long an operation took, so the
+  // daemon can roll real p50/p95 into `tb doctor`. People-free — a metric name
+  // + a duration in ms, no session identity. Fire-and-forget (no response).
+  z.object({
+    kind: z.literal(TIMING_REQUEST),
+    metric: z.enum(TIMING_METRICS),
+    ms: z.number().nonnegative(),
+  }),
 ]);
 export type DaemonRequest = z.infer<typeof daemonRequestSchema>;
 

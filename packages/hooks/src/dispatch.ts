@@ -1,4 +1,5 @@
 import type { SessionEvent } from '@teambrain/core';
+import { sendTiming } from '@teambrain/mcp/hook-client';
 import { buildHookContext } from './context.js';
 import { processHookPayload, type CaptureHookName } from './run.js';
 import { emitEvent } from './emit.js';
@@ -37,8 +38,10 @@ export async function captureAndEmit(
 
   // Non-default tools route through their registered adapter's mapper (its
   // payload taxonomy may differ); the claude-code default keeps the original
-  // processHookPayload path unchanged.
+  // processHookPayload path unchanged. Time the map+redact work — the <20ms
+  // NFR handler — and report it (fire-and-forget) for the doctor percentiles.
   let event: SessionEvent | null;
+  const startedNs = performance.now();
   const adapter =
     params.tool !== undefined && params.tool !== 'claude-code'
       ? ADAPTERS[params.tool]
@@ -52,8 +55,12 @@ export async function captureAndEmit(
   } else {
     event = processHookPayload(params.hookEvent, params.payloadJson, ctx).event;
   }
+  const handlerMs = performance.now() - startedNs;
 
   if (event !== null) {
+    void sendTiming(params.runtimeDir, 'hook', handlerMs, {
+      ...(params.timeoutMs === undefined ? {} : { timeoutMs: params.timeoutMs }),
+    });
     await emitEvent(params.runtimeDir, event, {
       ...(params.timeoutMs === undefined
         ? {}

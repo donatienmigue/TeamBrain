@@ -100,3 +100,5 @@ export type {
   CodemapEntryFrontmatter,
   ParsedCodemapEntry,
 } from './codemap-entry.js';
+export { fnv1a, codemapArm, effectiveHoldout } from './codemap-arm.js';
+export type { CodemapArm } from './codemap-arm.js';

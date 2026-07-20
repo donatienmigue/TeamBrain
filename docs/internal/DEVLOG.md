@@ -671,6 +671,17 @@ window and all), plus every git child of the daemon (fetch, branch-diff
 refresh, spool push) and of the hooks. Why: user-visible console windows
 appearing indefinitely. Tradeoffs: none; display-only flag.
 
+## 2026-07-20 — R16.1 T7a: holdout config + deterministic arm assignment
+What: `codemap.holdout` (0–1, default 0.1) added to brain.yaml's codemap block
+(additive; existing field-specific tests + compat fixture stay green). New pure
+core module `codemap-arm.ts`: `fnv1a` (tiny dep-free 32-bit hash) + `codemapArm(sid,
+holdout)` (`hash(sid) % 100 < holdout*100` → control) + `effectiveHoldout` (disabled
+codemap ⇒ 0 ⇒ every sid treatment, since serving is already off).
+Why: the CM6 gate needs a randomized control arm measured, not a before/after
+estimate. Assignment must be deterministic per sid across every process (hook
+tag, daemon bundle, MCP search) or the arms disagree. Tradeoffs: FNV-1a hand-
+rolled (boring-deps); disabled-arm tag is meaningless-but-harmless.
+
 ## 2026-07-16 — autostart circuit breaker (bounded retry + stop)
 What: ensureDaemon now records consecutive failed start attempts
 (runtimeDir/autostart-failures.json). After 3 failures it stops spawning

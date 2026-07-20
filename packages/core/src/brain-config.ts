@@ -35,12 +35,14 @@ export const brainConfigSchema = z.looseObject({
     .default({ autostart: true }),
   // R16 CodeMap (Tech Brief §4.8), off by default. Enabling makes the daemon
   // index .teambrain/codemap/ under C4's reserved source and tb distill
-  // --codemap maintain it.
+  // --codemap maintain it. `holdout` (R16.1 T7) is the fraction of sessions
+  // held out as control for the CM6 measurement — irrelevant while disabled.
   codemap: z
     .looseObject({
       enabled: z.boolean().default(false),
+      holdout: z.number().min(0).max(1).default(0.1),
     })
-    .default({ enabled: false }),
+    .default({ enabled: false, holdout: 0.1 }),
 });
 export type BrainConfig = z.infer<typeof brainConfigSchema>;
 

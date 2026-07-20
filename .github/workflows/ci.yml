@@ -22,7 +22,7 @@ jobs:
             -shellcheck= -pyflakes=
             .github/workflows/ci.yml
             .github/workflows/nightly.yml
-            .github/workflows/publish.yml
+            .github/workflows/changesets.yml
             .github/workflows/release.yml
             ci-templates/codemap.yml
             ci-templates/digest.yml

@@ -15,9 +15,13 @@
     "test:integration": "vitest run integration",
     "lint": "eslint . && prettier --check .",
     "bench": "pnpm -r --if-present run bench",
-    "eval": "pnpm --filter @teambrain/index run eval"
+    "eval": "pnpm --filter @teambrain/index run eval",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "pnpm build && pnpm -r publish --no-git-checks"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.31.1",
     "@eslint/js": "^9.17.0",
     "@teambrain/cli": "workspace:*",
     "@types/node": "^22.10.5",

@@ -35,9 +35,11 @@ confirms each). Bare-machine check against the live registry (fresh npm
 prefix, scratch git repo):
 `npm i -g @teambrain/cli` → 196 packages in 24s → `tb --version` → `0.0.1` →
 `tb init` runs correctly (reports nothing to import in an empty repo) →
-`tb doctor` runs. Publishing CI exists: `publish.yml` (push-to-main, publishes
-version bumps) and `release.yml` (tag `v*` → npm publish with provenance +
-mac/linux `bun --compile` binaries attached to the GitHub Release).
+`tb doctor` runs. Publishing CI exists: `changesets.yml` (push-to-main →
+Changesets opens a Version Packages PR; merging it publishes the bumped
+versions to npm via `pnpm -r publish`) and `release.yml` (tag `v*` → npm
+publish with provenance + mac/linux `bun --compile` binaries attached to the
+GitHub Release).
 
 **Still open from D1:**
 - No git tag / GitHub Release has ever been cut (D1.4: `v0.1.0`).

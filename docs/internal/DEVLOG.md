@@ -682,6 +682,21 @@ estimate. Assignment must be deterministic per sid across every process (hook
 tag, daemon bundle, MCP search) or the arms disagree. Tradeoffs: FNV-1a hand-
 rolled (boring-deps); disabled-arm tag is meaningless-but-harmless.
 
+## 2026-07-20 — CI: automated versioning + npm publish via Changesets
+What: replaced the continuous `publish.yml` (which only published on a manual
+version bump, so merges were silent no-ops) with a Changesets flow. `pnpm
+changeset` per change → on merge to main, `changesets/action` opens a "Version
+Packages" PR (bumps + CHANGELOGs); merging it runs `pnpm run release`
+(`pnpm -r publish`, rewrites workspace:* + skips already-published). All
+@teambrain/* are `fixed` (lockstep) so one changeset bumps all seven together.
+Added a changeset for the pending R16.1 T7 + performance-metrics work (→ 0.5.0).
+Why: user reported "CI doesn't push to npm" — diagnosis: publishing worked
+(0.4.0 live) but nothing new shipped because the version was never bumped;
+Changesets automates the bump. Tradeoffs: kept `release.yml` for tag-triggered
+standalone binaries (Changesets tags are per-package, not v*); `pnpm publish`
+(not `changeset publish`) so workspace:* deps are rewritten. ci.yml actionlint
+list + STATUS.md updated for the renamed workflow.
+
 ## 2026-07-20 — PM4: tb metrics read-only local snapshot
 What: new `tb metrics [--json]` — a read-only local dump for "why is my context
 slow/noisy": index size, latency percentiles (from the daemon heartbeat via the

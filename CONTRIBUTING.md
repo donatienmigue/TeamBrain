@@ -23,6 +23,25 @@ of every Claude Code turn in this repo, so a turn can't end with failing
 tests. The repo also dogfoods TeamBrain on itself — see
 [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md#dogfooding-this-repo-runs-teambrain-on-itself).
 
+## Releases (Changesets)
+
+Versioning and npm publishing are automated with
+[Changesets](https://github.com/changesets/changesets). **Any change that
+touches a published `@teambrain/*` package needs a changeset:**
+
+```
+pnpm changeset      # pick the bump (patch/minor/major) + write a summary
+```
+
+Commit the generated `.changeset/*.md` file with your PR. All `@teambrain/*`
+packages are versioned in lockstep (`fixed`), so one changeset bumps them all.
+
+On merge to `main`, the `changesets` workflow opens (or updates) a **"Version
+Packages" PR** that consumes the pending changesets and bumps versions. Merging
+*that* PR publishes the new versions to npm (`pnpm -r publish`, which rewrites
+`workspace:*` and skips already-published versions). Standalone binaries still
+come from a manual `v*` tag via `release.yml`.
+
 ## Good first contributions
 
 - **Redaction corpus cases** (`packages/redact/corpus/`) — adversarial true

@@ -60,10 +60,7 @@ export {
   runMcpServer,
   type McpServerOptions,
 } from './mcp-server.js';
-export {
-  servesCodemap,
-  filterSearchForArm,
-} from './codemap-arm-serving.js';
+export { servesCodemap, filterSearchForArm } from './codemap-arm-serving.js';
 export {
   openBackend,
   type OpenBackendOptions,

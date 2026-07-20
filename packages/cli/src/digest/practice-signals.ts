@@ -227,7 +227,10 @@ function bootstrapReductionCi(
   samples.sort((a, b) => a - b);
   const at = (q: number): number =>
     samples[
-      Math.min(samples.length - 1, Math.max(0, Math.round(q * (samples.length - 1))))
+      Math.min(
+        samples.length - 1,
+        Math.max(0, Math.round(q * (samples.length - 1))),
+      )
     ] as number;
   return [Math.round(at(0.025)), Math.round(at(0.975))];
 }

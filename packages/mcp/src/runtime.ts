@@ -1,6 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { effectiveHoldout, parseBrainConfig, type Logger } from '@teambrain/core';
+import {
+  effectiveHoldout,
+  parseBrainConfig,
+  type Logger,
+} from '@teambrain/core';
 import {
   openIndex,
   syncIndexWithBrain,

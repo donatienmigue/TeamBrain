@@ -22,7 +22,11 @@ export function fnv1a(input: string): number {
     // 32-bit FNV prime multiply via shifts, kept in uint32 with >>> 0.
     hash =
       (hash +
-        ((hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24))) >>>
+        ((hash << 1) +
+          (hash << 4) +
+          (hash << 7) +
+          (hash << 8) +
+          (hash << 24))) >>>
       0;
   }
   return hash >>> 0;

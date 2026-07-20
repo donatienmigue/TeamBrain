@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import type { SessionEvent } from '@teambrain/core';
-import { computePracticeSignals, MIN_ARM_SESSIONS } from './practice-signals.js';
+import {
+  computePracticeSignals,
+  MIN_ARM_SESSIONS,
+} from './practice-signals.js';
 
 // D3.2/D3.3 acceptance: the FlightDeck signal aggregates computed from
 // metadata-only events, plus the structural privacy negative test (no
@@ -253,7 +256,9 @@ describe('computePracticeSignals: codemap holdout (T7d)', () => {
     ): void => {
       for (let i = 0; i < count; i += 1) {
         const sid = `${arm}-${i}`;
-        out.push(ev(sid, 0, { ev: 'session_start', data: { codemap_arm: arm } }));
+        out.push(
+          ev(sid, 0, { ev: 'session_start', data: { codemap_arm: arm } }),
+        );
         if (arm === 'treatment') {
           out.push(
             ev(sid, 1, {
@@ -264,7 +269,9 @@ describe('computePracticeSignals: codemap holdout (T7d)', () => {
         }
         const explores = base + (i % 3); // deterministic spread
         for (let j = 0; j < explores; j += 1) {
-          out.push(ev(sid, 2 + j, { ev: 'tool_use', data: { kind: 'explore' } }));
+          out.push(
+            ev(sid, 2 + j, { ev: 'tool_use', data: { kind: 'explore' } }),
+          );
         }
       }
     };

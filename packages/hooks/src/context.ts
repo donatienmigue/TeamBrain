@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
-import { parseBrainConfig } from '@teambrain/core';
+import { effectiveHoldout, parseBrainConfig } from '@teambrain/core';
 import { buildDenyMatcher, type RedactionLevel } from '@teambrain/redact';
 import type { HookContext } from './map.js';
 
@@ -88,11 +88,17 @@ export function buildHookContext(
   const brainDir = join(root, '.teambrain');
 
   let level: RedactionLevel = 'strict';
+  // R16.1 T7: 0 unless codemap is enabled; a malformed/absent config leaves it
+  // at 0 (treatment), which is the safe no-op — no session is held out.
+  let codemapHoldout = 0;
   const configPath = join(brainDir, 'brain.yaml');
   if (existsSync(configPath)) {
     try {
-      level = parseBrainConfig(readFileSync(configPath, 'utf8')).redaction
-        .level;
+      const config = parseBrainConfig(readFileSync(configPath, 'utf8'));
+      level = config.redaction.level;
+      codemapHoldout = effectiveHoldout(
+        config.codemap as { enabled: boolean; holdout?: number },
+      );
     } catch {
       /* keep strict on a malformed config — fail safe toward more redaction */
     }
@@ -111,6 +117,7 @@ export function buildHookContext(
     tool: options.tool ?? 'claude-code',
     model: options.model ?? process.env['TEAMBRAIN_MODEL'] ?? 'unknown',
     redactionLevel: level,
+    codemapHoldout,
     now: options.now ?? ((): Date => new Date()),
     deny,
     session: options.session ?? { commitShas: sessionCommits(cwd) },

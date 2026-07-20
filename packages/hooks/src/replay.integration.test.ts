@@ -136,6 +136,21 @@ describe('hook replay (M5.2 accept)', () => {
     }
   });
 
+  it('R16.1 T7c: session_start carries only the people-free codemap_arm tag', () => {
+    const start = events.find((e) => e.ev === 'session_start');
+    // The arm is metadata (control|treatment), never an identity field, and is
+    // the sole key added to session_start data.
+    expect(Object.keys(start?.data ?? {})).toEqual(['codemap_arm']);
+    expect(['control', 'treatment']).toContain(
+      (start?.data as { codemap_arm: string }).codemap_arm,
+    );
+    // The arm never leaks onto any other event.
+    for (const event of events) {
+      if (event.ev === 'session_start') continue;
+      expect(event.data).not.toHaveProperty('codemap_arm');
+    }
+  });
+
   it('derives the session_end outcome from commits (committed)', () => {
     const end = events.find((e) => e.ev === 'session_end');
     expect(end?.data).toMatchObject({

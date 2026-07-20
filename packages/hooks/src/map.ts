@@ -1,4 +1,4 @@
-import type { SessionEvent } from '@teambrain/core';
+import { codemapArm, type SessionEvent } from '@teambrain/core';
 import type { DenyMatcher, RedactionLevel } from '@teambrain/redact';
 import type {
   PostToolUsePayload,
@@ -18,6 +18,12 @@ export interface HookContext {
   tool: string;
   model: string;
   redactionLevel: RedactionLevel;
+  /**
+   * R16.1 T7: effective codemap holdout fraction (0 when codemap is disabled).
+   * Drives the deterministic control/treatment arm tagged on session_start.
+   * Absent → 0 (treatment), so a context that never sets it is unaffected.
+   */
+  codemapHoldout?: number;
   now: () => Date;
   /** Deny matcher (.gitignore + brain.yaml deny-globs); drops matching paths. */
   deny?: DenyMatcher;
@@ -121,12 +127,19 @@ export function mapPostToolUse(
   return envelope(ctx, sidOf(payload.session_id, ctx), 'tool_use', data);
 }
 
-/** Maps a SessionStart payload to a C2 `session_start` event. */
+/**
+ * Maps a SessionStart payload to a C2 `session_start` event. Tags the
+ * deterministic codemap `codemap_arm` (R16.1 T7) — additive, people-free
+ * metadata (control|treatment), computed from the session's own sid so the
+ * serving bypass and the digest agree on the arm.
+ */
 export function mapSessionStart(
   payload: SessionStartPayload,
   ctx: HookContext,
 ): SessionEvent {
-  return envelope(ctx, sidOf(payload.session_id, ctx), 'session_start', {});
+  const sid = sidOf(payload.session_id, ctx);
+  const arm = codemapArm(sid, ctx.codemapHoldout ?? 0);
+  return envelope(ctx, sid, 'session_start', { codemap_arm: arm });
 }
 
 /**

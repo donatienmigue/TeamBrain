@@ -682,6 +682,17 @@ estimate. Assignment must be deterministic per sid across every process (hook
 tag, daemon bundle, MCP search) or the arms disagree. Tradeoffs: FNV-1a hand-
 rolled (boring-deps); disabled-arm tag is meaningless-but-harmless.
 
+## 2026-07-20 — R16.1 T7c: codemap_arm tag on session_start
+What: `mapSessionStart` now tags `data.codemap_arm` (control|treatment),
+computed from the session's own sid + the effective holdout (read from
+brain.yaml in `buildHookContext`, 0 when codemap disabled/config malformed).
+Additive under C2 (session_start.data is looseObject) — CONTRACTS untouched.
+Why: the digest (T7d) needs every session's arm to split metrics; tagging at
+the one place that owns session identity keeps hook and serving in agreement.
+Tradeoffs: privacy negative test extended — arm is people-free metadata and the
+sole session_start key; the Cursor Tier-B path is unchanged (arm-less → digest
+buckets it as neither arm).
+
 ## 2026-07-16 — autostart circuit breaker (bounded retry + stop)
 What: ensureDaemon now records consecutive failed start attempts
 (runtimeDir/autostart-failures.json). After 3 failures it stops spawning

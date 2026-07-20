@@ -94,7 +94,13 @@ describe('aggregateDigest (M7.1)', () => {
     const events: SessionEvent[] = [];
     for (let i = 0; i < 3; i += 1) {
       events.push(
-        ev('memory_retrieved', { via: 'context', ids: ['M1'], tokens: 800, required: 1, required_tokens: 200 }),
+        ev('memory_retrieved', {
+          via: 'context',
+          ids: ['M1'],
+          tokens: 800,
+          required: 1,
+          required_tokens: 200,
+        }),
       );
     }
     const report = aggregateDigest({
@@ -102,7 +108,10 @@ describe('aggregateDigest (M7.1)', () => {
       active: [{ id: 'M1', title: 'A', created: '2026-07-01' }],
       events: [
         ...events,
-        { ...ev('session_start', { codemap_arm: 'treatment' }), sid: 't1' } as SessionEvent,
+        {
+          ...ev('session_start', { codemap_arm: 'treatment' }),
+          sid: 't1',
+        } as SessionEvent,
       ],
     });
     expect(report.netEfficiency.verdict).toBe('insufficient-data');
@@ -113,15 +122,31 @@ describe('aggregateDigest (M7.1)', () => {
     // Build ≥20 sessions/arm: control explores ~10, treatment ~3, each with a
     // session-start injection so the weight term is populated.
     const events: SessionEvent[] = [];
-    const mk = (arm: 'control' | 'treatment', i: number, explores: number): void => {
+    const mk = (
+      arm: 'control' | 'treatment',
+      i: number,
+      explores: number,
+    ): void => {
       const sid = `${arm}-${i}`;
-      events.push({ ...ev('session_start', { codemap_arm: arm }), sid } as SessionEvent);
       events.push({
-        ...ev('memory_retrieved', { via: 'context', ids: ['M1'], tokens: 700, required: 1, required_tokens: 200 }),
+        ...ev('session_start', { codemap_arm: arm }),
+        sid,
+      } as SessionEvent);
+      events.push({
+        ...ev('memory_retrieved', {
+          via: 'context',
+          ids: ['M1'],
+          tokens: 700,
+          required: 1,
+          required_tokens: 200,
+        }),
         sid,
       } as SessionEvent);
       for (let j = 0; j < explores; j += 1) {
-        events.push({ ...ev('tool_use', { kind: 'explore' }), sid } as SessionEvent);
+        events.push({
+          ...ev('tool_use', { kind: 'explore' }),
+          sid,
+        } as SessionEvent);
       }
     };
     for (let i = 0; i < 22; i += 1) mk('control', i, 10 + (i % 3));

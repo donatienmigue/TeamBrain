@@ -130,9 +130,8 @@ export function sendTiming(
     socket.setTimeout(options.timeoutMs ?? HOOK_CLIENT_TIMEOUT_MS, finish);
     socket.on('error', finish);
     socket.on('connect', () => {
-      socket.write(
-        encodeMessage({ kind: TIMING_REQUEST, metric, ms }),
-        () => finish(),
+      socket.write(encodeMessage({ kind: TIMING_REQUEST, metric, ms }), () =>
+        finish(),
       );
     });
   });

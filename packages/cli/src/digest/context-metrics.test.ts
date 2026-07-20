@@ -25,7 +25,10 @@ function ev(
 }
 
 function injection(sid: string, data: object): SessionEvent {
-  return ev(sid, 0, { ev: 'memory_retrieved', data: { via: 'context', ...data } });
+  return ev(sid, 0, {
+    ev: 'memory_retrieved',
+    data: { via: 'context', ...data },
+  });
 }
 
 const NOW = new Date('2026-07-06T00:00:00Z');
@@ -34,8 +37,18 @@ describe('computeContextMetrics (§3.1)', () => {
   it('injection weight distribution over sessions', () => {
     const m = computeContextMetrics(
       [
-        injection('s1', { ids: ['M1'], tokens: 600, required: 1, required_tokens: 200 }),
-        injection('s2', { ids: ['M1'], tokens: 1000, required: 1, required_tokens: 200 }),
+        injection('s1', {
+          ids: ['M1'],
+          tokens: 600,
+          required: 1,
+          required_tokens: 200,
+        }),
+        injection('s2', {
+          ids: ['M1'],
+          tokens: 1000,
+          required: 1,
+          required_tokens: 200,
+        }),
       ],
       { active: [], staleDays: 90, now: NOW },
     );
@@ -46,7 +59,14 @@ describe('computeContextMetrics (§3.1)', () => {
 
   it('required-load flags when it exceeds the token budget', () => {
     const under = computeContextMetrics(
-      [injection('s1', { ids: ['R1'], tokens: 500, required: 2, required_tokens: 400 })],
+      [
+        injection('s1', {
+          ids: ['R1'],
+          tokens: 500,
+          required: 2,
+          required_tokens: 400,
+        }),
+      ],
       { active: [], staleDays: 90, now: NOW, requiredBudget: 1000 },
     );
     expect(under.requiredLoad).toEqual({
@@ -56,7 +76,14 @@ describe('computeContextMetrics (§3.1)', () => {
       overBudget: false,
     });
     const over = computeContextMetrics(
-      [injection('s1', { ids: ['R1'], tokens: 2000, required: 9, required_tokens: 1500 })],
+      [
+        injection('s1', {
+          ids: ['R1'],
+          tokens: 2000,
+          required: 9,
+          required_tokens: 1500,
+        }),
+      ],
       { active: [], staleDays: 90, now: NOW, requiredBudget: 1000 },
     );
     expect(over.requiredLoad.overBudget).toBe(true);
@@ -72,7 +99,10 @@ describe('computeContextMetrics (§3.1)', () => {
           required_tokens: 0,
         }),
         // a.ts is touched later; b.ts is not.
-        ev('s1', 1, { ev: 'tool_use', data: { kind: 'edit', path: 'src/a.ts' } }),
+        ev('s1', 1, {
+          ev: 'tool_use',
+          data: { kind: 'edit', path: 'src/a.ts' },
+        }),
       ],
       { active: [], staleDays: 90, now: NOW },
     );
@@ -83,7 +113,14 @@ describe('computeContextMetrics (§3.1)', () => {
 
   it('utilization rate is null when no codemap was injected (not fabricated)', () => {
     const m = computeContextMetrics(
-      [injection('s1', { ids: ['M1'], tokens: 300, required: 0, required_tokens: 0 })],
+      [
+        injection('s1', {
+          ids: ['M1'],
+          tokens: 300,
+          required: 0,
+          required_tokens: 0,
+        }),
+      ],
       { active: [], staleDays: 90, now: NOW },
     );
     expect(m.utilization.rate).toBeNull();
@@ -139,10 +176,21 @@ describe('computeContextMetrics (§3.1)', () => {
             data: { kind: 'edit', path: 'src/a.ts' },
           }),
         ],
-        { active: [{ id: 'M1', title: 'A', created: '2026-01-01' }], staleDays: 90, now: NOW },
+        {
+          active: [{ id: 'M1', title: 'A', created: '2026-01-01' }],
+          staleDays: 90,
+          now: NOW,
+        },
       ),
     );
-    for (const forbidden of ['secret-sid', 'claude-code', 'acme/api', '"sid"', 'src/a.ts', 'M1']) {
+    for (const forbidden of [
+      'secret-sid',
+      'claude-code',
+      'acme/api',
+      '"sid"',
+      'src/a.ts',
+      'M1',
+    ]) {
       expect(serialized).not.toContain(forbidden);
     }
   });

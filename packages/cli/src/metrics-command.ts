@@ -64,7 +64,8 @@ export async function runMetricsCommand(
 ): Promise<{ exitCode: 0 | ErrorExitCode; output: string }> {
   const root = git(['rev-parse', '--show-toplevel'], repoDir);
   try {
-    if (root === null) throw new UserError(`${repoDir} is not a git repository`);
+    if (root === null)
+      throw new UserError(`${repoDir} is not a git repository`);
   } catch (err) {
     return {
       exitCode: exitCodeForError(err) as ErrorExitCode,
@@ -118,7 +119,9 @@ export async function runMetricsCommand(
 }
 
 function ms(m: { p50Ms: number | null; p95Ms: number | null }): string {
-  return m.p95Ms === null ? 'no samples' : `p50 ${m.p50Ms}ms / p95 ${m.p95Ms}ms`;
+  return m.p95Ms === null
+    ? 'no samples'
+    : `p50 ${m.p50Ms}ms / p95 ${m.p95Ms}ms`;
 }
 
 function renderHuman(s: MetricsSnapshot): string {

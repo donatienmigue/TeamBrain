@@ -139,9 +139,9 @@ describe('daemon (M4.1)', () => {
     const daemon = await startFixtureDaemon();
     await requestSessionContext(daemon.runtimeDir); // no sid → nothing to key on
     await new Promise((r) => setTimeout(r, 150));
-    expect(
-      existsSync(sessionRecordPath(daemon.runtimeDir, 'undefined')),
-    ).toBe(false);
+    expect(existsSync(sessionRecordPath(daemon.runtimeDir, 'undefined'))).toBe(
+      false,
+    );
   });
 
   it('retired memory disappears from memory_search within a watcher cycle (R5)', async () => {

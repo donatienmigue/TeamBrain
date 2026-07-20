@@ -136,7 +136,9 @@ export function renderSlackMessage(report: DigestReport): SlackMessage {
       `• Codemap injection utilization: ${util}`,
       `• Served staleness: ${staleness}`,
     ].join('\n');
-    blocks.push(section(`*Context efficiency & rot (aggregate-only)*\n${lines}`));
+    blocks.push(
+      section(`*Context efficiency & rot (aggregate-only)*\n${lines}`),
+    );
   }
 
   const ne = report.netEfficiency;

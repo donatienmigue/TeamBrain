@@ -59,7 +59,9 @@ export async function captureAndEmit(
 
   if (event !== null) {
     void sendTiming(params.runtimeDir, 'hook', handlerMs, {
-      ...(params.timeoutMs === undefined ? {} : { timeoutMs: params.timeoutMs }),
+      ...(params.timeoutMs === undefined
+        ? {}
+        : { timeoutMs: params.timeoutMs }),
     });
     await emitEvent(params.runtimeDir, event, {
       ...(params.timeoutMs === undefined

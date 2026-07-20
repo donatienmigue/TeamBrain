@@ -78,7 +78,11 @@ describe('tb doctor (M7.2)', () => {
     expect(report.index.lastReindexAt).toBe('2026-07-06T09:05:00.000Z');
     expect(report.retrieval).toEqual({ p95Ms: 12.5, samples: 30 });
     // PM §3.2: real latency percentiles + bloat signals surface.
-    expect(report.latency.search).toEqual({ p50Ms: 40, p95Ms: 90, samples: 15 });
+    expect(report.latency.search).toEqual({
+      p50Ms: 40,
+      p95Ms: 90,
+      samples: 15,
+    });
     expect(report.latency.hook.p95Ms).toBe(7);
     expect(report.index.reindexCount).toBe(4);
     expect(report.index.dbSizeBytes).toBe(1048576);

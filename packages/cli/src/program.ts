@@ -300,7 +300,9 @@ export function buildProgram(): Command {
 
   program
     .command('metrics')
-    .description('print a read-only local metrics snapshot (health + context efficiency)')
+    .description(
+      'print a read-only local metrics snapshot (health + context efficiency)',
+    )
     .helpGroup('Daemon')
     .option('--json', 'emit machine-readable JSON snapshot', false)
     .action(async (opts: { json: boolean }) => {

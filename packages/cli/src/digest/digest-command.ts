@@ -111,9 +111,7 @@ export function readRequiredBudget(brainDir: string): number | undefined {
   const path = join(brainDir, 'brain.yaml');
   if (!existsSync(path)) return undefined;
   const parsed = parseYaml(readFileSync(path, 'utf8')) as
-    | { metrics?: { required_max_tokens?: unknown } }
-    | null
-    | undefined;
+    { metrics?: { required_max_tokens?: unknown } } | null | undefined;
   const value = parsed?.metrics?.required_max_tokens;
   return typeof value === 'number' && value > 0 ? value : undefined;
 }

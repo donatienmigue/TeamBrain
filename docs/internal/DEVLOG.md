@@ -682,6 +682,24 @@ estimate. Assignment must be deterministic per sid across every process (hook
 tag, daemon bundle, MCP search) or the arms disagree. Tradeoffs: FNV-1a hand-
 rolled (boring-deps); disabled-arm tag is meaningless-but-harmless.
 
+## 2026-07-20 — R16.1 T7b: control-arm serving bypass (single chokepoint)
+What: `codemap-arm-serving.ts` centralizes the arm decision (`servesCodemap`)
+and the search filter (`filterSearchForArm`); openBackend now exposes the
+effective `codemapHoldout`. Bundle path: the SessionStart hook threads its sid
+→ session_context request → daemon `contextBundle(sid)`; a control session gets
+paths:[] + null stats, i.e. the byte-identical empty-codemap bundle (asserted).
+Search path: `tb mcp` reads its sid from `TEAMBRAIN_SESSION_ID`, computes the
+arm, and (control) drops source:'codemap' at the one memory_search chokepoint.
+Also: `tb hook session-start` now emits the session_start event (previously
+never captured on the native path) so the arm tag actually reaches the spool.
+Why: CM6 needs a clean control baseline; both surfaces must key off one arm.
+Tradeoffs / flagged: no vendor exposes a documented per-session id to a
+`.mcp.json`-launched server, so `TEAMBRAIN_SESSION_ID` is the mechanism but the
+install does NOT yet write a speculative placeholder (would break the zero-diff
+install + could inject an empty env). Absent the var, search serves treatment-
+equivalently while the bundle bypass (sid-reliable) still fully applies — a
+partial, honest degradation, documented in the README.
+
 ## 2026-07-20 — R16.1 T7c: codemap_arm tag on session_start
 What: `mapSessionStart` now tags `data.codemap_arm` (control|treatment),
 computed from the session's own sid + the effective holdout (read from

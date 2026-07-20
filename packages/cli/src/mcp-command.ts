@@ -6,6 +6,7 @@ import {
   openBackend,
   resolveRuntimeDir,
   runMcpServer,
+  servesCodemap,
 } from '@teambrain/mcp';
 import { ADAPTERS } from '@teambrain/hooks';
 
@@ -55,7 +56,18 @@ export async function runMcpCommand(
     backend.context = wrapInferenceContext(backend.context, root, adapter.tool);
   }
 
-  await runMcpServer(backend.context);
+  // R16.1 T7b: the search-side control-arm bypass. The stdio MCP server is
+  // per-session but sid-less by default; it reads the session id from
+  // TEAMBRAIN_SESSION_ID (wired by `tb install` where the client exposes a
+  // per-session value). Absent/empty → treatment (serve), i.e. behavior is
+  // unchanged from before the holdout existed.
+  const sid = process.env['TEAMBRAIN_SESSION_ID'];
+  const serveCodemap = servesCodemap(sid, backend.codemapHoldout);
+  if (sid !== undefined && sid.length > 0 && !serveCodemap) {
+    logger.debug('codemap control arm: memory_search excludes codemap', {});
+  }
+
+  await runMcpServer(backend.context, { serveCodemap });
   // Stay alive on the stdio transport until the parent closes stdin.
   await new Promise<void>((resolvePromise) => {
     process.stdin.on('close', resolvePromise);

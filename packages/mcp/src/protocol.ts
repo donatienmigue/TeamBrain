@@ -15,6 +15,9 @@ export const daemonRequestSchema = z.discriminatedUnion('kind', [
   z.object({
     kind: z.literal(SESSION_CONTEXT_REQUEST),
     scope: z.enum(['team', 'org']).optional(),
+    // R16.1 T7b: the session id, when the caller knows it (the SessionStart
+    // hook does). Drives the codemap control-arm bypass; absent → treatment.
+    sid: z.string().optional(),
   }),
   z.object({ kind: z.literal(PING_REQUEST) }),
 ]);

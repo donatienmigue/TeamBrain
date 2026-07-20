@@ -11,6 +11,7 @@ import {
   memorySearchInput,
   type ToolContext,
 } from './tools.js';
+import { filterSearchForArm } from './codemap-arm-serving.js';
 
 // M4.2 stdio MCP server (C3). Server name `teambrain` → the 4 tools appear
 // to agents as mcp__teambrain__*. Each tool returns two channels: `content`
@@ -41,9 +42,23 @@ function renderMemoryList(views: MemoryView[], emptyText: string): string {
     : views.map(renderMemoryBlock).join('\n\n');
 }
 
+export interface McpServerOptions {
+  /**
+   * R16.1 T7b: whether this session's arm is served codemap. A control
+   * session (false) gets no codemap index block in memory_context and no
+   * codemap-sourced results from memory_search. Defaults to true (treatment),
+   * so a caller that doesn't know the session's arm is unaffected.
+   */
+  serveCodemap?: boolean;
+}
+
 /** Builds the MCP server over an already-open backend (no transport attached). */
-export function createMcpServer(context: ToolContext): McpServer {
+export function createMcpServer(
+  context: ToolContext,
+  options: McpServerOptions = {},
+): McpServer {
   const tools = createTools(context);
+  const serveCodemap = options.serveCodemap ?? true;
   const server = new McpServer(
     { name: MCP_SERVER_NAME, version: CORE_VERSION },
     { capabilities: { tools: {} } },
@@ -66,11 +81,12 @@ export function createMcpServer(context: ToolContext): McpServer {
       // fallback (paths: []), never the unscoped "newest" slice (R16.1 P1).
       const context_ = tools.memoryContext({ paths: [] });
       // The text channel carries the same bundle a SessionStart hook gets,
-      // including the CodeMap index block when the codemap is non-empty.
+      // including the CodeMap index block when the codemap is non-empty — but
+      // a control session (T7b) is served no index block (stats: null).
       const bundle = renderContextBundle(
         context_,
         SESSION_CONTEXT_MAX_CHARS,
-        context.backend.codemapStats?.() ?? null,
+        serveCodemap ? (context.backend.codemapStats?.() ?? null) : null,
       );
       return textResult(bundle, context_);
     },
@@ -86,7 +102,12 @@ export function createMcpServer(context: ToolContext): McpServer {
       outputSchema: { memories: z.array(memoryViewSchema) },
     },
     async (args) => {
-      const memories = await tools.memorySearch(args);
+      // T7b: a control session's search excludes codemap-sourced results at
+      // this one chokepoint, keyed by the session's arm.
+      const memories = filterSearchForArm(
+        await tools.memorySearch(args),
+        serveCodemap,
+      );
       return textResult(renderMemoryList(memories, 'No matching memories.'), {
         memories,
       });
@@ -130,8 +151,11 @@ export function createMcpServer(context: ToolContext): McpServer {
 }
 
 /** Builds the server and attaches a stdio transport (the `tb mcp` entry). */
-export async function runMcpServer(context: ToolContext): Promise<McpServer> {
-  const server = createMcpServer(context);
+export async function runMcpServer(
+  context: ToolContext,
+  options: McpServerOptions = {},
+): Promise<McpServer> {
+  const server = createMcpServer(context, options);
   await server.connect(new StdioServerTransport());
   return server;
 }

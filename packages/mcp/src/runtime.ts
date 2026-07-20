@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { parseBrainConfig, type Logger } from '@teambrain/core';
+import { effectiveHoldout, parseBrainConfig, type Logger } from '@teambrain/core';
 import {
   openIndex,
   syncIndexWithBrain,
@@ -34,22 +34,37 @@ export interface OpenBackendOptions {
   embedder?: Embedder | null;
 }
 
-/** codemap.enabled from brain.yaml; false when the file is absent/invalid. */
-function readCodemapEnabled(brainDir: string, logger?: Logger): boolean {
+/**
+ * codemap.enabled + the effective holdout (R16.1 T7) from brain.yaml. An
+ * absent/invalid file disables codemap and yields holdout 0 (no session held
+ * out) — the safe default in both dimensions.
+ */
+function readCodemapConfig(
+  brainDir: string,
+  logger?: Logger,
+): { enabled: boolean; holdout: number } {
   try {
-    return parseBrainConfig(readFileSync(join(brainDir, 'brain.yaml'), 'utf8'))
-      .codemap.enabled;
+    const codemap = parseBrainConfig(
+      readFileSync(join(brainDir, 'brain.yaml'), 'utf8'),
+    ).codemap as { enabled: boolean; holdout?: number };
+    return { enabled: codemap.enabled, holdout: effectiveHoldout(codemap) };
   } catch (err) {
     logger?.debug('brain.yaml unreadable; codemap treated as disabled', {
       reason: (err as Error).message,
     });
-    return false;
+    return { enabled: false, holdout: 0 };
   }
 }
 
 export interface BackendHandle {
   index: SqliteIndex;
   context: ToolContext;
+  /**
+   * R16.1 T7: effective codemap holdout (0 when disabled/unreadable). The
+   * daemon (bundle) and the MCP server (search) key their control-arm bypass
+   * off this + the session's sid, so both arms agree.
+   */
+  codemapHoldout: number;
   close(): void;
 }
 
@@ -73,6 +88,7 @@ export async function openBackend(
     embedder,
     ...(options.logger === undefined ? {} : { logger: options.logger }),
   });
+  let codemapHoldout = 0;
   if (options.brainDir !== undefined) {
     await syncIndexWithBrain(index, options.brainDir, {
       ...(options.forceReindex === undefined
@@ -83,8 +99,10 @@ export async function openBackend(
     // D6/R16: the codemap source follows brain.yaml's codemap.enabled.
     // Disabled (or unreadable config) empties the source, so flipping the
     // flag off stops serving codemap entries on the next open.
+    const codemapConfig = readCodemapConfig(options.brainDir, options.logger);
+    codemapHoldout = codemapConfig.holdout;
     await syncIndexWithCodemap(index, options.brainDir, {
-      enabled: readCodemapEnabled(options.brainDir, options.logger),
+      enabled: codemapConfig.enabled,
       ...(options.forceReindex === undefined
         ? {}
         : { force: options.forceReindex }),
@@ -101,6 +119,7 @@ export async function openBackend(
   return {
     index,
     context,
+    codemapHoldout,
     close: () => index.close(),
   };
 }

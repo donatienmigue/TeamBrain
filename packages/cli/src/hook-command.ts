@@ -39,8 +39,30 @@ export async function runHookCommand(
   options: { tool?: string } = {},
 ): Promise<{ exitCode: 0 | ErrorExitCode; output: string }> {
   if (event === 'session-start') {
+    // The SessionStart hook does two things: (1) fire-and-forget the
+    // session_start event — the only place it is captured on the native path,
+    // and the carrier of the R16.1 T7 codemap_arm tag; (2) inject the context
+    // bundle, passing the sid so the daemon can apply the control-arm bypass.
+    // Both swallow every error so the session is never affected (principle 2).
+    let sid: string | undefined;
+    try {
+      const payloadJson = readStdin().trim();
+      if (payloadJson.length > 0) {
+        sid = (JSON.parse(payloadJson) as { session_id?: string }).session_id;
+        await captureAndEmit({
+          hookEvent: 'SessionStart',
+          payloadJson,
+          runtimeDir: resolveRuntimeDir(),
+          ...(options.tool === undefined ? {} : { tool: options.tool }),
+        });
+      }
+    } catch (err) {
+      createLogger().debug('session_start capture dropped', {
+        reason: err instanceof Error ? err.message : String(err),
+      });
+    }
     // Writes hookSpecificOutput to stdout itself; never throws.
-    await runSessionStartHook();
+    await runSessionStartHook({ ...(sid === undefined ? {} : { sid }) });
     return { exitCode: 0, output: '' };
   }
 

@@ -14,6 +14,7 @@ import {
   CODEMAP_INDEX_MAX_TOKENS,
   SESSION_CONTEXT_MAX_CHARS,
 } from './context.js';
+import { servesCodemap, filterSearchForArm } from './codemap-arm-serving.js';
 import { openBackend } from './runtime.js';
 import { createTools } from './tools.js';
 import {
@@ -303,6 +304,77 @@ describe('codemap serving (D6/R16)', () => {
     const indexBlock = renderCodemapIndexBlock(index.codemapStats());
     const indexTokens = Math.ceil((indexBlock as string).length / 4);
     expect(sliceTokens + indexTokens).toBeLessThanOrEqual(700);
+  });
+
+  it('R16.1 T7b: servesCodemap keys the bypass — control drops codemap, sid-less serves', () => {
+    // Deterministic edges: holdout 1 → always control (no serve); holdout 0 →
+    // always treatment (serve); no sid → treatment (bare memory_context call).
+    expect(servesCodemap('any-sid', 1)).toBe(false);
+    expect(servesCodemap('any-sid', 0)).toBe(true);
+    expect(servesCodemap(undefined, 0.5)).toBe(true);
+    expect(servesCodemap('', 0.5)).toBe(true);
+  });
+
+  it('R16.1 T7b: a control-arm bundle is byte-identical to the empty-codemap bundle', async () => {
+    const now = new Date('2026-07-15T00:00:00Z');
+    // An index WITH codemap docs, and a second identical-memory index without.
+    const withCodemap = await fixtureIndex();
+    const brainDir = codemapBrainDir();
+    writeEntry(brainDir, 'src/payments/retry.ts', 'Retries webhooks.');
+    writeEntry(brainDir, 'src/auth/session.ts', 'Session auth.');
+    await syncIndexWithCodemap(withCodemap, brainDir, { enabled: true });
+    expect(withCodemap.codemapStats().entryCount).toBe(2);
+    const codemapFree = await fixtureIndex();
+
+    // The daemon renders a control session with paths:[] (no slice) and null
+    // stats (no index block) — exactly the codemap-off render.
+    const controlBundle = renderContextBundle(
+      buildMemoryContext(withCodemap, { now, paths: [] }),
+      SESSION_CONTEXT_MAX_CHARS,
+      null,
+    );
+    const emptyBundle = renderContextBundle(
+      buildMemoryContext(codemapFree, { now }),
+      SESSION_CONTEXT_MAX_CHARS,
+      codemapFree.codemapStats(),
+    );
+    expect(controlBundle).toBe(emptyBundle);
+    expect(controlBundle).not.toContain('CodeMap:');
+    expect(controlBundle).not.toContain('[codemap ·');
+
+    // …and a treatment render of the same index is NOT the empty bundle.
+    const treatmentBundle = renderContextBundle(
+      buildMemoryContext(withCodemap, {
+        now,
+        paths: ['src/payments/retry.ts'],
+      }),
+      SESSION_CONTEXT_MAX_CHARS,
+      withCodemap.codemapStats(),
+    );
+    expect(treatmentBundle).toContain('CodeMap:');
+    expect(treatmentBundle).not.toBe(controlBundle);
+  });
+
+  it('R16.1 T7b: memory_search excludes codemap for a control session, keeps it for treatment', async () => {
+    const index = await fixtureIndex();
+    const brainDir = codemapBrainDir();
+    writeEntry(
+      brainDir,
+      'src/zod-boundary.ts',
+      'Validates external input with zod at the boundary.',
+    );
+    await syncIndexWithCodemap(index, brainDir, { enabled: true });
+
+    const runtimeDir = await tempRuntimeDir(cleanups);
+    const tools = createTools(toolContextFor(index, runtimeDir));
+    const results = await tools.memorySearch({ query: 'zod boundary input' });
+    expect(results.some((v) => v.source === 'codemap')).toBe(true);
+
+    // Control (serve=false) strips codemap; treatment (serve=true) is unchanged.
+    const control = filterSearchForArm(results, false);
+    expect(control.some((v) => v.source === 'codemap')).toBe(false);
+    expect(control.every((v) => v.source === 'memory')).toBe(true);
+    expect(filterSearchForArm(results, true)).toEqual(results);
   });
 
   it('e2e both modes: openBackend serves codemap iff brain.yaml enables it', async () => {

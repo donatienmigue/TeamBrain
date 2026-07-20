@@ -61,7 +61,7 @@ function requestResponse(
  */
 export async function requestSessionContext(
   runtimeDir: string,
-  options: { scope?: 'team' | 'org'; timeoutMs?: number } = {},
+  options: { scope?: 'team' | 'org'; sid?: string; timeoutMs?: number } = {},
 ): Promise<string> {
   try {
     // Auto-start on demand (never on the sendHookEvent hot path). ensureDaemon
@@ -73,6 +73,7 @@ export async function requestSessionContext(
       {
         kind: SESSION_CONTEXT_REQUEST,
         ...(options.scope === undefined ? {} : { scope: options.scope }),
+        ...(options.sid === undefined ? {} : { sid: options.sid }),
       },
       options.timeoutMs ?? HOOK_CLIENT_TIMEOUT_MS,
     );

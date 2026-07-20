@@ -17,6 +17,7 @@ import {
 } from '@teambrain/index';
 import { openBackend } from './runtime.js';
 import { renderContextBundle, SESSION_CONTEXT_MAX_CHARS } from './context.js';
+import { servesCodemap } from './codemap-arm-serving.js';
 import { createTools, type Tools } from './tools.js';
 import { Spool } from './spool.js';
 import { SessionPathTracker } from './session-paths.js';
@@ -72,8 +73,8 @@ export interface DaemonHandle {
   index: SqliteIndex;
   /** Runs a checksum-gated reindex now; resolves to whether it reindexed. */
   reindexNow(): Promise<boolean>;
-  /** Current SessionStart context bundle string. */
-  contextBundle(): string;
+  /** Current SessionStart context bundle string (sid keys the T7 arm bypass). */
+  contextBundle(sid?: string): string;
   close(): Promise<void>;
 }
 
@@ -150,12 +151,18 @@ export async function startDaemon(
   const sessionPaths = new SessionPathTracker(dirname(brainDir), logger);
   sessionPaths.refreshBranchDiff();
 
-  const contextBundle = (): string =>
-    renderContextBundle(
-      tools.memoryContext({ paths: sessionPaths.paths() }),
+  // R16.1 T7b: control sessions are served no codemap — no scoped slice
+  // (paths: []) and no index block (stats: null) — so the bundle is
+  // byte-identical to the codemap-off bundle. Treatment (or a sid-less caller,
+  // e.g. the heartbeat) keeps the full scoped-slice + index-block behavior.
+  const contextBundle = (sid?: string): string => {
+    const serve = servesCodemap(sid, backend.codemapHoldout);
+    return renderContextBundle(
+      tools.memoryContext({ paths: serve ? sessionPaths.paths() : [] }),
       SESSION_CONTEXT_MAX_CHARS,
-      backend.index.codemapStats(),
+      serve ? backend.index.codemapStats() : null,
     );
+  };
 
   // --- observability state (surfaced via the heartbeat for `tb doctor`) ---
   const startedAt = now();
@@ -275,7 +282,7 @@ export async function startDaemon(
       } else {
         // Time the retrieval so `tb doctor` can report p95 over the window.
         const started = performance.now();
-        const bundle = contextBundle();
+        const bundle = contextBundle(request.sid);
         recordRetrieval(performance.now() - started);
         response = { kind: 'session_context_result', bundle };
       }

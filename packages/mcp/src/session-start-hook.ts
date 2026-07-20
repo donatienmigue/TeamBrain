@@ -10,6 +10,8 @@ import { SESSION_CONTEXT_MAX_CHARS } from './context.js';
 export interface SessionStartHookOptions {
   runtimeDir?: string;
   scope?: 'team' | 'org';
+  /** R16.1 T7b: the session id, so the daemon can apply the control-arm bypass. */
+  sid?: string;
   timeoutMs?: number;
   /** Sink for the emitted JSON; defaults to process.stdout. */
   write?: (text: string) => void;
@@ -23,6 +25,7 @@ export async function runSessionStartHook(
   try {
     bundle = await requestSessionContext(runtimeDir, {
       ...(options.scope === undefined ? {} : { scope: options.scope }),
+      ...(options.sid === undefined ? {} : { sid: options.sid }),
       ...(options.timeoutMs === undefined
         ? {}
         : { timeoutMs: options.timeoutMs }),

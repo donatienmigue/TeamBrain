@@ -671,6 +671,68 @@ window and all), plus every git child of the daemon (fetch, branch-diff
 refresh, spool push) and of the hooks. Why: user-visible console windows
 appearing indefinitely. Tradeoffs: none; display-only flag.
 
+## 2026-07-20 — R16.1 T7a: holdout config + deterministic arm assignment
+What: `codemap.holdout` (0–1, default 0.1) added to brain.yaml's codemap block
+(additive; existing field-specific tests + compat fixture stay green). New pure
+core module `codemap-arm.ts`: `fnv1a` (tiny dep-free 32-bit hash) + `codemapArm(sid,
+holdout)` (`hash(sid) % 100 < holdout*100` → control) + `effectiveHoldout` (disabled
+codemap ⇒ 0 ⇒ every sid treatment, since serving is already off).
+Why: the CM6 gate needs a randomized control arm measured, not a before/after
+estimate. Assignment must be deterministic per sid across every process (hook
+tag, daemon bundle, MCP search) or the arms disagree. Tradeoffs: FNV-1a hand-
+rolled (boring-deps); disabled-arm tag is meaningless-but-harmless.
+
+## 2026-07-20 — R16.1 T7e: holdout docs (README)
+What: the README CodeMap section now explains the holdout (what it is, why —
+clean causal measurement vs a confounded before/after, how to change/disable via
+`codemap.holdout: 0`, and that a control session behaves as if CodeMap were off);
+restated the default-on gate as a *measured* result; corrected the stale
+1,500-token budget line to the shipped ≤~700 (index ≤200 + scoped ≤500). Flagged
+the honest caveat that the search-side control exclusion needs TEAMBRAIN_SESSION_ID.
+Why: T7e — the holdout must be disclosed and configurable. Tradeoffs: none; docs.
+
+## 2026-07-20 — R16.1 T7d: digest arm split with bootstrap CI
+What: `computePracticeSignals` reads each session's `codemap_arm` and emits
+`codemapHoldout` — explore-actions/session and codemap query rate per arm, plus
+the treatment-vs-control reduction% with a seeded (mulberry32, deterministic)
+95% bootstrap CI over sessions. Labeled `measured` only when both arms ≥20
+sessions (MIN_ARM_SESSIONS), else `estimated`. Slack renderer never prints the
+effect without its label and per-arm n (control/treatment).
+Why: the CM6 gate is a measured holdout result, not a before/after estimate; an
+unlabeled reduction is the confounded number the holdout exists to replace.
+Tradeoffs: reduction is on the mean (explore-actions/session reads as a mean),
+not the median D6 instrument; both coexist. Bootstrap is 2000 iters, seeded so
+the CI is reproducible; people-free by construction (arm counts only).
+
+## 2026-07-20 — R16.1 T7b: control-arm serving bypass (single chokepoint)
+What: `codemap-arm-serving.ts` centralizes the arm decision (`servesCodemap`)
+and the search filter (`filterSearchForArm`); openBackend now exposes the
+effective `codemapHoldout`. Bundle path: the SessionStart hook threads its sid
+→ session_context request → daemon `contextBundle(sid)`; a control session gets
+paths:[] + null stats, i.e. the byte-identical empty-codemap bundle (asserted).
+Search path: `tb mcp` reads its sid from `TEAMBRAIN_SESSION_ID`, computes the
+arm, and (control) drops source:'codemap' at the one memory_search chokepoint.
+Also: `tb hook session-start` now emits the session_start event (previously
+never captured on the native path) so the arm tag actually reaches the spool.
+Why: CM6 needs a clean control baseline; both surfaces must key off one arm.
+Tradeoffs / flagged: no vendor exposes a documented per-session id to a
+`.mcp.json`-launched server, so `TEAMBRAIN_SESSION_ID` is the mechanism but the
+install does NOT yet write a speculative placeholder (would break the zero-diff
+install + could inject an empty env). Absent the var, search serves treatment-
+equivalently while the bundle bypass (sid-reliable) still fully applies — a
+partial, honest degradation, documented in the README.
+
+## 2026-07-20 — R16.1 T7c: codemap_arm tag on session_start
+What: `mapSessionStart` now tags `data.codemap_arm` (control|treatment),
+computed from the session's own sid + the effective holdout (read from
+brain.yaml in `buildHookContext`, 0 when codemap disabled/config malformed).
+Additive under C2 (session_start.data is looseObject) — CONTRACTS untouched.
+Why: the digest (T7d) needs every session's arm to split metrics; tagging at
+the one place that owns session identity keeps hook and serving in agreement.
+Tradeoffs: privacy negative test extended — arm is people-free metadata and the
+sole session_start key; the Cursor Tier-B path is unchanged (arm-less → digest
+buckets it as neither arm).
+
 ## 2026-07-16 — autostart circuit breaker (bounded retry + stop)
 What: ensureDaemon now records consecutive failed start attempts
 (runtimeDir/autostart-failures.json). After 3 failures it stops spawning

@@ -130,9 +130,36 @@ describe('mapSessionEnd outcome heuristic', () => {
 });
 
 describe('mapSessionStart', () => {
-  it('emits an empty-data session_start', () => {
+  it('tags codemap_arm (treatment when no holdout) and nothing else', () => {
     const event = mapSessionStart({ session_id: 's' }, ctx());
     expect(event.ev).toBe('session_start');
-    expect(event.data).toEqual({});
+    expect(event.data).toEqual({ codemap_arm: 'treatment' });
+  });
+
+  it('assigns the arm deterministically from the session sid + holdout', () => {
+    // Same sid + holdout → same arm on every call; the value matches the pure
+    // core function so the serving bypass and digest agree.
+    const first = mapSessionStart(
+      { session_id: 'sid-1' },
+      ctx({ codemapHoldout: 0.5 }),
+    ).data['codemap_arm'];
+    const again = mapSessionStart(
+      { session_id: 'sid-1' },
+      ctx({ codemapHoldout: 0.5 }),
+    ).data['codemap_arm'];
+    expect(again).toBe(first);
+    expect(['control', 'treatment']).toContain(first);
+    // holdout 1 → always control, regardless of sid.
+    expect(
+      mapSessionStart({ session_id: 'anything' }, ctx({ codemapHoldout: 1 }))
+        .data['codemap_arm'],
+    ).toBe('control');
+  });
+
+  it('codemap_arm appears on session_start only, never on tool_use/session_end', () => {
+    const tool = mapPostToolUse({ tool_name: 'Read', tool_input: {} }, ctx());
+    expect(tool?.data).not.toHaveProperty('codemap_arm');
+    const end = mapSessionEnd({ session_id: 's' }, ctx());
+    expect(end.data).not.toHaveProperty('codemap_arm');
   });
 });

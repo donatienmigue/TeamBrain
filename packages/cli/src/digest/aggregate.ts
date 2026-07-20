@@ -1,8 +1,13 @@
 import type { SessionEvent } from '@teambrain/core';
 import {
   computePracticeSignals,
+  isContextInjection,
   type PracticeSignals,
 } from './practice-signals.js';
+import {
+  computeContextMetrics,
+  type ContextMetrics,
+} from './context-metrics.js';
 
 // M7.1 digest aggregation. "Aggregate-only by construction" (Tech Brief §4.7):
 // the aggregator never sees anything that could group activity by a person. It
@@ -58,6 +63,8 @@ export interface DigestInput {
   topN?: number;
   /** No-retrieval staleness threshold in days. Default 90. */
   staleDays?: number;
+  /** Required-memory token budget for the rot flag (§3.1). */
+  requiredBudget?: number;
 }
 
 export interface DigestReport {
@@ -76,6 +83,12 @@ export interface DigestReport {
    * people-free-output guarantee is its negative test, not this projection.
    */
   practice: PracticeSignals;
+  /**
+   * Performance-metrics brief §3.1: context-efficiency & rot metrics —
+   * injection weight/utilization, required-load, served staleness. People-free
+   * (computed by context-metrics.ts from injection + tool_use events).
+   */
+  contextMetrics: ContextMetrics;
   /**
    * D3.1 governance friction: how long memory-proposal PRs wait for a human.
    * Populated by the digest command (source: `gh pr list`, injectable);
@@ -117,6 +130,9 @@ export function aggregateDigest(input: DigestInput): DigestReport {
   let noHitSearches = 0;
   for (const event of events) {
     if (event.ev !== 'memory_retrieved') continue;
+    // Injections (via:'context') are not queries — the context-efficiency
+    // metrics read them; topRetrieved/no-hit/staleness stay query-only.
+    if (isContextInjection(event.data)) continue;
     const ids = retrievedIds(event);
     if (ids.length === 0) {
       noHitSearches += 1;
@@ -168,5 +184,13 @@ export function aggregateDigest(input: DigestInput): DigestReport {
     stale,
     drift,
     practice: computePracticeSignals(input.events),
+    contextMetrics: computeContextMetrics(input.events, {
+      active: input.active,
+      staleDays,
+      now,
+      ...(input.requiredBudget === undefined
+        ? {}
+        : { requiredBudget: input.requiredBudget }),
+    }),
   };
 }

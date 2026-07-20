@@ -682,6 +682,26 @@ estimate. Assignment must be deterministic per sid across every process (hook
 tag, daemon bundle, MCP search) or the arms disagree. Tradeoffs: FNV-1a hand-
 rolled (boring-deps); disabled-arm tag is meaningless-but-harmless.
 
+## 2026-07-20 — PM0/PM1: injection capture + context-efficiency & rot metrics
+What: Finding — `memory_retrieved` events were NEVER emitted in the live path
+(no MCP-result hook; Cursor's memory_search branch is a no-op), so injection,
+retrieval-rate, and codemap-query metrics were all unfed on real data. Fix
+(PM0): the daemon logs a `memory_retrieved {ids, via:'context', tokens,
+required, required_tokens}` event when it serves a sid-bearing session_context
+bundle — it's the authority on what it injected. Reuses the frozen C2 event with
+additive data fields (no CONTRACTS change); ids are structural (ULIDs + cm:path),
+no content. Existing metrics ignore `via:'context'` events (isContextInjection),
+so no metric shifts. PM1: new context-metrics.ts computes injection weight,
+required-load (+budget flag via `metrics.required_max_tokens`), codemap
+utilization (injected map paths later touched by tool_use), and served staleness
+(injected memories ≥staleDays old) — all people-free, surfaced in `tb digest`.
+Why: answers "is injected context used, fresh, worth its budget — or is TeamBrain
+causing context rot?" Tradeoffs: utilization is codemap-only (governed memories
+have no code path in metadata); query-side retrieval is still uncaptured (chose
+injection logging over an MCP-result hook), so query-rate metrics stay unfed —
+documented. Contradiction count deferred (needs the LLM Provider; not in §6.1
+acceptance).
+
 ## 2026-07-20 — R16.1 T7e: holdout docs (README)
 What: the README CodeMap section now explains the holdout (what it is, why —
 clean causal measurement vs a confounded before/after, how to change/disable via

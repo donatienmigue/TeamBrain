@@ -113,6 +113,36 @@ describe('daemon (M4.1)', () => {
     );
   });
 
+  it('logs a via:context injection event when serving a session (perf-metrics §3.1)', async () => {
+    const daemon = await startFixtureDaemon();
+    // A sid-bearing request (the SessionStart hook path) → the daemon records
+    // what it injected so the rot metrics have a data source.
+    await requestSessionContext(daemon.runtimeDir, { sid: 'inject-sess' });
+    const recordPath = sessionRecordPath(daemon.runtimeDir, 'inject-sess');
+    const landed = await waitFor(async () => existsSync(recordPath));
+    expect(landed).toBe(true);
+    const line = (await readFile(recordPath, 'utf8'))
+      .split('\n')
+      .find((l) => l.includes('memory_retrieved'));
+    expect(line).toBeDefined();
+    const event = JSON.parse(line as string);
+    expect(event.ev).toBe('memory_retrieved');
+    expect(event.data.via).toBe('context');
+    expect(event.data.ids).toContain(FIXTURE_IDS.requiredZod);
+    expect(event.data.tokens).toBeGreaterThan(0);
+    expect(event.data.required).toBeGreaterThan(0);
+    expect(event.data.required_tokens).toBeGreaterThan(0);
+  });
+
+  it('serves a sid-less request without logging an injection (bare memory_context)', async () => {
+    const daemon = await startFixtureDaemon();
+    await requestSessionContext(daemon.runtimeDir); // no sid → nothing to key on
+    await new Promise((r) => setTimeout(r, 150));
+    expect(
+      existsSync(sessionRecordPath(daemon.runtimeDir, 'undefined')),
+    ).toBe(false);
+  });
+
   it('retired memory disappears from memory_search within a watcher cycle (R5)', async () => {
     const daemon = await startFixtureDaemon();
     expect(await searchIds(daemon, 'redis embedding cache')).toContain(

@@ -8,7 +8,7 @@ import {
 } from 'node:fs';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { createServer, type Server, type Socket } from 'node:net';
-import { dirname, join } from 'node:path';
+import { basename, dirname, join } from 'node:path';
 import type { Logger, SessionEvent } from '@teambrain/core';
 import {
   syncIndexWithBrain,
@@ -16,7 +16,12 @@ import {
   type SqliteIndex,
 } from '@teambrain/index';
 import { openBackend } from './runtime.js';
-import { renderContextBundle, SESSION_CONTEXT_MAX_CHARS } from './context.js';
+import {
+  renderContextBundle,
+  SESSION_CONTEXT_MAX_CHARS,
+  type MemoryContext,
+} from './context.js';
+import { bundleTokens } from './render.js';
 import { servesCodemap } from './codemap-arm-serving.js';
 import { createTools, type Tools } from './tools.js';
 import { Spool } from './spool.js';
@@ -155,13 +160,55 @@ export async function startDaemon(
   // (paths: []) and no index block (stats: null) — so the bundle is
   // byte-identical to the codemap-off bundle. Treatment (or a sid-less caller,
   // e.g. the heartbeat) keeps the full scoped-slice + index-block behavior.
-  const contextBundle = (sid?: string): string => {
+  const buildContext = (
+    sid?: string,
+  ): { context: MemoryContext; bundle: string } => {
     const serve = servesCodemap(sid, backend.codemapHoldout);
-    return renderContextBundle(
-      tools.memoryContext({ paths: serve ? sessionPaths.paths() : [] }),
+    const context = tools.memoryContext({
+      paths: serve ? sessionPaths.paths() : [],
+    });
+    const bundle = renderContextBundle(
+      context,
       SESSION_CONTEXT_MAX_CHARS,
       serve ? backend.index.codemapStats() : null,
     );
+    return { context, bundle };
+  };
+  const contextBundle = (sid?: string): string => buildContext(sid).bundle;
+
+  // PM (performance-metrics brief §3.1): the daemon is the sole authority on
+  // what it injected at session start, so it logs a `memory_retrieved` event
+  // tagged `via: 'context'` — the one additive capture the rot metrics need
+  // (injection weight/utilization/required-load). It reuses the frozen C2
+  // memory_retrieved shape with additive data fields (no CONTRACTS change).
+  // Only for an identified session (sid present, from the SessionStart hook)
+  // that actually injected something; ids are structural (ULIDs + cm:<path>),
+  // never content, so no redaction pass is needed.
+  const repo = basename(dirname(brainDir)) || 'unknown';
+  const emitInjection = (sid: string, context: MemoryContext): void => {
+    const ids = [
+      ...context.required.map((view) => view.id),
+      ...context.relevant.map((view) => view.id),
+    ];
+    if (ids.length === 0) return;
+    const event: SessionEvent = {
+      v: 1,
+      sid,
+      t: now().toISOString(),
+      tool: 'unknown', // the daemon serves every vendor; tool is unused people-free
+      model: 'unknown',
+      repo,
+      branch: 'unknown',
+      ev: 'memory_retrieved',
+      data: {
+        ids,
+        via: 'context',
+        tokens: context.token_estimate,
+        required: context.required.length,
+        required_tokens: bundleTokens(context.required),
+      },
+    };
+    onHookEvent(event);
   };
 
   // --- observability state (surfaced via the heartbeat for `tb doctor`) ---
@@ -282,8 +329,9 @@ export async function startDaemon(
       } else {
         // Time the retrieval so `tb doctor` can report p95 over the window.
         const started = performance.now();
-        const bundle = contextBundle(request.sid);
+        const { context, bundle } = buildContext(request.sid);
         recordRetrieval(performance.now() - started);
+        if (request.sid !== undefined) emitInjection(request.sid, context);
         response = { kind: 'session_context_result', bundle };
       }
     } catch (err) {

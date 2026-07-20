@@ -103,6 +103,21 @@ function readRulesBaseline(brainDir: string): Record<string, string> {
   return result;
 }
 
+/**
+ * Required-memory token budget for the §3.1 rot flag, from brain.yaml
+ * `metrics.required_max_tokens`. Undefined (→ the default) when absent/invalid.
+ */
+function readRequiredBudget(brainDir: string): number | undefined {
+  const path = join(brainDir, 'brain.yaml');
+  if (!existsSync(path)) return undefined;
+  const parsed = parseYaml(readFileSync(path, 'utf8')) as
+    | { metrics?: { required_max_tokens?: unknown } }
+    | null
+    | undefined;
+  const value = parsed?.metrics?.required_max_tokens;
+  return typeof value === 'number' && value > 0 ? value : undefined;
+}
+
 // The tool-local rules files whose drift the digest tracks (Tech Brief §4.7).
 const RULES_CANDIDATES = ['CLAUDE.md', 'AGENTS.md', '.cursorrules'];
 
@@ -244,6 +259,9 @@ export async function runDigestCommand(
     proposedCount: options.proposedCount ?? ghProposedCount(repoRoot),
     rules: collectRules(repoRoot, readRulesBaseline(brainDir)),
     ...(options.now === undefined ? {} : { now: options.now }),
+    ...(readRequiredBudget(brainDir) === undefined
+      ? {}
+      : { requiredBudget: readRequiredBudget(brainDir) }),
   });
   const governance = options.governance ?? ghGovernanceFriction(repoRoot);
   if (governance !== undefined) report.governance = governance;

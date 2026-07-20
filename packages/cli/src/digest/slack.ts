@@ -114,6 +114,31 @@ export function renderSlackMessage(report: DigestReport): SlackMessage {
     blocks.push(section(`*Practice signals (aggregate-only)*\n${lines}`));
   }
 
+  const cm = report.contextMetrics;
+  if (cm.sessionsWithInjection > 0) {
+    const util =
+      cm.utilization.rate === null
+        ? 'n/a (no codemap injected)'
+        : `${Math.round(cm.utilization.rate * 100)}% ` +
+          `(${cm.utilization.codemapReferenced}/${cm.utilization.codemapInjected} codemap entries, n=${cm.sessionsWithInjection})`;
+    const staleness =
+      cm.servedStaleness.rate === null
+        ? 'n/a'
+        : `${Math.round(cm.servedStaleness.rate * 100)}% ` +
+          `(${cm.servedStaleness.stale}/${cm.servedStaleness.served} served ≥${cm.servedStaleness.staleDays}d old)`;
+    const lines = [
+      `• Injection weight/session: median ${cm.injectionWeight.median} tokens ` +
+        `(max ${cm.injectionWeight.max}) over ${cm.sessionsWithInjection} session(s)`,
+      `• Required-memory load: ${cm.requiredLoad.count} memories / ${cm.requiredLoad.tokens} tokens` +
+        (cm.requiredLoad.overBudget
+          ? ` ⚠️ over budget (${cm.requiredLoad.budget}) — permanent team-wide context tax`
+          : ` (budget ${cm.requiredLoad.budget})`),
+      `• Codemap injection utilization: ${util}`,
+      `• Served staleness: ${staleness}`,
+    ].join('\n');
+    blocks.push(section(`*Context efficiency & rot (aggregate-only)*\n${lines}`));
+  }
+
   const drifted = report.drift.filter((entry) => entry.changed);
   if (drifted.length > 0) {
     const lines = drifted.map((entry) => `• \`${entry.file}\``).join('\n');

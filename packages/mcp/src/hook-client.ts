@@ -8,7 +8,9 @@ import {
   HOOK_EVENT_REQUEST,
   PING_REQUEST,
   SESSION_CONTEXT_REQUEST,
+  TIMING_REQUEST,
   type DaemonResponse,
+  type TimingMetric,
 } from './protocol.js';
 
 // Thin socket client used by hooks and `tb doctor`. Every call is bounded by
@@ -102,6 +104,33 @@ export function sendHookEvent(
     socket.on('error', finish);
     socket.on('connect', () => {
       socket.write(encodeMessage({ kind: HOOK_EVENT_REQUEST, event }), () =>
+        finish(),
+      );
+    });
+  });
+}
+
+/**
+ * Fire-and-forget: reports an operation's duration (ms) to the daemon for the
+ * `tb doctor` latency percentiles (PM §3.2). People-free (metric + duration).
+ * Never rejects; a down daemon simply drops the sample.
+ */
+export function sendTiming(
+  runtimeDir: string,
+  metric: TimingMetric,
+  ms: number,
+  options: { timeoutMs?: number } = {},
+): Promise<void> {
+  return new Promise<void>((resolve) => {
+    const socket = createConnection(daemonSocketPath(runtimeDir));
+    const finish = (): void => {
+      socket.destroy();
+      resolve();
+    };
+    socket.setTimeout(options.timeoutMs ?? HOOK_CLIENT_TIMEOUT_MS, finish);
+    socket.on('error', finish);
+    socket.on('connect', () => {
+      socket.write(encodeMessage({ kind: TIMING_REQUEST, metric, ms }), () =>
         finish(),
       );
     });

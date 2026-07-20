@@ -70,6 +70,10 @@ Plainly, so there are no surprises:
   memory-less.
 - `tb doctor` reports the daemon's true state and never starts anything;
   `tb doctor --fix` starts it for you.
+- `tb metrics` prints a read-only local snapshot — index size, real
+  retrieval/injection/hook latency percentiles, injected-context weight,
+  required-memory load, and whether team memory is net-anti-rot — for debugging
+  "why is my context slow or noisy." It captures nothing.
 
 ## How it works
 

@@ -682,6 +682,65 @@ estimate. Assignment must be deterministic per sid across every process (hook
 tag, daemon bundle, MCP search) or the arms disagree. Tradeoffs: FNV-1a hand-
 rolled (boring-deps); disabled-arm tag is meaningless-but-harmless.
 
+## 2026-07-20 — PM4: tb metrics read-only local snapshot
+What: new `tb metrics [--json]` — a read-only local dump for "why is my context
+slow/noisy": index size, latency percentiles (from the daemon heartbeat via the
+doctor snapshot), injection weight, required-load, codemap utilization, served
+staleness, and the net-efficiency verdict. Reuses the digest aggregation + the
+doctor report; captures nothing, writes nothing (Acceptance §7). CONTRACTS C6
+updated to add the verb — done with explicit human approval (a new top-level
+verb is a frozen-surface change, unlike the additive flags precedent), noted
+inline in CONTRACTS as additive + people-free.
+Why: §5 — a local debugging surface for context cost/rot without waiting for the
+weekly digest. Tradeoffs: latency fields are empty when the daemon is down (same
+as doctor); no new privacy surface since it only reads existing aggregates.
+
+## 2026-07-20 — PM3: net-efficiency composite (the question, answered)
+What: `netEfficiency` in the digest — avoided exploration (from the T7 CodeMap
+holdout arms, treatment vs randomized control, NOT before/after) paired with the
+injection weight it costs, with the same measured/estimated + 95% CI labeling.
+An honest verdict: insufficient-data (until the holdout is measured), net-anti-rot
+(measured, CI excludes zero, ≥30% CM6 bar), net-rot (treatment explored more), or
+inconclusive. Rendered as a plain statement in tb digest.
+Why: §3.3 — the one number that decides whether TeamBrain is worth its context
+cost. If not net-anti-rot on real data, that finding outranks every feature.
+Tradeoffs: reuses the holdout split (avoids the self-selecting codemap-retrieving
+vs not confound); verdict never claims a win without a measured, CI-excludes-zero
+result.
+
+## 2026-07-20 — PM2: real latency percentiles in tb doctor
+What: a people-free timing channel — a `timing` daemon message ({metric, ms},
+no identity). The daemon keeps rolling p50/p95 windows for `injection` (its own
+context render), `search` (reported by the MCP server around memory_search),
+and `hook` (reported by the capture handler around map+redact). `tb doctor
+--json` gains `latency.{injection,search,hook}` (real numbers vs the synthetic
+bench, against the 500/300/20ms NFRs) plus index bloat signals reindexCount +
+dbSizeBytes. Existing `retrieval` field kept (backward-compat) fed by injection.
+Why: §3.2 — a benchmark is a promise; this measures the kept promise in real use.
+Tradeoffs: search/hook latencies depend on the daemon being up (samples dropped
+if down); distiller cost (also §3.2 prose, not in §6 acceptance) deferred — it
+runs in CI, not the daemon.
+
+## 2026-07-20 — PM0/PM1: injection capture + context-efficiency & rot metrics
+What: Finding — `memory_retrieved` events were NEVER emitted in the live path
+(no MCP-result hook; Cursor's memory_search branch is a no-op), so injection,
+retrieval-rate, and codemap-query metrics were all unfed on real data. Fix
+(PM0): the daemon logs a `memory_retrieved {ids, via:'context', tokens,
+required, required_tokens}` event when it serves a sid-bearing session_context
+bundle — it's the authority on what it injected. Reuses the frozen C2 event with
+additive data fields (no CONTRACTS change); ids are structural (ULIDs + cm:path),
+no content. Existing metrics ignore `via:'context'` events (isContextInjection),
+so no metric shifts. PM1: new context-metrics.ts computes injection weight,
+required-load (+budget flag via `metrics.required_max_tokens`), codemap
+utilization (injected map paths later touched by tool_use), and served staleness
+(injected memories ≥staleDays old) — all people-free, surfaced in `tb digest`.
+Why: answers "is injected context used, fresh, worth its budget — or is TeamBrain
+causing context rot?" Tradeoffs: utilization is codemap-only (governed memories
+have no code path in metadata); query-side retrieval is still uncaptured (chose
+injection logging over an MCP-result hook), so query-rate metrics stay unfed —
+documented. Contradiction count deferred (needs the LLM Provider; not in §6.1
+acceptance).
+
 ## 2026-07-20 — R16.1 T7e: holdout docs (README)
 What: the README CodeMap section now explains the holdout (what it is, why —
 clean causal measurement vs a confounded before/after, how to change/disable via

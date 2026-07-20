@@ -2,13 +2,14 @@ import { execFile } from 'node:child_process';
 import {
   existsSync,
   rmSync,
+  statSync,
   watch,
   writeFileSync,
   type FSWatcher,
 } from 'node:fs';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { createServer, type Server, type Socket } from 'node:net';
-import { dirname, join } from 'node:path';
+import { basename, dirname, join } from 'node:path';
 import type { Logger, SessionEvent } from '@teambrain/core';
 import {
   syncIndexWithBrain,
@@ -16,7 +17,12 @@ import {
   type SqliteIndex,
 } from '@teambrain/index';
 import { openBackend } from './runtime.js';
-import { renderContextBundle, SESSION_CONTEXT_MAX_CHARS } from './context.js';
+import {
+  renderContextBundle,
+  SESSION_CONTEXT_MAX_CHARS,
+  type MemoryContext,
+} from './context.js';
+import { bundleTokens } from './render.js';
 import { servesCodemap } from './codemap-arm-serving.js';
 import { createTools, type Tools } from './tools.js';
 import { Spool } from './spool.js';
@@ -26,7 +32,12 @@ import {
   encodeMessage,
   type DaemonResponse,
 } from './protocol.js';
-import { daemonSocketPath, heartbeatPath, pidFilePath } from './paths.js';
+import {
+  daemonSocketPath,
+  heartbeatPath,
+  indexDbPath,
+  pidFilePath,
+} from './paths.js';
 
 // M4.1 daemon: long-lived process that keeps the index fresh and serves hook
 // events + context requests over a local socket. Principle 1 governs every
@@ -155,13 +166,55 @@ export async function startDaemon(
   // (paths: []) and no index block (stats: null) — so the bundle is
   // byte-identical to the codemap-off bundle. Treatment (or a sid-less caller,
   // e.g. the heartbeat) keeps the full scoped-slice + index-block behavior.
-  const contextBundle = (sid?: string): string => {
+  const buildContext = (
+    sid?: string,
+  ): { context: MemoryContext; bundle: string } => {
     const serve = servesCodemap(sid, backend.codemapHoldout);
-    return renderContextBundle(
-      tools.memoryContext({ paths: serve ? sessionPaths.paths() : [] }),
+    const context = tools.memoryContext({
+      paths: serve ? sessionPaths.paths() : [],
+    });
+    const bundle = renderContextBundle(
+      context,
       SESSION_CONTEXT_MAX_CHARS,
       serve ? backend.index.codemapStats() : null,
     );
+    return { context, bundle };
+  };
+  const contextBundle = (sid?: string): string => buildContext(sid).bundle;
+
+  // PM (performance-metrics brief §3.1): the daemon is the sole authority on
+  // what it injected at session start, so it logs a `memory_retrieved` event
+  // tagged `via: 'context'` — the one additive capture the rot metrics need
+  // (injection weight/utilization/required-load). It reuses the frozen C2
+  // memory_retrieved shape with additive data fields (no CONTRACTS change).
+  // Only for an identified session (sid present, from the SessionStart hook)
+  // that actually injected something; ids are structural (ULIDs + cm:<path>),
+  // never content, so no redaction pass is needed.
+  const repo = basename(dirname(brainDir)) || 'unknown';
+  const emitInjection = (sid: string, context: MemoryContext): void => {
+    const ids = [
+      ...context.required.map((view) => view.id),
+      ...context.relevant.map((view) => view.id),
+    ];
+    if (ids.length === 0) return;
+    const event: SessionEvent = {
+      v: 1,
+      sid,
+      t: now().toISOString(),
+      tool: 'unknown', // the daemon serves every vendor; tool is unused people-free
+      model: 'unknown',
+      repo,
+      branch: 'unknown',
+      ev: 'memory_retrieved',
+      data: {
+        ids,
+        via: 'context',
+        tokens: context.token_estimate,
+        required: context.required.length,
+        required_tokens: bundleTokens(context.required),
+      },
+    };
+    onHookEvent(event);
   };
 
   // --- observability state (surfaced via the heartbeat for `tb doctor`) ---
@@ -169,25 +222,52 @@ export async function startDaemon(
   // Index was freshly built in openBackend, so the initial "last reindex" is
   // startup; reindexNow advances it whenever the checksum poll reindexes.
   let lastReindexAt: string = startedAt.toISOString();
+  // PM §3.2 daemon health: reindex frequency (a bloat/churn signal) and the
+  // index.db size on disk (grows with the corpus — the bloat early-warning).
+  let reindexCount = 0;
+  const dbSizeBytes = (): number | null => {
+    try {
+      return statSync(indexDbPath(runtimeDir)).size;
+    } catch {
+      return null;
+    }
+  };
   // Per-tool hook liveness: last event time + count, keyed by C2 `tool`.
   const hookHeartbeats = new Map<
     string,
     { lastEventAt: string; count: number }
   >();
-  // Rolling window of the daemon's own retrieval (context-render) latencies,
-  // last 100, for the p95 `tb doctor` reports (Tech Brief §6).
-  const RETRIEVAL_WINDOW = 100;
-  const retrievalSamplesMs: number[] = [];
-  const recordRetrieval = (ms: number): void => {
-    retrievalSamplesMs.push(ms);
-    if (retrievalSamplesMs.length > RETRIEVAL_WINDOW)
-      retrievalSamplesMs.shift();
+  // Rolling windows of real operation latencies (last 100 each) for the
+  // `tb doctor` percentiles (Tech Brief §6 + perf-metrics §3.2). `injection`
+  // is the daemon's own context-render time; `search` and `hook` arrive as
+  // people-free timing reports from the MCP server and hook processes.
+  const LATENCY_WINDOW = 100;
+  const latencySamples: Record<string, number[]> = {
+    injection: [],
+    search: [],
+    hook: [],
   };
-  const retrievalP95 = (): number | null => {
-    if (retrievalSamplesMs.length === 0) return null;
-    const sorted = [...retrievalSamplesMs].sort((a, b) => a - b);
-    const rank = Math.ceil(0.95 * sorted.length) - 1;
-    return Math.round((sorted[rank] as number) * 1000) / 1000;
+  const recordTiming = (metric: string, ms: number): void => {
+    const samples = latencySamples[metric];
+    if (samples === undefined) return;
+    samples.push(ms);
+    if (samples.length > LATENCY_WINDOW) samples.shift();
+  };
+  const percentile = (samples: number[], q: number): number | null => {
+    if (samples.length === 0) return null;
+    const sorted = [...samples].sort((a, b) => a - b);
+    const rank = Math.ceil(q * sorted.length) - 1;
+    return Math.round((sorted[Math.max(0, rank)] as number) * 1000) / 1000;
+  };
+  const latencyStats = (
+    metric: string,
+  ): { p50Ms: number | null; p95Ms: number | null; samples: number } => {
+    const samples = latencySamples[metric] ?? [];
+    return {
+      p50Ms: percentile(samples, 0.5),
+      p95Ms: percentile(samples, 0.95),
+      samples: samples.length,
+    };
   };
 
   // --- checksum-gated reindex (the watcher cycle) ---
@@ -201,6 +281,7 @@ export async function startDaemon(
       });
       if (result.reindexed) {
         lastReindexAt = now().toISOString();
+        reindexCount += 1;
         logger?.debug('daemon reindexed brain', {
           docs: result.docCount,
           checksum: result.checksum,
@@ -231,10 +312,19 @@ export async function startDaemon(
       lexicalOnly: stats.lexicalOnly,
       brainChecksum: stats.brainChecksum,
       lastReindexAt,
+      reindexCount,
+      dbSizeBytes: dbSizeBytes(),
       hooks: Object.fromEntries(hookHeartbeats),
+      // Backward-compat: `retrieval` has always carried the context-render
+      // (injection) p95; keep it, and add the fuller per-metric `latency`.
       retrieval: {
-        p95Ms: retrievalP95(),
-        samples: retrievalSamplesMs.length,
+        p95Ms: latencyStats('injection').p95Ms,
+        samples: latencySamples.injection?.length ?? 0,
+      },
+      latency: {
+        injection: latencyStats('injection'),
+        search: latencyStats('search'),
+        hook: latencyStats('hook'),
       },
     };
     try {
@@ -273,6 +363,11 @@ export async function startDaemon(
         onHookEvent(request.event);
         return; // fire-and-forget: no response
       }
+      if (request.kind === 'timing') {
+        // People-free operational sample from the MCP server / hook process.
+        recordTiming(request.metric, request.ms);
+        return; // fire-and-forget: no response
+      }
       if (request.kind === 'ping') {
         response = {
           kind: 'pong',
@@ -282,8 +377,9 @@ export async function startDaemon(
       } else {
         // Time the retrieval so `tb doctor` can report p95 over the window.
         const started = performance.now();
-        const bundle = contextBundle(request.sid);
-        recordRetrieval(performance.now() - started);
+        const { context, bundle } = buildContext(request.sid);
+        recordTiming('injection', performance.now() - started);
+        if (request.sid !== undefined) emitInjection(request.sid, context);
         response = { kind: 'session_context_result', bundle };
       }
     } catch (err) {

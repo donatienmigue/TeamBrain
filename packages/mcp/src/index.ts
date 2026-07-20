@@ -74,6 +74,7 @@ export {
 export {
   requestSessionContext,
   sendHookEvent,
+  sendTiming,
   pingDaemon,
   HOOK_CLIENT_TIMEOUT_MS,
 } from './hook-client.js';

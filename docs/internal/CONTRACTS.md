@@ -29,7 +29,8 @@ Memory rendering rule: bodies are returned inside a fenced block prefixed
 `complete({system, prompt, schema}): Promise<T>` — structured output validated by zod; drivers: anthropic, openai, ollama, fake (fixtures). Model pinned in `brain.yaml`. No LLM calls anywhere outside packages/distill.
 
 ### C6. CLI surface
-`tb init | serve | install <claude-code|cursor> | propose | retire <id> <reason> | audit [--last-session] | reindex | doctor [--json] | distill | digest | lint`. Exit codes: 0 ok · 1 user error · 2 environment error · 3 lint/validation failure.
+`tb init | serve | install <claude-code|cursor> | propose | retire <id> <reason> | audit [--last-session] | reindex | doctor [--json] | distill | digest | metrics [--json] | lint`. Exit codes: 0 ok · 1 user error · 2 environment error · 3 lint/validation failure.
+(`metrics` added 2026-07-20 with explicit human approval — additive read-only verb: prints a local health + context-efficiency snapshot, reusing the digest aggregation and daemon heartbeat. Captures nothing; no new privacy surface.)
 
 ### C7. Filesystem layout at runtime
 Brain: `.teambrain/` in target repo (brain.yaml, memories/, retired/, prompts/, INDEX.md). Machine-local (never synced): `~/.teambrain/{user/, spool/, index.db, logs/}`. The sync code must be physically unable to read `~/.teambrain/user/` (separate module without that path in scope; asserted by test).

@@ -9,6 +9,21 @@ import type { CodemapArm, SessionEvent } from '@teambrain/core';
 // any other event string ever appears in a PracticeSignals value (asserted
 // by a negative test). Definitions live in docs/internal/PRACTICE_SIGNALS.md.
 
+/**
+ * A `memory_retrieved` event tagged `via: 'context'` is a session-start
+ * injection (logged by the daemon), not an agent query. Every existing
+ * retrieval metric must ignore it — injections are read only by the new
+ * context-efficiency metrics (context-metrics.ts) — so counting them here
+ * would silently change the meaning of retrievalRate/topRetrieved/staleness.
+ */
+export function isContextInjection(data: unknown): boolean {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    (data as { via?: unknown }).via === 'context'
+  );
+}
+
 export interface Distribution {
   median: number;
   mean: number;
@@ -108,7 +123,7 @@ interface SessionFeatures {
   arm: CodemapArm | null;
 }
 
-function distribution(values: number[]): Distribution {
+export function distribution(values: number[]): Distribution {
   if (values.length === 0) return { median: 0, mean: 0, max: 0 };
   const sorted = [...values].sort((a, b) => a - b);
   const mid = sorted.length / 2;
@@ -141,6 +156,11 @@ function sessionFeatures(events: SessionEvent[]): SessionFeatures {
   let sawToolUse = false;
 
   for (const event of ordered) {
+    // Session-start injections are a separate signal; invisible to D3 practice
+    // signals so they change no existing metric (retrieval rate, context-setup).
+    if (event.ev === 'memory_retrieved' && isContextInjection(event.data)) {
+      continue;
+    }
     if (event.ev === 'tool_use') {
       sawToolUse = true;
       const kind = event.data.kind;

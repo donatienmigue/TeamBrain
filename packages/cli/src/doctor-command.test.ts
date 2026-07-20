@@ -55,6 +55,13 @@ describe('tb doctor (M7.2)', () => {
           'claude-code': { lastEventAt: '2026-07-06T09:09:00.000Z', count: 7 },
         },
         retrieval: { p95Ms: 12.5, samples: 30 },
+        reindexCount: 4,
+        dbSizeBytes: 1048576,
+        latency: {
+          injection: { p50Ms: 8, p95Ms: 12.5, samples: 30 },
+          search: { p50Ms: 40, p95Ms: 90, samples: 15 },
+          hook: { p50Ms: 2, p95Ms: 7, samples: 50 },
+        },
       }),
       'utf8',
     );
@@ -70,6 +77,15 @@ describe('tb doctor (M7.2)', () => {
     expect(report.index.brainChecksum).toBe('abc123');
     expect(report.index.lastReindexAt).toBe('2026-07-06T09:05:00.000Z');
     expect(report.retrieval).toEqual({ p95Ms: 12.5, samples: 30 });
+    // PM §3.2: real latency percentiles + bloat signals surface.
+    expect(report.latency.search).toEqual({
+      p50Ms: 40,
+      p95Ms: 90,
+      samples: 15,
+    });
+    expect(report.latency.hook.p95Ms).toBe(7);
+    expect(report.index.reindexCount).toBe(4);
+    expect(report.index.dbSizeBytes).toBe(1048576);
     expect(report.hooks).toEqual([
       {
         tool: 'claude-code',

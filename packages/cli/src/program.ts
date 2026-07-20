@@ -8,6 +8,7 @@ import { runInstallCommand } from './install/install-command.js';
 import { runServeCommand, runServeStopCommand } from './serve-command.js';
 import { runMcpCommand } from './mcp-command.js';
 import { runDoctorCommand } from './doctor-command.js';
+import { runMetricsCommand } from './metrics-command.js';
 import { runHookCommand } from './hook-command.js';
 import { runAuditCommand } from './audit-command.js';
 import { runDistillCommand } from './distill/distill-command.js';
@@ -292,6 +293,21 @@ export function buildProgram(): Command {
         json: opts.json,
         fix: opts.fix,
         ...(governance === undefined ? {} : { governance }),
+      });
+      process.stdout.write(output);
+      process.exitCode = exitCode;
+    });
+
+  program
+    .command('metrics')
+    .description(
+      'print a read-only local metrics snapshot (health + context efficiency)',
+    )
+    .helpGroup('Daemon')
+    .option('--json', 'emit machine-readable JSON snapshot', false)
+    .action(async (opts: { json: boolean }) => {
+      const { exitCode, output } = await runMetricsCommand(process.cwd(), {
+        json: opts.json,
       });
       process.stdout.write(output);
       process.exitCode = exitCode;

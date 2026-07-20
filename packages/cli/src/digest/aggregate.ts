@@ -1,8 +1,13 @@
 import type { SessionEvent } from '@teambrain/core';
 import {
   computePracticeSignals,
+  isContextInjection,
   type PracticeSignals,
 } from './practice-signals.js';
+import {
+  computeContextMetrics,
+  type ContextMetrics,
+} from './context-metrics.js';
 
 // M7.1 digest aggregation. "Aggregate-only by construction" (Tech Brief §4.7):
 // the aggregator never sees anything that could group activity by a person. It
@@ -58,6 +63,8 @@ export interface DigestInput {
   topN?: number;
   /** No-retrieval staleness threshold in days. Default 90. */
   staleDays?: number;
+  /** Required-memory token budget for the rot flag (§3.1). */
+  requiredBudget?: number;
 }
 
 export interface DigestReport {
@@ -77,11 +84,43 @@ export interface DigestReport {
    */
   practice: PracticeSignals;
   /**
+   * Performance-metrics brief §3.1: context-efficiency & rot metrics —
+   * injection weight/utilization, required-load, served staleness. People-free
+   * (computed by context-metrics.ts from injection + tool_use events).
+   */
+  contextMetrics: ContextMetrics;
+  /** §3.3 composite: avoided exploration vs injected weight (the whole thesis). */
+  netEfficiency: NetEfficiency;
+  /**
    * D3.1 governance friction: how long memory-proposal PRs wait for a human.
    * Populated by the digest command (source: `gh pr list`, injectable);
    * absent when the query is unavailable (no gh / no remote).
    */
   governance?: GovernanceFriction;
+}
+
+/**
+ * §3.3 the one composite that answers the question: avoided exploration
+ * (from the CodeMap holdout — treatment vs randomized control, NOT a
+ * self-selecting before/after) versus the injection weight it costs. Reported
+ * with the same measured/estimated + CI labeling as the holdout.
+ */
+export interface NetEfficiency {
+  /** Treatment-vs-control exploration reduction % (from the holdout arms). */
+  explorationReductionPct: number | null;
+  reductionCi95: [number, number] | null;
+  label: 'measured' | 'estimated';
+  controlSessions: number;
+  treatmentSessions: number;
+  /** Median tokens injected per session — the cost side of the ratio. */
+  injectionWeightTokens: number;
+  /**
+   * The honest verdict. `insufficient-data` until the holdout is `measured`;
+   * `net-anti-rot` only when the reduction is real (CI excludes zero) and
+   * clears the ≥30% CM6 bar; `net-rot` when treatment explored MORE; else
+   * `inconclusive` (collect more sessions, don't ship).
+   */
+  verdict: 'net-anti-rot' | 'inconclusive' | 'net-rot' | 'insufficient-data';
 }
 
 export interface GovernanceFriction {
@@ -103,6 +142,34 @@ function daysBetween(from: Date, to: Date): number {
   return (to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24);
 }
 
+/** The CM6 exploration-reduction bar the composite calls a win (§3.5). */
+export const NET_EFFICIENCY_TARGET_PCT = 30;
+
+function computeNetEfficiency(
+  practice: PracticeSignals,
+  contextMetrics: ContextMetrics,
+): NetEfficiency {
+  const h = practice.codemapHoldout;
+  const ci = h.reductionCi95;
+  const verdict: NetEfficiency['verdict'] =
+    h.label !== 'measured' || h.reductionPct === null || ci === null
+      ? 'insufficient-data'
+      : ci[1] < 0
+        ? 'net-rot' // treatment explored more; the whole CI is negative
+        : ci[0] > 0 && h.reductionPct >= NET_EFFICIENCY_TARGET_PCT
+          ? 'net-anti-rot'
+          : 'inconclusive';
+  return {
+    explorationReductionPct: h.reductionPct,
+    reductionCi95: ci,
+    label: h.label,
+    controlSessions: h.control.sessions,
+    treatmentSessions: h.treatment.sessions,
+    injectionWeightTokens: contextMetrics.injectionWeight.median,
+    verdict,
+  };
+}
+
 /** Computes the weekly digest from people-free inputs. Pure + deterministic. */
 export function aggregateDigest(input: DigestInput): DigestReport {
   const now = input.now ?? new Date();
@@ -117,6 +184,9 @@ export function aggregateDigest(input: DigestInput): DigestReport {
   let noHitSearches = 0;
   for (const event of events) {
     if (event.ev !== 'memory_retrieved') continue;
+    // Injections (via:'context') are not queries — the context-efficiency
+    // metrics read them; topRetrieved/no-hit/staleness stay query-only.
+    if (isContextInjection(event.data)) continue;
     const ids = retrievedIds(event);
     if (ids.length === 0) {
       noHitSearches += 1;
@@ -157,6 +227,16 @@ export function aggregateDigest(input: DigestInput): DigestReport {
     }))
     .sort((a, b) => a.file.localeCompare(b.file));
 
+  const practice = computePracticeSignals(input.events);
+  const contextMetrics = computeContextMetrics(input.events, {
+    active: input.active,
+    staleDays,
+    now,
+    ...(input.requiredBudget === undefined
+      ? {}
+      : { requiredBudget: input.requiredBudget }),
+  });
+
   return {
     memories: {
       proposed: input.proposedCount,
@@ -167,6 +247,8 @@ export function aggregateDigest(input: DigestInput): DigestReport {
     noHitSearches,
     stale,
     drift,
-    practice: computePracticeSignals(input.events),
+    practice,
+    contextMetrics,
+    netEfficiency: computeNetEfficiency(practice, contextMetrics),
   };
 }

@@ -6,6 +6,7 @@ import {
   openBackend,
   resolveRuntimeDir,
   runMcpServer,
+  sendTiming,
   servesCodemap,
 } from '@teambrain/mcp';
 import { ADAPTERS } from '@teambrain/hooks';
@@ -67,7 +68,12 @@ export async function runMcpCommand(
     logger.debug('codemap control arm: memory_search excludes codemap', {});
   }
 
-  await runMcpServer(backend.context, { serveCodemap });
+  const runtimeDir = resolveRuntimeDir();
+  await runMcpServer(backend.context, {
+    serveCodemap,
+    // PM §3.2: report real search latencies to the daemon (fire-and-forget).
+    onTiming: (_metric, ms) => void sendTiming(runtimeDir, 'search', ms),
+  });
   // Stay alive on the stdio transport until the parent closes stdin.
   await new Promise<void>((resolvePromise) => {
     process.stdin.on('close', resolvePromise);

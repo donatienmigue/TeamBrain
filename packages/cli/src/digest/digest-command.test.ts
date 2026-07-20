@@ -107,6 +107,7 @@ describe('tb digest (M7.1)', () => {
       brainDir,
       proposedCount: 0,
       sessions: sessionSource([
+        ev('session_start', { codemap_arm: 'treatment' }),
         ev('memory_retrieved', { ids: ['cm:src/router.ts'] }),
         ev('tool_use', { kind: 'explore', path: 'src/a.ts' }),
         ev('tool_use', { kind: 'explore' }),
@@ -126,6 +127,10 @@ describe('tb digest (M7.1)', () => {
     const rendered = JSON.stringify(message);
     expect(rendered).toContain('Exploration events/session: median 2');
     expect(rendered).toContain('Codemap query rate: 100%');
+    // T7d: the holdout line is present and always carries per-arm n — a single
+    // treatment session has no control baseline, so the effect is not shown.
+    expect(rendered).toContain('CodeMap holdout: effect not computable');
+    expect(rendered).toContain('n=0/1 (control/treatment)');
     // People-free: no join keys or per-person fields in the whole output.
     for (const forbidden of ['"sid"', 's1', 'claude-code', 'acme/web']) {
       expect(rendered).not.toContain(forbidden);

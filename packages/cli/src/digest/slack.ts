@@ -1,4 +1,29 @@
 import type { DigestReport } from './aggregate.js';
+import type { CodemapHoldoutReport } from './practice-signals.js';
+
+/**
+ * R16.1 T7d: the CM6 holdout line. The effect is NEVER shown without its
+ * measured/estimated label and per-arm n — an unlabeled reduction is exactly
+ * the confounded before/after number the holdout exists to replace.
+ */
+function renderCodemapHoldout(h: CodemapHoldoutReport): string {
+  const n = `n=${h.control.sessions}/${h.treatment.sessions} (control/treatment)`;
+  if (h.reductionPct === null) {
+    return `• CodeMap holdout: effect not computable — ${n}`;
+  }
+  const ci =
+    h.reductionCi95 === null
+      ? ''
+      : ` (95% CI ${h.reductionCi95[0]}%…${h.reductionCi95[1]}%)`;
+  const label =
+    h.label === 'measured'
+      ? 'measured'
+      : `estimated (insufficient control n=${h.control.sessions})`;
+  return (
+    `• CodeMap effect: ${h.reductionPct}% explore reduction${ci}, ${label}, ` +
+    `${n}; target ≥30% with a CI excluding zero`
+  );
+}
 
 // M7.1 Slack rendering + delivery. This is the *only* network egress in the
 // digest path (guideline 4: git, the LLM Provider in distill, and this webhook
@@ -84,6 +109,7 @@ export function renderSlackMessage(report: DigestReport): SlackMessage {
             `(${practice.explorationByCodemap.reductionPct}% reduction; target ≥30%)`),
       `• Codemap query rate: ${Math.round(practice.codemapQueryRate * 100)}% ` +
         'of sessions retrieved ≥1 codemap entry',
+      renderCodemapHoldout(practice.codemapHoldout),
     ].join('\n');
     blocks.push(section(`*Practice signals (aggregate-only)*\n${lines}`));
   }

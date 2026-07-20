@@ -1,4 +1,4 @@
-import type { SessionEvent } from '@teambrain/core';
+import type { CodemapArm, SessionEvent } from '@teambrain/core';
 
 // D3.2/D3.3 practice signals (POSTV1_PLAN.md). Computes the FlightDeck
 // signal-sufficiency aggregates from existing metadata-only events. Privacy
@@ -60,6 +60,39 @@ export interface PracticeSignals {
     withoutCodemap: number | null;
     reductionPct: number | null;
   };
+  /**
+   * R16.1 T7d: the CM6 measurement — explore-actions/session and codemap query
+   * rate split by the randomized holdout arm (from session_start's
+   * `codemap_arm`), with a bootstrap 95% CI on the treatment-vs-control
+   * reduction. `label` is 'measured' only when both arms have ≥20 sessions,
+   * else 'estimated'; the effect must never be shown without label + per-arm n.
+   */
+  codemapHoldout: CodemapHoldoutReport;
+}
+
+/** Minimum sessions per arm before the CM6 effect is labeled `measured`. */
+export const MIN_ARM_SESSIONS = 20;
+
+export interface ArmMetrics {
+  sessions: number;
+  /** Mean explore-actions per session in this arm. */
+  explorationPerSession: number;
+  /** Fraction of this arm's sessions that retrieved ≥1 codemap entry. */
+  codemapQueryRate: number;
+}
+
+export interface CodemapHoldoutReport {
+  control: ArmMetrics;
+  treatment: ArmMetrics;
+  /**
+   * Relative reduction in explore-actions/session, treatment vs control (%).
+   * Positive = treatment explores less. null when either arm is empty or the
+   * control mean is 0 (no baseline to divide by).
+   */
+  reductionPct: number | null;
+  /** 95% bootstrap CI [low, high] on `reductionPct`; null when not computable. */
+  reductionCi95: [number, number] | null;
+  label: 'measured' | 'estimated';
 }
 
 interface SessionFeatures {
@@ -71,6 +104,8 @@ interface SessionFeatures {
   exploreEvents: number;
   eventsBeforeFirstToolUse: number;
   outcome: keyof OutcomeCounts | null;
+  /** R16.1 T7: the holdout arm from session_start, or null if untagged. */
+  arm: CodemapArm | null;
 }
 
 function distribution(values: number[]): Distribution {
@@ -100,6 +135,7 @@ function sessionFeatures(events: SessionEvent[]): SessionFeatures {
     exploreEvents: 0,
     eventsBeforeFirstToolUse: 0,
     outcome: null,
+    arm: null,
   };
   let lastFailedKind: string | null = null;
   let sawToolUse = false;
@@ -133,9 +169,103 @@ function sessionFeatures(events: SessionEvent[]): SessionFeatures {
       }
     } else if (event.ev === 'session_end') {
       features.outcome = event.data.outcome;
+    } else if (event.ev === 'session_start') {
+      const arm = (event.data as { codemap_arm?: unknown }).codemap_arm;
+      if (arm === 'control' || arm === 'treatment') features.arm = arm;
     }
   }
   return features;
+}
+
+/** Mulberry32: a tiny deterministic PRNG so the bootstrap CI is reproducible. */
+function seededRng(seed: number): () => number {
+  let state = seed >>> 0;
+  return (): number => {
+    state = (state + 0x6d2b79f5) >>> 0;
+    let t = state;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function mean(values: number[]): number {
+  if (values.length === 0) return 0;
+  return values.reduce((sum, v) => sum + v, 0) / values.length;
+}
+
+/** Relative reduction (%) of treatment vs control means; null if no baseline. */
+function reductionPct(control: number[], treatment: number[]): number | null {
+  const controlMean = mean(control);
+  if (control.length === 0 || treatment.length === 0 || controlMean === 0) {
+    return null;
+  }
+  return ((controlMean - mean(treatment)) / controlMean) * 100;
+}
+
+const BOOTSTRAP_ITERATIONS = 2000;
+
+/**
+ * 95% bootstrap CI on the treatment-vs-control reduction%, resampling sessions
+ * within each arm with replacement. Deterministic (seeded). null when the
+ * point estimate itself is null (either arm empty / zero control baseline).
+ */
+function bootstrapReductionCi(
+  control: number[],
+  treatment: number[],
+): [number, number] | null {
+  if (reductionPct(control, treatment) === null) return null;
+  const rand = seededRng(0x9e3779b9);
+  const resample = (pool: number[]): number[] =>
+    pool.map(() => pool[Math.floor(rand() * pool.length)] as number);
+  const samples: number[] = [];
+  for (let i = 0; i < BOOTSTRAP_ITERATIONS; i += 1) {
+    const value = reductionPct(resample(control), resample(treatment));
+    if (value !== null) samples.push(value);
+  }
+  if (samples.length === 0) return null;
+  samples.sort((a, b) => a - b);
+  const at = (q: number): number =>
+    samples[
+      Math.min(samples.length - 1, Math.max(0, Math.round(q * (samples.length - 1))))
+    ] as number;
+  return [Math.round(at(0.025)), Math.round(at(0.975))];
+}
+
+function armMetrics(sessions: SessionFeatures[]): ArmMetrics {
+  return {
+    sessions: sessions.length,
+    explorationPerSession:
+      Math.round(mean(sessions.map((s) => s.exploreEvents)) * 100) / 100,
+    codemapQueryRate:
+      sessions.length === 0
+        ? 0
+        : Math.round(
+            (sessions.filter((s) => s.retrievedCodemap).length /
+              sessions.length) *
+              100,
+          ) / 100,
+  };
+}
+
+function codemapHoldoutReport(
+  sessions: SessionFeatures[],
+): CodemapHoldoutReport {
+  const control = sessions.filter((s) => s.arm === 'control');
+  const treatment = sessions.filter((s) => s.arm === 'treatment');
+  const controlExplore = control.map((s) => s.exploreEvents);
+  const treatmentExplore = treatment.map((s) => s.exploreEvents);
+  const pct = reductionPct(controlExplore, treatmentExplore);
+  return {
+    control: armMetrics(control),
+    treatment: armMetrics(treatment),
+    reductionPct: pct === null ? null : Math.round(pct),
+    reductionCi95: bootstrapReductionCi(controlExplore, treatmentExplore),
+    label:
+      control.length >= MIN_ARM_SESSIONS && treatment.length >= MIN_ARM_SESSIONS
+        ? 'measured'
+        : 'estimated',
+  };
 }
 
 function emptyOutcomes(): OutcomeCounts {
@@ -215,5 +345,6 @@ export function computePracticeSignals(
       withoutCodemap: medianWithout,
       reductionPct,
     },
+    codemapHoldout: codemapHoldoutReport(sessions),
   };
 }

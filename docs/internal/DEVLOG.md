@@ -682,6 +682,19 @@ estimate. Assignment must be deterministic per sid across every process (hook
 tag, daemon bundle, MCP search) or the arms disagree. Tradeoffs: FNV-1a hand-
 rolled (boring-deps); disabled-arm tag is meaningless-but-harmless.
 
+## 2026-07-20 — R16.1 T7d: digest arm split with bootstrap CI
+What: `computePracticeSignals` reads each session's `codemap_arm` and emits
+`codemapHoldout` — explore-actions/session and codemap query rate per arm, plus
+the treatment-vs-control reduction% with a seeded (mulberry32, deterministic)
+95% bootstrap CI over sessions. Labeled `measured` only when both arms ≥20
+sessions (MIN_ARM_SESSIONS), else `estimated`. Slack renderer never prints the
+effect without its label and per-arm n (control/treatment).
+Why: the CM6 gate is a measured holdout result, not a before/after estimate; an
+unlabeled reduction is the confounded number the holdout exists to replace.
+Tradeoffs: reduction is on the mean (explore-actions/session reads as a mean),
+not the median D6 instrument; both coexist. Bootstrap is 2000 iters, seeded so
+the CI is reproducible; people-free by construction (arm counts only).
+
 ## 2026-07-20 — R16.1 T7b: control-arm serving bypass (single chokepoint)
 What: `codemap-arm-serving.ts` centralizes the arm decision (`servesCodemap`)
 and the search filter (`filterSearchForArm`); openBackend now exposes the

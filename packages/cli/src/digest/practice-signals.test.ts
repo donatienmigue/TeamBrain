@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { SessionEvent } from '@teambrain/core';
-import { computePracticeSignals } from './practice-signals.js';
+import { computePracticeSignals, MIN_ARM_SESSIONS } from './practice-signals.js';
 
 // D3.2/D3.3 acceptance: the FlightDeck signal aggregates computed from
 // metadata-only events, plus the structural privacy negative test (no
@@ -227,5 +227,140 @@ describe('exploration measurement (C2 explore kind, D6 §4.8 instrument)', () =>
       ev(SID_C, 0, { ev: 'memory_retrieved', data: { ids: ['01JZMEM9'] } }),
     ]);
     expect(memoryOnly.codemapQueryRate).toBe(0);
+  });
+});
+
+// R16.1 T7d: the CM6 holdout report — explore-actions/session and codemap
+// query rate split by arm, with a bootstrap CI and measured/estimated labeling.
+describe('computePracticeSignals: codemap holdout (T7d)', () => {
+  /**
+   * Builds `control` + `treatment` sessions. Each session is a session_start
+   * tagged with its arm, `explore` explore-events (with a little per-session
+   * spread so the bootstrap CI is a real interval), and — for treatment — a
+   * codemap retrieval so its query rate is non-zero.
+   */
+  function armFixture(opts: {
+    control: number;
+    treatment: number;
+    controlExplore: number;
+    treatmentExplore: number;
+  }): SessionEvent[] {
+    const out: SessionEvent[] = [];
+    const push = (
+      arm: 'control' | 'treatment',
+      count: number,
+      base: number,
+    ): void => {
+      for (let i = 0; i < count; i += 1) {
+        const sid = `${arm}-${i}`;
+        out.push(ev(sid, 0, { ev: 'session_start', data: { codemap_arm: arm } }));
+        if (arm === 'treatment') {
+          out.push(
+            ev(sid, 1, {
+              ev: 'memory_retrieved',
+              data: { ids: [`cm:src/mod${i}.ts`] },
+            }),
+          );
+        }
+        const explores = base + (i % 3); // deterministic spread
+        for (let j = 0; j < explores; j += 1) {
+          out.push(ev(sid, 2 + j, { ev: 'tool_use', data: { kind: 'explore' } }));
+        }
+      }
+    };
+    push('control', opts.control, opts.controlExplore);
+    push('treatment', opts.treatment, opts.treatmentExplore);
+    return out;
+  }
+
+  it('measured: both arms ≥20 → split, positive reduction, bootstrap CI excluding zero', () => {
+    const signals = computePracticeSignals(
+      armFixture({
+        control: 25,
+        treatment: 25,
+        controlExplore: 10,
+        treatmentExplore: 4,
+      }),
+    );
+    const h = signals.codemapHoldout;
+    expect(h.control.sessions).toBe(25);
+    expect(h.treatment.sessions).toBe(25);
+    expect(h.label).toBe('measured');
+    // Control explores ~11 (10 + spread), treatment ~5 → ~50%+ reduction.
+    expect(h.reductionPct).not.toBeNull();
+    expect(h.reductionPct as number).toBeGreaterThan(30);
+    expect(h.reductionCi95).not.toBeNull();
+    const [low, high] = h.reductionCi95 as [number, number];
+    expect(low).toBeLessThanOrEqual(high);
+    expect(low).toBeGreaterThan(0); // CI excludes zero → clears the CM6 shape
+    // Query rate: treatment retrieved codemap, control did not.
+    expect(h.control.codemapQueryRate).toBe(0);
+    expect(h.treatment.codemapQueryRate).toBe(1);
+  });
+
+  it('bootstrap CI is deterministic across runs (seeded)', () => {
+    const fx = armFixture({
+      control: 22,
+      treatment: 24,
+      controlExplore: 9,
+      treatmentExplore: 3,
+    });
+    expect(computePracticeSignals(fx).codemapHoldout.reductionCi95).toEqual(
+      computePracticeSignals(fx).codemapHoldout.reductionCi95,
+    );
+  });
+
+  it('estimated at the n=20 boundary: control just under the floor', () => {
+    const belowFloor = computePracticeSignals(
+      armFixture({
+        control: MIN_ARM_SESSIONS - 1,
+        treatment: MIN_ARM_SESSIONS,
+        controlExplore: 10,
+        treatmentExplore: 4,
+      }),
+    ).codemapHoldout;
+    expect(belowFloor.control.sessions).toBe(19);
+    expect(belowFloor.label).toBe('estimated');
+
+    const atFloor = computePracticeSignals(
+      armFixture({
+        control: MIN_ARM_SESSIONS,
+        treatment: MIN_ARM_SESSIONS,
+        controlExplore: 10,
+        treatmentExplore: 4,
+      }),
+    ).codemapHoldout;
+    expect(atFloor.label).toBe('measured');
+  });
+
+  it('negative: an empty arm → reduction and CI null, never fabricated', () => {
+    const h = computePracticeSignals(
+      armFixture({
+        control: 0,
+        treatment: 10,
+        controlExplore: 10,
+        treatmentExplore: 4,
+      }),
+    ).codemapHoldout;
+    expect(h.control.sessions).toBe(0);
+    expect(h.reductionPct).toBeNull();
+    expect(h.reductionCi95).toBeNull();
+    expect(h.label).toBe('estimated');
+  });
+
+  it('negative: the holdout report carries no per-person fields', () => {
+    const serialized = JSON.stringify(
+      computePracticeSignals(
+        armFixture({
+          control: 20,
+          treatment: 20,
+          controlExplore: 8,
+          treatmentExplore: 3,
+        }),
+      ).codemapHoldout,
+    );
+    for (const forbidden of ['control-0', 'treatment-0', 'cm:src', '"sid"']) {
+      expect(serialized).not.toContain(forbidden);
+    }
   });
 });

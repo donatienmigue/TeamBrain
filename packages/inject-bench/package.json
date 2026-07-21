@@ -1,0 +1,32 @@
+{
+  "name": "@teambrain/inject-bench",
+  "version": "0.4.0",
+  "description": "A public memory-poisoning benchmark for MCP memory servers — measures ingestion-block and containment rates against a corpus of known injection techniques.",
+  "keywords": [
+    "mcp",
+    "prompt-injection",
+    "memory-poisoning",
+    "benchmark",
+    "security"
+  ],
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "comment:files": "The adversarial corpus (corpus/) is deliberately NOT shipped — it is defensive test material, kept in the repo for reproduction (E5.4). Only the harness ships.",
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@teambrain/core": "workspace:*",
+    "@teambrain/mcp": "workspace:*"
+  }
+}

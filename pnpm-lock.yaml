@@ -140,6 +140,15 @@ importers:
         specifier: ^7.6.13
         version: 7.6.13
 
+  packages/inject-bench:
+    dependencies:
+      '@teambrain/core':
+        specifier: workspace:*
+        version: link:../core
+      '@teambrain/mcp':
+        specifier: workspace:*
+        version: link:../mcp
+
   packages/mcp:
     dependencies:
       '@modelcontextprotocol/sdk':

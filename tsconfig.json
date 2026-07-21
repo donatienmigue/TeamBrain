@@ -7,6 +7,7 @@
     { "path": "packages/hooks" },
     { "path": "packages/redact" },
     { "path": "packages/distill" },
-    { "path": "packages/cli" }
+    { "path": "packages/cli" },
+    { "path": "packages/inject-bench" }
   ]
 }

@@ -882,3 +882,23 @@ and host.
 Tradeoffs: the Action comment render mirrors review-comment.ts (the tested
 source of truth); the gh find-update itself is exercised only in real CI. No
 new MCP tool (four-tool snapshot unchanged); C1/C2 diffs empty.
+
+## 2026-07-21 — E5: inject-bench (memory-poisoning benchmark)
+What: new @teambrain/inject-bench package. SystemUnderTest interface (ingest +
+serve — the MCP surface every memory server exposes), a scorer (tier 1 ingestion
+block, tier 2 containment; LLM-free), an adversarial corpus by attack class
+(instruction override, F1 fence-escape first-class, tool-invocation,
+exfiltration, scope escalation, homoglyph, encoded, sleeper), and two in-process
+adapters: teambrainSystem (scanForInjection + renderMemoryBlock) and
+vulnerableMockSystem (the E5.3 validity control).
+Results (reproduced by the tests from a clean clone): TeamBrain 100% safe
+(50% blocked at ingestion, 100% contained — F1 fence-escape included); the
+vulnerable mock scores 0% (so the benchmark can detect a known-bad system).
+Why: "PR review beats silent auto-write", measured and published including our
+own tier-1 gaps (homoglyph/encoded/sleeper evade the keyword lint but tier-2
+contains them). Honest > perfect scorecard.
+Tradeoffs: corpus is NOT shipped (files: dist only; defensive test material) —
+reproduction is from the repo. The over-the-wire MCP-client adapter is the same
+interface but not wired here (needs a live endpoint); in-process adapters are
+the tested/reproducible path. Tier 3 (behavioural) is out of scope. E5.4
+(publish the results) is a human decision — NOT made. No contract change.

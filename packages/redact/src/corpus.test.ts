@@ -1,59 +1,14 @@
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { redactString } from './engine.js';
+import { loadRedactionCorpus } from './corpus.js';
 
 // M5.1 release gate: the public corpus. CI fails on any regression here — a
 // false negative (secret leaks) or a false positive (a git SHA / UUID / path
-// gets redacted) is a shipping blocker, not a warning.
+// gets redacted) is a shipping blocker, not a warning. The loader (with its
+// de-fang/refang handling) is shared with `tb verify` V4 so the repo test and
+// the installed-binary verifier can never diverge.
 
-interface CorpusCase {
-  id: string;
-  kind: 'positive' | 'negative';
-  detector?: string;
-  input: string;
-  expect_types?: string[];
-  secret?: string;
-  note?: string;
-}
-
-// Some detector prefixes match live-credential formats that GitHub's push
-// protection blocks on sight — a redaction *test* corpus can't win that fight.
-// So those fixtures are stored "de-fanged" (the prefix as a `{token}`
-// placeholder) and the real prefix is re-assembled here at load time. The
-// committed bytes never form a scannable credential; the redaction engine still
-// sees the genuine format at test time, so coverage is unchanged. See
-// corpus/README.md.
-const DEFANG: Record<string, string> = {
-  '{glpat}': 'glpat-',
-  '{sk_live}': 'sk_live_',
-  '{rk_live}': 'rk_live_',
-};
-
-function refang(value: string): string {
-  let out = value;
-  for (const [placeholder, prefix] of Object.entries(DEFANG)) {
-    out = out.split(placeholder).join(prefix);
-  }
-  return out;
-}
-
-function loadCorpus(): CorpusCase[] {
-  const here = dirname(fileURLToPath(import.meta.url));
-  const path = join(here, '..', 'corpus', 'corpus.jsonl');
-  return readFileSync(path, 'utf8')
-    .split('\n')
-    .filter((line) => line.trim().length > 0)
-    .map((line) => {
-      const parsed = JSON.parse(line) as CorpusCase;
-      parsed.input = refang(parsed.input);
-      if (parsed.secret !== undefined) parsed.secret = refang(parsed.secret);
-      return parsed;
-    });
-}
-
-const corpus = loadCorpus();
+const corpus = loadRedactionCorpus();
 
 describe('redaction corpus (M5.1 release gate)', () => {
   it('has at least 120 cases across positives and negatives', () => {

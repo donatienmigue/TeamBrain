@@ -816,3 +816,36 @@ Corrupt/absent record fails open. A throwing spawn counts as a failure.
 Why: a daemon that crashes on boot was respawned by every hook event,
 forever. Tradeoffs: state is per-runtimeDir and time-based, not persistent
 across cooldowns by design.
+
+## 2026-07-21 — E1 start: contract amendment A (verify) + OQ-8 egress spike
+What: added `verify [--json] [--strict]` to C6 in CONTRACTS.md (additive
+amendment A, ADR-6/EVIDENCE_BRIEF §9, explicit human approval 2026-07-21) with
+its own exit-code note (0 pass / 2 could-not-run / 3 invariant violated). Ran
+the OQ-8 spike before writing V2.
+Why: `tb verify` is the phase keystone — privacy-by-construction as a command a
+stranger runs on their own data. V2 needs an honest egress claim.
+OQ-8 result: JS instrumentation (net.Socket.connect/http.request/fetch) DOES
+observe JS-layer egress; native deps (better-sqlite3, onnxruntime-node) do
+local I/O in C++/libuv and never traverse the JS net prototype, so JS-level
+instrumentation is structurally blind to native sockets. Therefore V2 claims
+only "no egress from TeamBrain's JavaScript surface"; --strict is the OS-sandbox
+tier for a stronger guarantee. Under-claim by construction (guardrail C6/§C).
+Tradeoffs: V2 cannot make an unqualified "no egress" claim; stated explicitly
+in the report allowlist and SECURITY.md rather than hidden.
+
+## 2026-07-21 — E1 complete: tb verify V1–V8 + SECURITY.md
+What: finished the self-audit command. V1 provenance (npm attestation for all 7
+packages; offline→UNVERIFIED, shell:true so Windows .cmd works), V2 egress via
+a child-process socket probe replaying a serve+search (0 JS-layer connections;
+scoped to the JS surface per OQ-8), V4 redaction corpus vs the INSTALLED
+redactor (corpus now shipped in @teambrain/redact files[]; shared loader), V5
+digest people-free over the real spool, V7 retired-unserved on the live index.
+SECURITY.md now points at the command and names the F8 embedding endpoint in an
+explicit egress allowlist.
+Why: turn privacy-by-construction from 500 internal tests into one command a
+stranger runs on their own data (ADR-6). Under-claim everywhere.
+Tradeoffs: V1 is registry-attestation-presence, not full sigstore-chain (stated
+in the report). V2 cannot see native sockets (stated; --strict is the OS tier).
+Evidence: `tb verify` PASS in 17s online / exit 2 UNVERIFIED offline; 8 checks,
+each with a negative control; --json golden; 677 tests green; four-tool MCP
+snapshot + egress-guard unchanged; CONTRACTS diff = amendment A only.

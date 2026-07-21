@@ -1,0 +1,90 @@
+# TeamBrain — scheduled install smoke gate (E0.3)
+#
+# The release workflow smoke-tests a version at the moment it is published.
+# This job answers a different, ongoing question: does `npm i -g @teambrain/cli`
+# STILL produce a working `tb` today, on a machine that has never seen this
+# project? Registry propagation, transitive-dependency rot, and Node point
+# releases can all break a previously-good install between tags — so this runs
+# on a schedule against the published `latest`, not once per release.
+#
+# Matrix adds Windows (D5.3): a deep clone of THIS repo needs
+# `git clone -c core.longpaths=true`, and while the smoke installs from the
+# registry (not a clone), the Windows job sets core.longpaths globally and
+# documents the requirement so the matrix exercises the platform the install
+# claim covers.
+name: smoke
+
+on:
+  schedule:
+    - cron: '0 6 * * 1' # Mondays 06:00 UTC
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to smoke-test (default: latest)'
+        required: false
+        default: 'latest'
+
+jobs:
+  smoke:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org
+
+      # D5.3: on Windows a deep working tree can exceed MAX_PATH. The install
+      # itself is registry-based, but we set this globally so the documented
+      # requirement is exercised (and any brain the user later clones works).
+      - name: Configure long paths (Windows)
+        if: runner.os == 'Windows'
+        run: git config --global core.longpaths true
+
+      - name: Install the published CLI from the registry
+        shell: bash
+        run: |
+          version="${{ github.event.inputs.version || 'latest' }}"
+          for i in 1 2 3 4 5; do
+            npm install -g "@teambrain/cli@${version}" && exit 0
+            echo "registry not propagated yet (attempt $i); waiting 30s"
+            sleep 30
+          done
+          exit 1
+
+      - name: tb --version
+        shell: bash
+        run: tb --version
+
+      # The README quick start: init imports CLAUDE.md into a brain branch, the
+      # daemon serves it, and doctor must reach exit 0 (doctor exits 2 by design
+      # when no daemon is reachable, so a bare `tb doctor` can never pass).
+      - name: tb init + tb serve + tb doctor in a scratch repo
+        shell: bash
+        run: |
+          git config --global user.email ci@teambrain.invalid
+          git config --global user.name teambrain-ci
+          git config --global init.defaultBranch main
+          scratch="$(mktemp -d)"
+          cd "$scratch"
+          git init -q .
+          printf '# scratch\n\nUse pnpm for installs. The API layer lives in src/api.\n' > CLAUDE.md
+          echo '# scratch' > README.md
+          git add . && git commit -qm init
+          tb init
+          git checkout -q teambrain/init
+          nohup tb serve > serve.log 2>&1 &
+          ok=0
+          for i in $(seq 1 30); do
+            if tb doctor > doctor.log 2>&1; then ok=1; break; fi
+            sleep 2
+          done
+          cat doctor.log
+          if [ "$ok" != "1" ]; then
+            echo '--- tb serve log ---'
+            cat serve.log
+            exit 1
+          fi

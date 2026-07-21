@@ -9,6 +9,7 @@ import { runServeCommand, runServeStopCommand } from './serve-command.js';
 import { runMcpCommand } from './mcp-command.js';
 import { runDoctorCommand } from './doctor-command.js';
 import { runMetricsCommand } from './metrics-command.js';
+import { runVerifyCommand } from './verify/verify-command.js';
 import { runHookCommand } from './hook-command.js';
 import { runAuditCommand } from './audit-command.js';
 import { runDistillCommand } from './distill/distill-command.js';
@@ -312,6 +313,31 @@ export function buildProgram(): Command {
       process.stdout.write(output);
       process.exitCode = exitCode;
     });
+
+  program
+    .command('verify')
+    .description(
+      "re-assert TeamBrain's privacy invariants at runtime on your own data",
+    )
+    .helpGroup('Quality')
+    .argument('[path]', 'repository containing .teambrain/', '.')
+    .option('--json', 'emit the machine-readable report', false)
+    .option(
+      '--strict',
+      'opt into the OS-sandbox egress tier (see the egress check)',
+      false,
+    )
+    .addHelpText('after', commandHelpAfter(HELP.verify))
+    .action(
+      async (repoDir: string, opts: { json: boolean; strict: boolean }) => {
+        const { exitCode, output } = await runVerifyCommand(repoDir, {
+          json: opts.json,
+          strict: opts.strict,
+        });
+        process.stdout.write(output);
+        process.exitCode = exitCode;
+      },
+    );
 
   program
     .command('hook', { hidden: true })

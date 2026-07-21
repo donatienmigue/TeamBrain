@@ -34,6 +34,14 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
 
+      # E0.2 — a tagged release must not be able to publish on red. The tag
+      # trigger fires independently of the CI workflow, so the test + lint gate
+      # is re-run here in the publish job itself: this is what makes the
+      # README's "the redaction corpus is release-gating" claim literally true
+      # (README_AUDIT R26) rather than incidentally true via a separate CI run.
+      - run: pnpm test
+      - run: pnpm lint
+
       # publishConfig.provenance is set per package; -r publishes all of them
       # and rewrites workspace:* to the released version.
       - name: Publish to npm

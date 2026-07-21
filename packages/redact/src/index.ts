@@ -17,3 +17,8 @@ export {
   ENTROPY_THRESHOLD,
 } from './entropy.js';
 export { buildDenyMatcher, normalizePath, type DenyMatcher } from './globs.js';
+export {
+  loadRedactionCorpus,
+  redactionCorpusPath,
+  type RedactionCorpusCase,
+} from './corpus.js';

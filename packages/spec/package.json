@@ -1,0 +1,36 @@
+{
+  "name": "@teambrain/spec",
+  "version": "0.4.0",
+  "description": "The TeamBrain memory-format and session-event spec, with published JSON Schema and a standalone conformance validator (npx @teambrain/spec).",
+  "keywords": [
+    "spec",
+    "json-schema",
+    "memory",
+    "mcp",
+    "conformance"
+  ],
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "teambrain-validate": "./dist/validate-cli.js"
+  },
+  "files": [
+    "dist",
+    "MEMORY-FORMAT-1.0.md",
+    "SESSION-EVENT-1.0.md"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@teambrain/core": "workspace:*",
+    "zod": "^4.4.3"
+  }
+}

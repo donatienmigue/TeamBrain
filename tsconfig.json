@@ -8,6 +8,7 @@
     { "path": "packages/redact" },
     { "path": "packages/distill" },
     { "path": "packages/cli" },
-    { "path": "packages/inject-bench" }
+    { "path": "packages/inject-bench" },
+    { "path": "packages/spec" }
   ]
 }

@@ -161,6 +161,21 @@ Exit 0 when the daemon socket is reachable; 2 otherwise. --json emits a
 machine-readable report (schema-validated in tests). --fix starts the daemon
 when it is down; without it doctor only reports and never spawns anything.`,
 
+  verify: `
+Examples:
+  $ tb verify
+  $ tb verify --json
+  $ tb verify --strict
+
+Re-asserts TeamBrain's published privacy invariants at runtime, on your own
+machine and against your own brain and spool — the artifact you paste into a
+security review. Prints the network egress allowlist in full (including the
+one-time embedding-model download) and a PASS/FAIL/UNVERIFIED line per check.
+Exit 0 when every check passes; 2 when a check could not run (e.g. offline
+provenance — reported UNVERIFIED, never PASS); 3 when an invariant is
+violated. Never prints a scanned value — only path:line:key. Exit 1 when the
+target repo has no brain.`,
+
   hook: `
 Examples:
   $ tb hook session-start

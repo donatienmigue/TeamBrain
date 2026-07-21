@@ -816,3 +816,19 @@ Corrupt/absent record fails open. A throwing spawn counts as a failure.
 Why: a daemon that crashes on boot was respawned by every hook event,
 forever. Tradeoffs: state is per-runtimeDir and time-based, not persistent
 across cooldowns by design.
+
+## 2026-07-21 — E1 start: contract amendment A (verify) + OQ-8 egress spike
+What: added `verify [--json] [--strict]` to C6 in CONTRACTS.md (additive
+amendment A, ADR-6/EVIDENCE_BRIEF §9, explicit human approval 2026-07-21) with
+its own exit-code note (0 pass / 2 could-not-run / 3 invariant violated). Ran
+the OQ-8 spike before writing V2.
+Why: `tb verify` is the phase keystone — privacy-by-construction as a command a
+stranger runs on their own data. V2 needs an honest egress claim.
+OQ-8 result: JS instrumentation (net.Socket.connect/http.request/fetch) DOES
+observe JS-layer egress; native deps (better-sqlite3, onnxruntime-node) do
+local I/O in C++/libuv and never traverse the JS net prototype, so JS-level
+instrumentation is structurally blind to native sockets. Therefore V2 claims
+only "no egress from TeamBrain's JavaScript surface"; --strict is the OS-sandbox
+tier for a stronger guarantee. Under-claim by construction (guardrail C6/§C).
+Tradeoffs: V2 cannot make an unqualified "no egress" claim; stated explicitly
+in the report allowlist and SECURITY.md rather than hidden.

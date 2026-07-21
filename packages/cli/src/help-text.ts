@@ -125,10 +125,17 @@ a PR. Never writes to main.`,
 Examples:
   $ tb digest --dry-run
   $ set TEAMBRAIN_SLACK_WEBHOOK=https://hooks.slack.com/... && tb digest
+  $ tb digest --format markdown --out .teambrain/reports/2026-W30.md
+  $ tb digest --format json
 
 Aggregates proposal, retrieval, and drift stats with no per-person fields
 (enforced by construction). Posts to Slack when TEAMBRAIN_SLACK_WEBHOOK is
-set; --dry-run or a missing webhook prints JSON instead.`,
+set; --dry-run or a missing webhook prints JSON instead.
+
+--format markdown|json writes the FlightDeck v0 report (the weekly committed
+artifact) instead of posting to Slack. Aggregates over fewer than 5 units are
+suppressed in the aggregator, so --format json cannot leak what the markdown
+hides. --out writes to a file (default: stdout). Reports are never indexed.`,
 
   propose: `
 Examples:

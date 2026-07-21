@@ -849,3 +849,21 @@ in the report). V2 cannot see native sockets (stated; --strict is the OS tier).
 Evidence: `tb verify` PASS in 17s online / exit 2 UNVERIFIED offline; 8 checks,
 each with a negative control; --json golden; 677 tests green; four-tool MCP
 snapshot + egress-guard unchanged; CONTRACTS diff = amendment A only.
+
+## 2026-07-21 — E2: FlightDeck v0 weekly report
+What: `tb digest --format markdown|json --out <path>` (amendment D) renders the
+weekly report from PRACTICE_SIGNALS strong-column signals only. Small-cell
+suppression (n<5) lives in buildFlightDeckReport (the aggregator), not the
+renderer, so a suppressed cell carries n but no value — --format json cannot
+leak what markdown hides. Cursor unknown-inflation caveat inline; co-occurrence
+labelled correlation; nothing reads plan_revision. Weekly CI template commits
+the report under .teambrain/reports/ (CodeMap precedent, not PR-gated).
+Why: makes the leadership-layer differentiator a durable, diffable artifact
+from week one (ADR-9), without widening capture (PRACTICE_SIGNALS conditional
+GO).
+Tradeoffs: "Memories at risk" is a placeholder until E3 drift lands. Default
+Slack behaviour unchanged. Reports never indexed (indexer scans memories/**
+only; negative test asserts a reports/ file is unsearchable).
+Evidence: 3-session fixture suppresses every derived cell + json has no
+"value"; golden markdown body; not-indexed negative test; 680 tests green;
+CONTRACTS diff = amendments A + D only. E2.4 (30-day dogfood) is a human task.

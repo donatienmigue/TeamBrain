@@ -147,6 +147,11 @@ describe('M2 acceptance: tb init against the fixture repos', () => {
       // INDEX.md references every written memory.
       const index = readFileSync(join(brainDir, 'INDEX.md'), 'utf8');
       for (const id of ids) expect(index).toContain(id);
+
+      // F5 (E6.4): the brain's prompts/ is scaffolded with the distiller prompt.
+      const distillPrompt = join(brainDir, 'prompts', 'distill-v1.md');
+      expect(existsSync(distillPrompt)).toBe(true);
+      expect(readFileSync(distillPrompt, 'utf8').length).toBeGreaterThan(0);
     });
   }
 

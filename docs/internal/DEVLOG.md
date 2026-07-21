@@ -902,3 +902,23 @@ reproduction is from the repo. The over-the-wire MCP-client adapter is the same
 interface but not wired here (needs a live endpoint); in-process adapters are
 the tested/reproducible path. Tier 3 (behavioural) is out of scope. E5.4
 (publish the results) is a human decision — NOT made. No contract change.
+
+## 2026-07-21 — E6: spec, conformance validator, adapters-as-data, prompts scaffold
+What: (E6.1/E6.2) new @teambrain/spec — MEMORY-FORMAT-1.0 / SESSION-EVENT-1.0
+docs derived from CONTRACTS (stated upstream), C1/C2 zod schemas re-exported
+with JSON Schema via z.toJSONSchema, and a standalone validator + bin
+(teambrain-validate) that reuses the product parser so a PASS cannot diverge
+from the frozen contract. Conformance corpus = testdata/compat/v1-brain
+PROMOTED (not regenerated; byte-exactness still gated by core/compat-v1).
+(E6.3) adapters.yaml as reviewable data + zod schema + a drift test asserting
+its tool set equals the code registry (amendment C: install <tool>; unknown
+tool already exits 1 with the supported set). (E6.4/F5) tb init now scaffolds
+.teambrain/prompts/distill-v1.md seeded with the versioned distiller prompt;
+added prompts/ to the distill package files (also fixes a latent load bug).
+Why: git-native as the neutral, independently-implementable ground (ADR-10/11).
+Tradeoffs: the validator depends on @teambrain/core for the schemas (no daemon/
+index/native deps) — the point is zero divergence from the contract. The README
+matrix still generates from ADAPTERS (its own drift test); adapters.yaml is
+tied to it by the consistency test. Accept: 1-byte perturbation rejected;
+install <unknown> exits 1; fresh init produces prompts/; compat byte-exact. 700
+tests green.

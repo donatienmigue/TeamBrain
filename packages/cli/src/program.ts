@@ -10,6 +10,7 @@ import { runMcpCommand } from './mcp-command.js';
 import { runDoctorCommand } from './doctor-command.js';
 import { runMetricsCommand } from './metrics-command.js';
 import { runVerifyCommand } from './verify/verify-command.js';
+import { runRelevantCommand } from './relevant/relevant-command.js';
 import { runHookCommand } from './hook-command.js';
 import { runAuditCommand } from './audit-command.js';
 import { runDistillCommand } from './distill/distill-command.js';
@@ -338,6 +339,41 @@ export function buildProgram(): Command {
       process.stdout.write(output);
       process.exitCode = exitCode;
     });
+
+  program
+    .command('relevant')
+    .description('list memories relevant to changed paths (human query path)')
+    .helpGroup('Quality')
+    .argument('[path]', 'repository containing .teambrain/', '.')
+    .option(
+      '--paths <glob...>',
+      'changed file paths to find memories for (repeatable)',
+    )
+    .option('--query <text>', 'extra free-text query (e.g. the PR title)')
+    .option('--k <n>', 'max memories to return (default 5)')
+    .option(
+      '--json',
+      'emit machine-readable rows (for the review Action)',
+      false,
+    )
+    .addHelpText('after', commandHelpAfter(HELP.relevant))
+    .action(
+      async (
+        repoDir: string,
+        opts: { paths?: string[]; query?: string; k?: string; json: boolean },
+      ) => {
+        const k =
+          opts.k === undefined ? undefined : Number.parseInt(opts.k, 10);
+        const { exitCode, output } = await runRelevantCommand(repoDir, {
+          ...(opts.paths === undefined ? {} : { paths: opts.paths }),
+          ...(opts.query === undefined ? {} : { query: opts.query }),
+          ...(k === undefined || Number.isNaN(k) ? {} : { k }),
+          json: opts.json,
+        });
+        process.stdout.write(output);
+        process.exitCode = exitCode;
+      },
+    );
 
   program
     .command('verify')

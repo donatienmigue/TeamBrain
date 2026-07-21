@@ -5,6 +5,53 @@ reaches an agent, and what an agent could be tricked into doing — are safe by
 construction, not by policy. This is a summary of the V1 threat model; the full
 version is in `docs/internal/TECH_BRIEF.md` §5.
 
+## Verify it yourself — `tb verify`
+
+Do not take the claims below on trust. `tb verify` re-asserts them at runtime,
+**on your own machine and against your own brain and spool**, and prints a
+report you can paste into a security review:
+
+```
+$ tb verify           # human report
+$ tb verify --json    # machine-readable
+```
+
+It exits `0` when every check passes, `2` when a check could not run (e.g.
+offline provenance — reported `UNVERIFIED`, never `PASS`), and `3` when an
+invariant is violated. It reports only `path:line:key` for any finding, never
+the offending value. The checks map directly to the guarantees in this file:
+
+| Check | Guarantee |
+|---|---|
+| V1 provenance | the installed `@teambrain/*` packages carry npm provenance attestations |
+| V2 egress | a scripted serve+search session opens no connection on TeamBrain's JS surface (see *Network egress* below) |
+| V3 no content in events | your spool holds no `content`/`old_string`/`new_string`/`command` key and no over-long `intent` |
+| V4 redaction corpus | the shipped corpus still passes against the **installed** redactor |
+| V5 digest people-free | the digest projection drops every identity field |
+| V6 user-scope isolation | nothing under `user/` is on the pushed sessions branch |
+| V7 retired unserved | no retired memory is returned by your live index |
+| V8 repo scoping | the daemon being reported on is *this* repo's |
+
+## Network egress
+
+TeamBrain has no server, so egress is limited to a small, fixed allowlist that
+`tb verify` prints in full — including the one-time embedding-model download,
+which earlier docs omitted:
+
+- **your brain git remote** — brain sync (push/pull), via the git subprocess.
+- **`api.anthropic.com`** (or the `brain.yaml` Provider host) — the distiller
+  LLM calls, in `packages/distill` only, never at capture time.
+- **your `brain.yaml` digest webhook** (e.g. `hooks.slack.com`) — the weekly
+  digest, only when a webhook is configured.
+- **`storage.googleapis.com/qdrant-fastembed`** — a one-time, checksum-pinned
+  download of the bge-small embedding model to `~/.teambrain/models/`
+  (`packages/index/src/embeddings.ts`).
+
+V2's guarantee is scoped to TeamBrain's **JavaScript** surface: sockets opened
+inside native modules (`better-sqlite3`, the ONNX runtime) are created below
+the JS layer and cannot be observed by JS instrumentation. `tb verify --strict`
+runs the replay under an OS-level deny-all network sandbox for a stronger check.
+
 ## Trust boundaries
 
 - **Agent ↔ hook.** A hook receives only what the tool's hook API exposes, does
@@ -49,7 +96,8 @@ that, a layered redaction engine (vendored gitleaks ruleset + Shannon-entropy
 scanner + PII detectors) runs **before** anything touches the spool. The
 redaction corpus (`packages/redact/corpus/`, ≥ 120 adversarial cases including
 tricky negatives like UUIDs and git SHAs) is a release gate — CI fails on any
-regression.
+regression. It ships with the `@teambrain/redact` package, so `tb verify` (V4)
+re-runs it against the redactor you actually installed, not just ours.
 
 ### Compromised distiller PR
 
@@ -78,7 +126,9 @@ code cannot reach — asserted at the git-object level in tests.
 ### Supply chain
 
 Minimal dependency tree, committed lockfile, and npm provenance
-(`--provenance`) on published releases.
+(`--provenance`) on published releases — checked for all seven `@teambrain/*`
+packages by `tb verify` (V1), so a reader can confirm the code they installed is
+the code that was audited.
 
 ## Reporting a vulnerability
 

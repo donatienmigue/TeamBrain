@@ -27,6 +27,7 @@ jobs:
             .github/workflows/smoke.yml
             ci-templates/codemap.yml
             ci-templates/digest.yml
+            ci-templates/memory-review.yml
             ci-templates/flightdeck.yml
             ci-templates/distill.yml
             ci-templates/lint.yml

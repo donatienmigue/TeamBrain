@@ -867,3 +867,18 @@ only; negative test asserts a reports/ file is unsearchable).
 Evidence: 3-session fixture suppresses every derived cell + json has no
 "value"; golden markdown body; not-indexed negative test; 680 tests green;
 CONTRACTS diff = amendments A + D only. E2.4 (30-day dogfood) is a human task.
+
+## 2026-07-21 — E4: tb relevant + review-time memory Action
+What: `tb relevant --paths <glob…> [--query] [--k] [--json]` (amendment B) —
+the first human query path into the brain. Reuses openBackend + memorySearch
+(C4), so retired/out-of-scope memories never surface; prints id·title·class
+only (no bodies, no session/author data); fails open (exit 0 empty) with no
+brain/no match. ci-templates/memory-review.yml posts ONE sticky comment per PR
+(marker-based find-then-update → N pushes = 1 comment), ≤5 rows, brain.yaml
+review.enabled:false opt-out, fails open on every path.
+Why: memory meets developers in ordinary code review — the moment they can best
+judge if it is still true (ADR-8), a git-native move a hosted rival must build
+and host.
+Tradeoffs: the Action comment render mirrors review-comment.ts (the tested
+source of truth); the gh find-update itself is exercised only in real CI. No
+new MCP tool (four-tool snapshot unchanged); C1/C2 diffs empty.

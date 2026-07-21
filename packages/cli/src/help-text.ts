@@ -168,6 +168,18 @@ Exit 0 when the daemon socket is reachable; 2 otherwise. --json emits a
 machine-readable report (schema-validated in tests). --fix starts the daemon
 when it is down; without it doctor only reports and never spawns anything.`,
 
+  relevant: `
+Examples:
+  $ tb relevant --paths src/auth/login.ts src/auth/tokens.ts
+  $ tb relevant --paths packages/api/*.ts --query "rate limiting"
+  $ tb relevant --paths src/db.ts --json --k 5
+
+The human query path into the brain: which team memories touch these files?
+Searches the same RetrievalBackend agents use, so retired and out-of-scope
+memories never surface. Prints id · title · class (no bodies, no session or
+author data). --json feeds the review-time Action (ci-templates/
+memory-review.yml). Exits 0 with nothing when there is no brain or no match.`,
+
   verify: `
 Examples:
   $ tb verify

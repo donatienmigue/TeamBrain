@@ -1,0 +1,108 @@
+# TeamBrain — review-time memory surfacing (E4)
+#
+# On every PR, finds the already-approved team memories that touch the changed
+# files and posts ONE sticky comment (updated in place, never duplicated). It
+# is read-only against the brain, posts only public content (memory id · title
+# · class — never session, author, or telemetry data), and FAILS OPEN: no brain,
+# no match, opt-out, or any error → exit 0 with no comment. Opt out by setting
+# `review: { enabled: false }` in .teambrain/brain.yaml.
+#
+# The comment rendering mirrors packages/cli/src/relevant/review-comment.ts,
+# which is the tested source of truth for the marker, the ≤5 cap, and the links.
+name: teambrain-memory-review
+
+on:
+  pull_request:
+
+concurrency:
+  group: teambrain-memory-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  memory-review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Gate — brain present and not opted out
+        id: gate
+        run: |
+          if [ ! -d .teambrain ]; then
+            echo 'no brain; skipping'
+            echo 'skip=1' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Opt-out: review.enabled: false in brain.yaml.
+          if [ -f .teambrain/brain.yaml ] && \
+             grep -Pzoq 'review:\s*\n\s*enabled:\s*false' .teambrain/brain.yaml; then
+            echo 'review opted out; skipping'
+            echo 'skip=1' >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-node@v4
+        if: steps.gate.outputs.skip != '1'
+        with:
+          node-version: 20
+
+      - name: Install the CLI
+        if: steps.gate.outputs.skip != '1'
+        run: npm install -g @teambrain/cli
+
+      - name: Find relevant memories and post the sticky comment
+        if: steps.gate.outputs.skip != '1'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          # Fail open: any error below must not fail the PR.
+          set +e
+          mapfile -t CHANGED < <(git diff --name-only "$BASE_SHA" "$HEAD_SHA")
+          if [ "${#CHANGED[@]}" -eq 0 ]; then
+            echo 'no changed paths'
+            exit 0
+          fi
+          tb relevant --paths "${CHANGED[@]}" --query "$PR_TITLE" --json > rows.json
+          node <<'NODE'
+          const { execSync } = require('node:child_process');
+          const fs = require('node:fs');
+          const MARKER = '<!-- teambrain-memory-review -->';
+          let rows = [];
+          try { rows = JSON.parse(fs.readFileSync('rows.json', 'utf8')); } catch { rows = []; }
+          const shown = rows.slice(0, 5);
+          if (shown.length === 0) { console.log('no relevant memories'); process.exit(0); }
+          let body = MARKER + '\n';
+          body += '### \u{1F9E0} TeamBrain — team memories relevant to this change\n\n';
+          body += 'These already-approved memories touch files in this PR. If one is no longer accurate, fixing it now is a great idea.\n\n';
+          body += '| memory | class | is it still true? |\n|---|---|---|\n';
+          for (const r of shown) {
+            body += `| ${r.title} (\`${r.id}\`) | ${r.class} | ✅ still true · \u{1F5D1}️ propose retirement → \`tb retire ${r.id} "no longer accurate (PR review)"\` |\n`;
+          }
+          body += '\n_Read-only from your brain (id · title · class only — never per-developer telemetry). Opt out with `review.enabled: false` in `brain.yaml`._\n';
+          fs.writeFileSync('body.md', body);
+          const repo = process.env.GH_REPO;
+          const pr = process.env.PR_NUMBER;
+          let existing = null;
+          try {
+            const list = JSON.parse(execSync(`gh api repos/${repo}/issues/${pr}/comments --paginate`, { encoding: 'utf8' }));
+            existing = list.find((c) => typeof c.body === 'string' && c.body.includes(MARKER)) || null;
+          } catch { existing = null; }
+          try {
+            if (existing) {
+              execSync(`gh api -X PATCH repos/${repo}/issues/comments/${existing.id} -F body=@body.md`, { stdio: 'inherit' });
+            } else {
+              execSync(`gh api -X POST repos/${repo}/issues/${pr}/comments -F body=@body.md`, { stdio: 'inherit' });
+            }
+          } catch (e) {
+            console.log('comment post failed (failing open):', e.message);
+          }
+          NODE
+          exit 0

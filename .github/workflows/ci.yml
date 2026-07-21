@@ -24,6 +24,7 @@ jobs:
             .github/workflows/nightly.yml
             .github/workflows/changesets.yml
             .github/workflows/release.yml
+            .github/workflows/smoke.yml
             ci-templates/codemap.yml
             ci-templates/digest.yml
             ci-templates/distill.yml

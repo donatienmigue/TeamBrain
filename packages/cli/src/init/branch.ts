@@ -16,6 +16,7 @@ import {
   serializeMemoryFile,
   type Memory,
 } from '@teambrain/core';
+import { loadDistillPrompt } from '@teambrain/distill';
 
 // M2.3: writes the imported brain onto branch `teambrain/init` through a
 // temporary git worktree. The user's checkout is never switched, staged,
@@ -94,6 +95,22 @@ function writeBrainTree(brainDir: string, memories: Memory[]): number {
   mkdirSync(brainDir, { recursive: true });
   writeFileSync(join(brainDir, '.gitattributes'), BRAIN_GITATTRIBUTES, 'utf8');
   writeFileSync(join(brainDir, 'brain.yaml'), DEFAULT_BRAIN_YAML, 'utf8');
+  // F5 (E6.4): scaffold the brain's prompts/ (C7 lists it; nothing created it)
+  // seeded with the versioned distiller prompt, so teams can review and
+  // customise distillation in their own repo — an unfulfilled governance claim.
+  mkdirSync(join(brainDir, 'prompts'), { recursive: true });
+  let distillPrompt: string;
+  try {
+    distillPrompt = loadDistillPrompt();
+  } catch {
+    distillPrompt =
+      '# Distiller prompt (distill-v1)\n\nSeed unavailable at init.\n';
+  }
+  writeFileSync(
+    join(brainDir, 'prompts', 'distill-v1.md'),
+    distillPrompt,
+    'utf8',
+  );
   for (const memory of memories) {
     const relativePath = memoryPath(memory);
     const absolutePath = join(brainDir, relativePath);
@@ -106,7 +123,8 @@ function writeBrainTree(brainDir: string, memories: Memory[]): number {
     renderIndex(memories, createdDate),
     'utf8',
   );
-  return memories.length + 3; // memories + .gitattributes + brain.yaml + INDEX.md
+  // memories + .gitattributes + brain.yaml + prompts/distill-v1.md + INDEX.md
+  return memories.length + 4;
 }
 
 /**

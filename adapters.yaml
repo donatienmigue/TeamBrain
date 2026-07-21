@@ -1,0 +1,30 @@
+# TeamBrain adapter registry (E6.3 / ADR-11) — adapters as data.
+#
+# Each entry maps an agent tool to where its MCP config lives, how the server is
+# registered, and its capture tier. `tb install <tool>` and the README capture
+# matrix resolve from this; a validation test asserts the tool set matches the
+# code registry (packages/hooks ADAPTERS) so the data and the behaviour cannot
+# drift. Adding a tool that already speaks MCP is a reviewable data PR here.
+#
+# Capture tiers:
+#   T1 = serve + full capture (native lifecycle hooks: edits, commands, outcome)
+#   T2 = serve + inferred capture (MCP-side session inference; no edit/command telemetry)
+#   T3 = serve only (no capture surface)
+version: 1
+adapters:
+  - tool: claude-code
+    config: .claude/settings.json
+    registration: hooks+mcpServers
+    tier: T1
+  - tool: gemini-cli
+    config: .gemini/settings.json
+    registration: hooks+mcpServers
+    tier: T1
+  - tool: cursor
+    config: .cursor/mcp.json
+    registration: mcpServers+inference
+    tier: T2
+  - tool: codex
+    config: ~/.codex/config.toml
+    registration: mcpServers+inference
+    tier: T2

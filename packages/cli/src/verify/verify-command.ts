@@ -56,6 +56,7 @@ export async function runVerifyCommand(
 
   const now = options.now ?? ((): Date => new Date());
   const ctx: CheckContext = {
+    version: CORE_VERSION,
     repoDir,
     brainDir,
     runtimeDir: options.runtimeDir ?? resolveRuntimeDir(),

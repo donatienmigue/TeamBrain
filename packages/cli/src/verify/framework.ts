@@ -64,6 +64,8 @@ export const EGRESS_ALLOWLIST: readonly AllowedEgress[] = [
 ] as const;
 
 export interface CheckContext {
+  /** The installed CLI version (drives the provenance query). */
+  readonly version: string;
   /** The repo whose brain is being verified. */
   readonly repoDir: string;
   /** `<repoDir>/.teambrain`; the orchestrator guarantees it exists (exit 1 else). */

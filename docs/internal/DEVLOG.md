@@ -832,3 +832,20 @@ only "no egress from TeamBrain's JavaScript surface"; --strict is the OS-sandbox
 tier for a stronger guarantee. Under-claim by construction (guardrail C6/§C).
 Tradeoffs: V2 cannot make an unqualified "no egress" claim; stated explicitly
 in the report allowlist and SECURITY.md rather than hidden.
+
+## 2026-07-21 — E1 complete: tb verify V1–V8 + SECURITY.md
+What: finished the self-audit command. V1 provenance (npm attestation for all 7
+packages; offline→UNVERIFIED, shell:true so Windows .cmd works), V2 egress via
+a child-process socket probe replaying a serve+search (0 JS-layer connections;
+scoped to the JS surface per OQ-8), V4 redaction corpus vs the INSTALLED
+redactor (corpus now shipped in @teambrain/redact files[]; shared loader), V5
+digest people-free over the real spool, V7 retired-unserved on the live index.
+SECURITY.md now points at the command and names the F8 embedding endpoint in an
+explicit egress allowlist.
+Why: turn privacy-by-construction from 500 internal tests into one command a
+stranger runs on their own data (ADR-6). Under-claim everywhere.
+Tradeoffs: V1 is registry-attestation-presence, not full sigstore-chain (stated
+in the report). V2 cannot see native sockets (stated; --strict is the OS tier).
+Evidence: `tb verify` PASS in 17s online / exit 2 UNVERIFIED offline; 8 checks,
+each with a negative control; --json golden; 677 tests green; four-tool MCP
+snapshot + egress-guard unchanged; CONTRACTS diff = amendment A only.

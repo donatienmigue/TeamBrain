@@ -1,0 +1,50 @@
+# TeamBrain — weekly FlightDeck report (E2)
+#
+# Generates the people-free weekly report and commits it to the brain repo as a
+# derived artifact — the CodeMap precedent (not PR-gated; governance applies to
+# knowledge, not to generated output). Small-cell suppression (n<5) is applied
+# in the aggregator, so the committed report never reveals a small cell.
+# Reports live under .teambrain/reports/ and are NEVER indexed (the indexer
+# scans only memories/**).
+name: teambrain-flightdeck
+
+on:
+  schedule:
+    # Mondays 08:00 UTC — the week just past.
+    - cron: '0 8 * * 1'
+  workflow_dispatch:
+
+concurrency:
+  group: teambrain-flightdeck
+  cancel-in-progress: false
+
+jobs:
+  flightdeck:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The report reads the teambrain/sessions branch; fetch full history.
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm install -g @teambrain/cli
+
+      - name: Generate the report
+        run: |
+          week="$(date -u +%G)-W$(date -u +%V)"
+          tb digest --format markdown --out ".teambrain/reports/${week}.md"
+
+      - name: Commit the report
+        run: |
+          git config user.name "teambrain-flightdeck"
+          git config user.email "flightdeck@teambrain.invalid"
+          git add .teambrain/reports
+          git diff --cached --quiet && exit 0
+          git commit -m "chore(teambrain): weekly FlightDeck report"
+          git push

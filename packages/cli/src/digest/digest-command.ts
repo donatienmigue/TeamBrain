@@ -1,7 +1,13 @@
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  writeFileSync,
+} from 'node:fs';
+import { dirname, join } from 'node:path';
 import { parse as parseYaml } from 'yaml';
 import { parseMemoryFile, UserError, exitCodeForError } from '@teambrain/core';
 import { gitSessionSource, type SessionSource } from '@teambrain/distill';
@@ -14,6 +20,10 @@ import {
   type RulesFile,
 } from './aggregate.js';
 import { postDigest, renderSlackMessage, type SlackMessage } from './slack.js';
+import {
+  buildFlightDeckReport,
+  renderFlightDeckMarkdown,
+} from './flightdeck.js';
 
 // M7.1 `tb digest`: the weekly CI entrypoint. Reads people-free aggregates from
 // the brain + sessions branch, renders a Slack payload, and posts it (or, with
@@ -27,6 +37,14 @@ export interface DigestCommandResult {
 
 export interface DigestCommandOptions {
   dryRun?: boolean;
+  /**
+   * E2 FlightDeck v0. When set, produce the derived report instead of the Slack
+   * payload: `markdown` (the committed artifact) or `json` (the suppressed
+   * report, so no small cell can leak). Default (unset) keeps Slack behaviour.
+   */
+  format?: 'markdown' | 'json';
+  /** Destination path for --format output; stdout when omitted. */
+  out?: string;
   /** Slack incoming-webhook URL; defaults to $TEAMBRAIN_SLACK_WEBHOOK. */
   webhookUrl?: string;
   /** Override the sessions source (tests). */
@@ -263,6 +281,24 @@ export async function runDigestCommand(
   });
   const governance = options.governance ?? ghGovernanceFriction(repoRoot);
   if (governance !== undefined) report.governance = governance;
+
+  // E2 FlightDeck v0: the derived report artifact (amendment D). Suppression
+  // happens in buildFlightDeckReport, so both markdown and json are safe.
+  if (options.format !== undefined) {
+    const flightDeck = buildFlightDeckReport(report, {
+      ...(options.now === undefined ? {} : { generatedAt: options.now }),
+    });
+    const rendered =
+      options.format === 'markdown'
+        ? renderFlightDeckMarkdown(flightDeck)
+        : `${JSON.stringify(flightDeck, null, 2)}\n`;
+    if (options.out === undefined) {
+      return { exitCode: 0, output: rendered };
+    }
+    mkdirSync(dirname(options.out), { recursive: true });
+    writeFileSync(options.out, rendered);
+    return { exitCode: 0, output: `tb digest: wrote ${options.out}\n` };
+  }
 
   const message = renderSlackMessage(report);
   const webhookUrl =

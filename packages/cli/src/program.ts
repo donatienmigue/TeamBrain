@@ -219,14 +219,39 @@ export function buildProgram(): Command {
     .helpGroup('Quality')
     .argument('[path]', 'repository containing .teambrain/', '.')
     .option('--dry-run', 'print digest JSON instead of posting to Slack', false)
+    .option(
+      '--format <fmt>',
+      'FlightDeck report instead of Slack: markdown | json',
+    )
+    .option('--out <path>', 'write --format output to a file (default: stdout)')
     .addHelpText('after', commandHelpAfter(HELP.digest))
-    .action(async (repoDir: string, opts: { dryRun: boolean }) => {
-      const { exitCode, output } = await runDigestCommand(repoDir, {
-        dryRun: opts.dryRun,
-      });
-      process.stdout.write(output);
-      process.exitCode = exitCode;
-    });
+    .action(
+      async (
+        repoDir: string,
+        opts: { dryRun: boolean; format?: string; out?: string },
+      ) => {
+        if (
+          opts.format !== undefined &&
+          opts.format !== 'markdown' &&
+          opts.format !== 'json'
+        ) {
+          process.stderr.write(
+            `tb digest: --format must be markdown or json\n`,
+          );
+          process.exitCode = 1;
+          return;
+        }
+        const { exitCode, output } = await runDigestCommand(repoDir, {
+          dryRun: opts.dryRun,
+          ...(opts.format === undefined
+            ? {}
+            : { format: opts.format as 'markdown' | 'json' }),
+          ...(opts.out === undefined ? {} : { out: opts.out }),
+        });
+        process.stdout.write(output);
+        process.exitCode = exitCode;
+      },
+    );
 
   program
     .command('propose')

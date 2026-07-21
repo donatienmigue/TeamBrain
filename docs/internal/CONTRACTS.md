@@ -29,8 +29,9 @@ Memory rendering rule: bodies are returned inside a fenced block prefixed
 `complete({system, prompt, schema}): Promise<T>` — structured output validated by zod; drivers: anthropic, openai, ollama, fake (fixtures). Model pinned in `brain.yaml`. No LLM calls anywhere outside packages/distill.
 
 ### C6. CLI surface
-`tb init | serve | install <claude-code|cursor> | propose | retire <id> <reason> | audit [--last-session] | reindex | doctor [--json] | distill | digest | metrics [--json] | lint`. Exit codes: 0 ok · 1 user error · 2 environment error · 3 lint/validation failure.
+`tb init | serve | install <claude-code|cursor> | propose | retire <id> <reason> | audit [--last-session] | reindex | doctor [--json] | distill | digest | metrics [--json] | verify [--json] [--strict] | lint`. Exit codes: 0 ok · 1 user error · 2 environment error · 3 lint/validation failure.
 (`metrics` added 2026-07-20 with explicit human approval — additive read-only verb: prints a local health + context-efficiency snapshot, reusing the digest aggregation and daemon heartbeat. Captures nothing; no new privacy surface.)
+(`verify` added 2026-07-21 with explicit human approval — additive amendment A, ADR-6/EVIDENCE_BRIEF §9. Read-only self-audit that re-asserts the published privacy invariants at runtime on the user's own machine/data and emits a report. Captures nothing; adds no MCP tool. Exit codes for this verb only: 0 all checks pass · 2 a check could not run, e.g. offline provenance (reported UNVERIFIED, never PASS) · 3 an invariant is violated. `--strict` opts into the OS-sandbox egress tier. Note the reuse of the general exit-code table's 2 for "could not run" and 3 for "violation".)
 
 ### C7. Filesystem layout at runtime
 Brain: `.teambrain/` in target repo (brain.yaml, memories/, retired/, prompts/, INDEX.md). Machine-local (never synced): `~/.teambrain/{user/, spool/, index.db, logs/}`. The sync code must be physically unable to read `~/.teambrain/user/` (separate module without that path in scope; asserted by test).

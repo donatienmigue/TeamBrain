@@ -1,6 +1,6 @@
 {
   "name": "@teambrain/core",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "TeamBrain brain format: memory/event schemas, byte-exact parsing, lint, ULIDs, logging",
   "keywords": [
     "ai",

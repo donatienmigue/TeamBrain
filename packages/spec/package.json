@@ -1,6 +1,6 @@
 {
   "name": "@teambrain/spec",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "The TeamBrain memory-format and session-event spec, with published JSON Schema and a standalone conformance validator (npx @teambrain/spec).",
   "keywords": [
     "spec",

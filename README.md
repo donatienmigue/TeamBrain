@@ -150,15 +150,25 @@ The redaction corpus, the egress scanner, and the privacy negative tests are all
 
 ## Compatibility
 
-Serving works with any MCP-capable agent. Capture depth depends on what lifecycle hooks the tool exposes.
+Serving works with any MCP-capable agent. Capture depth depends on what lifecycle hooks the tool exposes. This matrix is generated from the adapter capabilities declared in code (`packages/hooks`), and a CI test fails the build if the table drifts from them — so it cannot overclaim:
 
-| Tool | Serving (read memory) | Capture (learn from sessions) |
-|---|---|---|
-| **Claude Code** | Full — MCP + session-start injection | Full — native hooks: session start/end, edits, commands, outcomes, commit SHAs |
-| **Cursor** | Full — MCP | Degraded — session boundaries inferred MCP-side (proposal or 30-min idle); no edit or command telemetry; no commit SHAs or outcome |
-| **Any MCP client** | Full — the four tools are vendor-neutral | None — no hook surface to capture from |
+<!-- capture-matrix:start -->
+| Capability | Claude Code | Codex | Cursor | Gemini CLI |
+| --- | --- | --- | --- | --- |
+| Install command | `tb install claude-code` | `tb install codex` | `tb install cursor` | `tb install gemini-cli` |
+| Capture tier | Native hooks | MCP-side inference | MCP-side inference | Native hooks |
+| Session start | Yes (native hook) | Yes (MCP-side inference) | Yes (MCP-side inference) | Yes (native hook) |
+| Session end | Yes (native hook) | Yes (MCP-side inference) | Yes (MCP-side inference) | Yes (native hook) |
+| Tool use (edits / commands / tests / exploration) | Yes (native hook) | No | No | Yes (native hook) |
+| Commit SHAs & outcome | Yes (native hook) | No | No | Yes (native hook) |
+| Plan revisions | No | No | No | No |
+| Memory search / retrieve (MCP tool) | Yes | Yes | Yes | Yes |
+| Propose memory (MCP tool) | Yes | Yes | Yes | Yes |
+<!-- capture-matrix:end -->
 
-`tb install` currently automates setup for `claude-code` and `cursor`. Other MCP clients work by pointing them at the server manually.
+*Cursor and Codex lack usable native lifecycle/post-tool hooks, so their sessions carry no `tool_use` events. Session boundaries are inferred from MCP tool calls: a session ends when it proposes a memory or after 30 minutes of inactivity; commit SHAs and outcome are not captured. Any other MCP-capable agent can still read and propose memories (serving) — it just isn't captured.*
+
+`tb install` automates setup for `claude-code`, `codex`, `cursor`, and `gemini-cli`. Other MCP clients work by pointing them at the server manually.
 
 ## Honest limits
 
@@ -196,6 +206,6 @@ Reproduce with `pnpm bench`.
 
 V1 is complete and dogfooded. The governed loop — capture, distill, propose, approve, serve, retire — works end to end and is covered by an integration test that runs it on every build.
 
-Not yet built: org and multi-repo scoping, GitLab distiller driver, a hosted tier, Codex and Kiro install adapters.
+Not yet built: org and multi-repo scoping, GitLab distiller driver, a hosted tier, and verified Cline, Kiro, and Antigravity install adapters.
 
 Apache-2.0. Issues and PRs welcome — please read [CONTRIBUTING.md](CONTRIBUTING.md) first.

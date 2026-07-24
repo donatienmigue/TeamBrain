@@ -39,7 +39,7 @@ export interface ProposeOptions {
 }
 
 /** Sid of the most recently modified session record, or null (spool empty). */
-function latestSessionSid(runtimeDir: string): string | null {
+export function latestSessionSid(runtimeDir: string): string | null {
   const dir = sessionSpoolDir(runtimeDir);
   if (!existsSync(dir)) return null;
   const newest = readdirSync(dir)

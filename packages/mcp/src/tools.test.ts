@@ -1,7 +1,11 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { isUlid } from '@teambrain/core';
+import {
+  isUlid,
+  sessionEventSchema,
+  type CandidateDraft,
+} from '@teambrain/core';
 import { createTools } from './tools.js';
 import {
   FIXTURE_IDS,
@@ -145,6 +149,87 @@ describe('memory_propose', () => {
     });
     const record = readSpooledDraft(runtimeDir, result.candidate_id);
     expect(record.draft.evidence.sessions).toEqual(['caller-supplied']);
+  });
+
+  it('redacts secrets in the draft before it is spooled (A3)', async () => {
+    const index = await indexForBrain(fixtureBrainDir());
+    cleanups.push(() => index.close());
+    const runtimeDir = await tempRuntimeDir(cleanups);
+    const t = createTools(toolContextFor(index, runtimeDir));
+    const result = t.memoryPropose({
+      draft: {
+        class: 'learning',
+        title: 'Rotate the AKIAIOSFODNN7EXAMPLE key',
+        body: 'The daemon read AKIAIOSFODNN7EXAMPLE from the env; rotate it.',
+      },
+    });
+    const record = readSpooledDraft(runtimeDir, result.candidate_id) as {
+      draft: { title: string; body: string };
+    };
+    expect(JSON.stringify(record)).not.toContain('AKIAIOSFODNN7EXAMPLE');
+    expect(record.draft.title).toContain('«REDACTED:aws_access_key»');
+    expect(record.draft.body).toContain('«REDACTED:aws_access_key»');
+  });
+
+  it('emits the redacted, evidence-stamped draft as a C2 event (A3)', async () => {
+    const index = await indexForBrain(fixtureBrainDir());
+    cleanups.push(() => index.close());
+    const runtimeDir = await tempRuntimeDir(cleanups);
+    const context = toolContextFor(index, runtimeDir);
+    context.resolveEvidence = () => ({
+      sessions: ['01J9ZSESSION00000000000000'],
+      commits: [],
+    });
+    const emitted: CandidateDraft[] = [];
+    context.emitCandidateProposed = (draft) => emitted.push(draft);
+    const t = createTools(context);
+    t.memoryPropose({
+      draft: {
+        class: 'learning',
+        title: 'Rotate the leaked key',
+        body: 'Rotate AKIAIOSFODNN7EXAMPLE immediately.',
+      },
+    });
+    expect(emitted).toHaveLength(1);
+    const draft = emitted[0] as CandidateDraft & {
+      evidence: { sessions: string[] };
+    };
+    // Redacted before it left the tool…
+    expect(JSON.stringify(draft)).not.toContain('AKIAIOSFODNN7EXAMPLE');
+    // …carrying the resolved session evidence…
+    expect(draft.evidence.sessions).toEqual(['01J9ZSESSION00000000000000']);
+    // …and it wraps into a C2-valid candidate_proposed event.
+    const event = sessionEventSchema.parse({
+      v: 1,
+      sid: '01J9ZSESSION00000000000000',
+      t: '2026-07-24T00:00:00.000Z',
+      tool: 'claude-code',
+      model: 'm',
+      repo: 'acme/api',
+      branch: 'main',
+      ev: 'candidate_proposed',
+      data: { draft },
+    });
+    expect(event.ev).toBe('candidate_proposed');
+  });
+
+  it('does not emit when no emitter is wired; still spools locally (A3)', async () => {
+    const index = await indexForBrain(fixtureBrainDir());
+    cleanups.push(() => index.close());
+    const runtimeDir = await tempRuntimeDir(cleanups);
+    // No emitCandidateProposed (e.g. daemon-less / degraded) → local spool only.
+    const t = createTools(toolContextFor(index, runtimeDir));
+    const result = t.memoryPropose({
+      draft: {
+        class: 'learning',
+        title: 'Local only',
+        body: 'This still lands in the local spool.',
+      },
+    });
+    expect(result.queued).toBe(true);
+    expect(readdirSync(join(runtimeDir, 'spool', 'candidates'))).toContain(
+      `${result.candidate_id}.json`,
+    );
   });
 
   it('rejects a draft that fails schema validation', async () => {

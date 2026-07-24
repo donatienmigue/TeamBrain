@@ -69,8 +69,11 @@ export function redactEvent(
     replacements,
   ) as SessionEvent['data'];
 
-  // Exception: candidate_proposed events carry an explicit proposed 'body',
-  // which is safe because it is LLM-generated distillation, not raw user content.
+  // candidate_proposed carries an agent-authored draft. `title` is a normal
+  // string leaf, so the sanitize sweep above already redacted it; `body` is a
+  // FORBIDDEN key and was dropped, so re-instate it here, redacted. Both run
+  // through the same redactor — the draft is deliberate signal, but it is
+  // prose the agent composed and could echo a secret (feature brief §5, A3).
   if (event.ev === 'candidate_proposed') {
     const draft = (event.data as { draft?: CandidateDraft }).draft;
     if (draft && typeof draft.body === 'string') {

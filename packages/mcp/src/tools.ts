@@ -5,6 +5,7 @@ import {
   type Evidence,
   type Logger,
 } from '@teambrain/core';
+import { redactString, type RedactionLevel } from '@teambrain/redact';
 import type { Scored, SearchOptions } from '@teambrain/index';
 import {
   buildMemoryContext,
@@ -54,6 +55,22 @@ export interface ToolContext {
    * null-sid path (evidence left unset).
    */
   resolveEvidence?: () => Evidence | undefined;
+  /**
+   * A3 (load-bearing): emit the proposal as a C2 `candidate_proposed` event
+   * into the active session's JSONL, so it reaches the CI distiller on
+   * `session_end` (C7: the local candidate spool is never synced). Injectable
+   * so the golden tests stay offline; the daemon-connected MCP entry wires it
+   * to `sendHookEvent`. Undefined on the mcp-inference path (Cursor), where the
+   * interceptor already emits the event — so this never double-emits. The draft
+   * passed here is already redacted.
+   */
+  emitCandidateProposed?: (draft: CandidateDraft) => void;
+  /**
+   * Redaction level for the propose path (A3). Defaults to `strict` — the
+   * fail-safe (more redaction), matching the hook default. The runtime wires
+   * the brain.yaml level.
+   */
+  redactionLevel?: RedactionLevel;
 }
 
 // Input shapes as zod raw shapes so the MCP SDK can expose them directly.
@@ -135,7 +152,23 @@ export function createTools(context: ToolContext): Tools {
           draft = candidateDraftSchema.parse({ ...draft, evidence });
         }
       }
+      // A3 privacy: the draft is agent-authored prose composed from what the
+      // agent saw in-session, so unlike tool_use metadata it *could* echo a
+      // secret. Run title + body through the same redactor before it is
+      // spooled OR emitted — the one content-leak path around "metadata by
+      // default, never content" (principle 3). Re-validate so both sinks and
+      // the C2 event see a contract-valid draft.
+      const level = context.redactionLevel ?? 'strict';
+      const title = redactString(draft.title, level).text;
+      const body = redactString(draft.body, level).text;
+      if (title !== draft.title || body !== draft.body) {
+        draft = candidateDraftSchema.parse({ ...draft, title, body });
+      }
       const candidateId = writeCandidate(context.spoolDir, draft, clock());
+      // A3 transport: also emit the C2 event so the proposal actually reaches
+      // CI. Best-effort (principle 2): a failed emit still leaves the local
+      // spool copy for `tb audit` / `tb propose` parity.
+      context.emitCandidateProposed?.(draft);
       context.logger?.debug('candidate queued to spool', {
         candidate_id: candidateId,
         class: draft.class,

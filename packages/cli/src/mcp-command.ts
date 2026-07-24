@@ -88,7 +88,9 @@ export async function runMcpCommand(
     latestSessionSid(runtimeDir) ??
     undefined;
   backend.context.resolveEvidence = () =>
-    proposeSid === undefined ? undefined : { sessions: [proposeSid], commits: [] };
+    proposeSid === undefined
+      ? undefined
+      : { sessions: [proposeSid], commits: [] };
   // The mcp-inference path (Cursor/codex) already emits candidate_proposed via
   // its interceptor; wiring the tools-level emit only on the native-hook path
   // keeps CI seeing exactly one event.

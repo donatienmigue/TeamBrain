@@ -73,8 +73,7 @@ describe('teambrain MCP server (M4.2 accept)', () => {
       'draft',
     ]);
     const output = propose?.outputSchema as
-      | { properties?: Record<string, unknown>; required?: string[] }
-      | undefined;
+      { properties?: Record<string, unknown>; required?: string[] } | undefined;
     expect(Object.keys(output?.properties ?? {}).sort()).toEqual([
       'candidate_id',
       'queued',

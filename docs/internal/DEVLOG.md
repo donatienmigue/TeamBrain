@@ -922,3 +922,25 @@ matrix still generates from ADAPTERS (its own drift test); adapters.yaml is
 tied to it by the consistency test. Accept: 1-byte perturbation rejected;
 install <unknown> exits 1; fresh init produces prompts/; compat byte-exact. 700
 tests green.
+
+## 2026-07-24 — Agent-proposed memory: fire at the right moment, reach the gate
+What: sharpened the existing C3 `memory_propose` from passive infra into a real
+signal. (A0) Confirmed the transport gap: on the native-hook (Claude Code) path
+`memory_propose` only wrote the local candidate spool — never synced (C7) — so
+agent proposals never reached CI; only the Cursor interceptor emitted the C2
+event. (A1) Rewrote the tool description + added a preamble-region propose
+protocol to the SessionStart standing context (when to propose, search-first,
+human-approval guarantee) — no LLM call (C5). (A2) Injectable `resolveEvidence`
+stamps the live session on agent drafts, closing the asymmetry with `tb propose`.
+(A3) The propose handler now redacts title+body through the on-device redactor
+before spool AND emit, then emits a C2 `candidate_proposed` event (wired in `tb
+mcp` for the native-hook path; the inference path already emits, so no
+double-emit). (A4) Agent candidates skip the draft Provider call (already
+drafted) and flow through dedup+gate under the shared N≤10 cap, carrying
+proposing-session evidence.
+Why: the correction/gotcha/decision moment is the highest-signal, human-verified
+learning; without timing + transport + grounding it was dead on arrival.
+Tradeoffs: zero frozen-schema changes — behavioral/description only; adds
+@teambrain/redact to mcp (pure, offline, in-tree). Cursor's emitted event still
+lacks auto-evidence (degraded path, deferred). Propose-time dedup, flywheel
+calibration, and evidence.commits enrichment remain non-goals until real usage.

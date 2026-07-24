@@ -44,7 +44,11 @@ async function tempRepo(): Promise<string> {
   return dir;
 }
 
-function envelope(sid: string, ev: SessionEvent['ev'], data: object): SessionEvent {
+function envelope(
+  sid: string,
+  ev: SessionEvent['ev'],
+  data: object,
+): SessionEvent {
   return {
     v: 1,
     sid,
@@ -117,7 +121,11 @@ describe('memory_propose transport (A3 accept)', () => {
       .map((line) => parseSessionEventLine(line)); // (a) validates against C2
     const proposed = events.find((e) => e.ev === 'candidate_proposed');
     expect(proposed).toBeDefined();
-    const draft = (proposed!.data as { draft: CandidateDraft & { evidence?: { sessions: string[] } } }).draft;
+    const draft = (
+      proposed!.data as {
+        draft: CandidateDraft & { evidence?: { sessions: string[] } };
+      }
+    ).draft;
     expect(draft.title).toBe('Prefer WAL mode for concurrent readers');
     // (c) carries the auto-evidence the agent proposal was stamped with.
     expect(draft.evidence?.sessions).toEqual([sid]);

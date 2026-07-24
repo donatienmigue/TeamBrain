@@ -52,6 +52,34 @@ describe('teambrain MCP server (M4.2 accept)', () => {
     expect(client.getServerVersion()?.name).toBe(MCP_SERVER_NAME);
   });
 
+  it('memory_propose description carries the propose protocol (A1)', async () => {
+    const { client } = await connectedClient();
+    const { tools } = await client.listTools();
+    const propose = tools.find((tool) => tool.name === 'memory_propose');
+    expect(propose?.description).toContain('Search first');
+    expect(propose?.description).toMatch(/human correcting your approach/);
+    // The human-approval guarantee must survive the rewrite.
+    expect(propose?.description).toContain(
+      'nothing is written to the brain until a human approves a PR',
+    );
+  });
+
+  it('C3 signature guardrail: propose input/output schemas are unchanged (A1)', async () => {
+    const { client } = await connectedClient();
+    const { tools } = await client.listTools();
+    const propose = tools.find((tool) => tool.name === 'memory_propose');
+    // Input is still a single `draft`; output is still {queued, candidate_id}.
+    expect(Object.keys(propose?.inputSchema.properties ?? {})).toEqual([
+      'draft',
+    ]);
+    const output = propose?.outputSchema as
+      { properties?: Record<string, unknown>; required?: string[] } | undefined;
+    expect(Object.keys(output?.properties ?? {}).sort()).toEqual([
+      'candidate_id',
+      'queued',
+    ]);
+  });
+
   it('memory_search returns ranked results with injection-safe text', async () => {
     const { client } = await connectedClient();
     const result = await client.callTool({

@@ -34,6 +34,7 @@
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@teambrain/core": "workspace:*",
     "@teambrain/index": "workspace:*",
+    "@teambrain/redact": "workspace:*",
     "zod": "^4.4.3"
   },
   "exports": {

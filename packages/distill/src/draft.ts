@@ -1,7 +1,12 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
-import { memoryClassSchema, ulid, type Memory } from '@teambrain/core';
+import {
+  memoryClassSchema,
+  ulid,
+  type CandidateDraft,
+  type Memory,
+} from '@teambrain/core';
 import type { Provider } from './provider.js';
 import type { Cluster } from './types.js';
 
@@ -109,7 +114,39 @@ function isoDate(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
 
-/** Drafts one candidate per cluster; unusable Provider output is discarded. */
+/** Assembles a C1 candidate memory from draft content + its cluster evidence. */
+function buildMemory(
+  output: DraftOutput,
+  cluster: Cluster,
+  created: string,
+  id: string,
+): Memory {
+  return {
+    id,
+    class: output.class,
+    scope: 'team',
+    status: 'active',
+    priority: 'advisory',
+    title: output.title,
+    created,
+    evidence: { sessions: cluster.sessions, commits: cluster.commits },
+    supersedes: [],
+    tags: output.tags,
+    ttl_days: null,
+    body: output.body,
+  };
+}
+
+/**
+ * Drafts one candidate per cluster; unusable output is discarded and counted.
+ *
+ * Agent candidates are the exception: `memory_propose` already produced a full
+ * class/title/body draft, so they skip the Provider call entirely (no
+ * re-generation — cheaper, and it preserves the agent's own wording) and flow
+ * straight into dedup + gate carrying their proposing-session evidence. Every
+ * other cluster kind is drafted by one Provider call against the versioned
+ * prompt.
+ */
 export async function draftCandidates(
   clusters: Cluster[],
   provider: Provider,
@@ -124,6 +161,26 @@ export async function draftCandidates(
   let discarded = 0;
 
   for (const cluster of clusters) {
+    if (cluster.kind === 'agent_candidate') {
+      const draft = (cluster.detail as { draft?: CandidateDraft }).draft;
+      const parsed = draftOutputSchema.safeParse({
+        class: draft?.class,
+        title: draft?.title,
+        body: draft?.body,
+        tags: draft?.tags ?? [],
+      });
+      if (!parsed.success) {
+        // A malformed agent draft is discarded like any unusable output.
+        discarded += 1;
+        continue;
+      }
+      candidates.push({
+        memory: buildMemory(parsed.data, cluster, created, newId()),
+        cluster,
+      });
+      continue;
+    }
+
     let output: DraftOutput;
     try {
       output = await provider.complete({
@@ -139,21 +196,10 @@ export async function draftCandidates(
       continue;
     }
 
-    const memory: Memory = {
-      id: newId(),
-      class: output.class,
-      scope: 'team',
-      status: 'active',
-      priority: 'advisory',
-      title: output.title,
-      created,
-      evidence: { sessions: cluster.sessions, commits: cluster.commits },
-      supersedes: [],
-      tags: output.tags,
-      ttl_days: null,
-      body: output.body,
-    };
-    candidates.push({ memory, cluster });
+    candidates.push({
+      memory: buildMemory(output, cluster, created, newId()),
+      cluster,
+    });
   }
 
   return { candidates, discarded };

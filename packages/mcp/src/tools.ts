@@ -2,6 +2,7 @@ import { z } from 'zod';
 import {
   candidateDraftSchema,
   type CandidateDraft,
+  type Evidence,
   type Logger,
 } from '@teambrain/core';
 import type { Scored, SearchOptions } from '@teambrain/index';
@@ -44,6 +45,15 @@ export interface ToolContext {
   logger?: Logger;
   /** Optional interceptor for capturing tool usage (e.g., Cursor MCP-side inference). */
   onToolCall?: (name: string, args?: Record<string, unknown>) => void;
+  /**
+   * A2: resolves the current session's evidence for an agent proposal, so an
+   * agent draft that carries none is stamped with the live session — closing
+   * the asymmetry with `tb propose`. Injectable so the golden tests stay
+   * offline; the daemon/MCP entry wires it to the live sid. Returns
+   * `undefined` when no session is resolvable, mirroring `tb propose`'s
+   * null-sid path (evidence left unset).
+   */
+  resolveEvidence?: () => Evidence | undefined;
 }
 
 // Input shapes as zod raw shapes so the MCP SDK can expose them directly.
@@ -114,7 +124,17 @@ export function createTools(context: ToolContext): Tools {
       context.onToolCall?.('memory_propose', input);
       // Re-validate: the SDK already parsed, but the hook path and other
       // callers hit this directly with untrusted drafts.
-      const draft = candidateDraftSchema.parse(input.draft);
+      let draft = candidateDraftSchema.parse(input.draft);
+      // A2: the agent is *in* the session, so stamp its evidence when the
+      // draft carries none — same linkage `tb propose` sets for the human
+      // path. Null-safe: no resolver / no session → leave evidence unset, then
+      // re-validate the enriched draft (the handler re-parses untrusted input).
+      if ((draft as { evidence?: unknown }).evidence === undefined) {
+        const evidence = context.resolveEvidence?.();
+        if (evidence !== undefined) {
+          draft = candidateDraftSchema.parse({ ...draft, evidence });
+        }
+      }
       const candidateId = writeCandidate(context.spoolDir, draft, clock());
       context.logger?.debug('candidate queued to spool', {
         candidate_id: candidateId,

@@ -16,6 +16,15 @@ afterEach(async () => {
   while (cleanups.length > 0) await cleanups.pop()?.();
 });
 
+/** Reads the one spooled candidate record for `candidateId`. */
+function readSpooledDraft(
+  runtimeDir: string,
+  candidateId: string,
+): { draft: { evidence?: { sessions: string[]; commits: string[] } } } {
+  const path = join(runtimeDir, 'spool', 'candidates', `${candidateId}.json`);
+  return JSON.parse(readFileSync(path, 'utf8'));
+}
+
 async function tools() {
   const index = await indexForBrain(fixtureBrainDir());
   cleanups.push(() => index.close());
@@ -73,6 +82,69 @@ describe('memory_propose', () => {
       readFileSync(join(spoolDir, files[0] as string), 'utf8'),
     );
     expect(record.draft.title).toBe('Prefer WAL mode for concurrent readers');
+  });
+
+  it('stamps the resolved session evidence when the draft carries none (A2)', async () => {
+    const index = await indexForBrain(fixtureBrainDir());
+    cleanups.push(() => index.close());
+    const runtimeDir = await tempRuntimeDir(cleanups);
+    const context = toolContextFor(index, runtimeDir);
+    context.resolveEvidence = () => ({
+      sessions: ['01J9ZSESSION00000000000000'],
+      commits: [],
+    });
+    const t = createTools(context);
+    const result = t.memoryPropose({
+      draft: {
+        class: 'learning',
+        title: 'Prefer WAL mode for concurrent readers',
+        body: 'SQLite WAL lets the daemon write while readers query.',
+      },
+    });
+    expect(result.queued).toBe(true);
+    const record = readSpooledDraft(runtimeDir, result.candidate_id);
+    expect(record.draft.evidence).toEqual({
+      sessions: ['01J9ZSESSION00000000000000'],
+      commits: [],
+    });
+  });
+
+  it('omits evidence when no session resolves, mirroring tb propose (A2)', async () => {
+    const index = await indexForBrain(fixtureBrainDir());
+    cleanups.push(() => index.close());
+    const runtimeDir = await tempRuntimeDir(cleanups);
+    const context = toolContextFor(index, runtimeDir);
+    context.resolveEvidence = () => undefined; // no active session
+    const t = createTools(context);
+    const result = t.memoryPropose({
+      draft: {
+        class: 'learning',
+        title: 'Prefer WAL mode for concurrent readers',
+        body: 'SQLite WAL lets the daemon write while readers query.',
+      },
+    });
+    expect(result.queued).toBe(true);
+    const record = readSpooledDraft(runtimeDir, result.candidate_id);
+    expect(record.draft.evidence).toBeUndefined();
+  });
+
+  it('does not overwrite evidence the agent supplied explicitly (A2)', async () => {
+    const index = await indexForBrain(fixtureBrainDir());
+    cleanups.push(() => index.close());
+    const runtimeDir = await tempRuntimeDir(cleanups);
+    const context = toolContextFor(index, runtimeDir);
+    context.resolveEvidence = () => ({ sessions: ['resolved'], commits: [] });
+    const t = createTools(context);
+    const result = t.memoryPropose({
+      draft: {
+        class: 'learning',
+        title: 'Prefer WAL mode for concurrent readers',
+        body: 'SQLite WAL lets the daemon write while readers query.',
+        evidence: { sessions: ['caller-supplied'], commits: ['abc123'] },
+      },
+    });
+    const record = readSpooledDraft(runtimeDir, result.candidate_id);
+    expect(record.draft.evidence.sessions).toEqual(['caller-supplied']);
   });
 
   it('rejects a draft that fails schema validation', async () => {

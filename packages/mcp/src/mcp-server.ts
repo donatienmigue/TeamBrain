@@ -124,8 +124,15 @@ export function createMcpServer(
     'memory_propose',
     {
       description:
-        'Queue a candidate memory for human review. It is spooled locally ' +
-        'only — nothing is written to the brain until a human approves a PR.',
+        'Queue a candidate memory for human review. Propose when you hit ' +
+        'something the team should remember: a human correcting your ' +
+        'approach, a non-obvious gotcha you solved after a failed attempt, a ' +
+        'decision the human ratified, or a topic you searched for and found ' +
+        'nothing on. Search first with memory_search and propose only a ' +
+        'genuine gap — do not restate existing memories, propose one-off ' +
+        'trivia, or propose anything you are unsure a teammate would want ' +
+        'reviewed. The candidate is spooled locally only; nothing is written ' +
+        'to the brain until a human approves a PR.',
       inputSchema: memoryProposeInput,
       outputSchema: { queued: z.literal(true), candidate_id: z.string() },
     },

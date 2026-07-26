@@ -944,3 +944,15 @@ Tradeoffs: zero frozen-schema changes — behavioral/description only; adds
 @teambrain/redact to mcp (pure, offline, in-tree). Cursor's emitted event still
 lacks auto-evidence (degraded path, deferred). Propose-time dedup, flywheel
 calibration, and evidence.commits enrichment remain non-goals until real usage.
+
+## 2026-07-26 — Unblock the 0.5.0 npm publish (provenance needs `repository`)
+What: added the `homepage` + `repository` (with `directory`) block to
+`@teambrain/spec` and `@teambrain/inject-bench` — the only two published
+packages missing it. The 0.5.0 release published core/index/redact then aborted
+at spec with npm E422: "Error verifying sigstore provenance bundle ...
+`repository.url` is ''". Both changesets runs since have failed identically.
+Why: `publishConfig.provenance` makes npm verify the signed source repo against
+the manifest, so a missing `repository` is a hard publish failure, not a warning.
+Tradeoffs: metadata only — deliberately no changeset, since a bump would open a
+Version Packages PR for 0.5.1 instead of completing 0.5.0; `pnpm -r publish`
+skips the three already-published packages.

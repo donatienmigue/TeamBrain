@@ -9,6 +9,12 @@
     "mcp",
     "conformance"
   ],
+  "homepage": "https://github.com/donatienmigue/TeamBrain#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/donatienmigue/TeamBrain.git",
+    "directory": "packages/spec"
+  },
   "license": "Apache-2.0",
   "type": "module",
   "main": "./dist/index.js",

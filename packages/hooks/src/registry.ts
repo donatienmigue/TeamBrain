@@ -3,6 +3,7 @@ import { claudeCodeAdapter } from './adapters/claude-code.js';
 import { cursorAdapter } from './adapters/cursor.js';
 import { codexAdapter } from './adapters/codex.js';
 import { geminiAdapter } from './adapters/gemini.js';
+import { vscodeAdapter } from './adapters/vscode.js';
 
 // A0.3 the adapter registry. Adding a vendor is: write the adapter file,
 // add it here. `tb install`, `tb doctor`, and the README capture matrix all
@@ -19,6 +20,7 @@ export const ADAPTERS: Record<string, CaptureAdapter> = {
   [cursorAdapter.tool]: cursorAdapter,
   [codexAdapter.tool]: codexAdapter,
   [geminiAdapter.tool]: geminiAdapter,
+  [vscodeAdapter.tool]: vscodeAdapter,
 };
 
 /** Registry keys, sorted — the `tb install <tool>` argument set. */

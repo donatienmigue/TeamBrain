@@ -25,6 +25,7 @@ jobs:
             .github/workflows/changesets.yml
             .github/workflows/release.yml
             .github/workflows/smoke.yml
+            .github/workflows/vscode-extension.yml
             ci-templates/codemap.yml
             ci-templates/digest.yml
             ci-templates/memory-review.yml
@@ -57,3 +58,35 @@ jobs:
       - run: pnpm lint
 
       - run: pnpm bench
+
+  # The VSIX is built from a manifest that no unit test can fully validate
+  # (contribution points, activation events, the ignore list). Packaging it on
+  # every PR keeps a broken manifest from being discovered at tag time, when
+  # the only fix is another version number.
+  vsix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - run: corepack enable
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Package the extension
+        run: pnpm --filter teambrain-vscode run package
+
+      # Belt and braces around the packaging tests: assert on the real archive
+      # that no source and no node_modules leaked into it.
+      - name: The VSIX contains only the bundle and its docs
+        working-directory: packages/vscode
+        run: |
+          unzip -l teambrain-vscode.vsix
+          if unzip -l teambrain-vscode.vsix | grep -qE 'node_modules|extension/src/|\.node$'; then
+            echo 'VSIX contains sources, node_modules, or a native binary'
+            exit 1
+          fi

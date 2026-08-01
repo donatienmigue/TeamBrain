@@ -47,3 +47,10 @@ export {
 export { cursorAdapter, ensureCursorRules } from './adapters/cursor.js';
 export { codexAdapter, ensureCodexMcpServer } from './adapters/codex.js';
 export { ensureGeminiCaptureHooks, geminiAdapter } from './adapters/gemini.js';
+export {
+  ensureVsCodeInstructions,
+  ensureVsCodeMcpServer,
+  VSCODE_MCP_ARGS,
+  VSCODE_MCP_SERVERS_KEY,
+  vscodeAdapter,
+} from './adapters/vscode.js';

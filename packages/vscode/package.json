@@ -1,0 +1,144 @@
+{
+  "name": "teambrain-vscode",
+  "displayName": "TeamBrain",
+  "description": "Git-native, PR-governed team memory for AI coding agents. Registers the TeamBrain MCP server with Copilot agent mode — no config file.",
+  "version": "0.1.0",
+  "publisher": "teambrain",
+  "private": true,
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/donatienmigue/TeamBrain#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/donatienmigue/TeamBrain.git",
+    "directory": "packages/vscode"
+  },
+  "bugs": {
+    "url": "https://github.com/donatienmigue/TeamBrain/issues"
+  },
+  "type": "module",
+  "engines": {
+    "vscode": "^1.102.0",
+    "node": ">=20"
+  },
+  "categories": [
+    "AI",
+    "Other"
+  ],
+  "keywords": [
+    "mcp",
+    "memory",
+    "copilot",
+    "agent",
+    "ai"
+  ],
+  "main": "./out/extension.cjs",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": false,
+      "description": "TeamBrain launches the `tb` CLI from this workspace, so it stays off until the workspace is trusted."
+    }
+  },
+  "contributes": {
+    "mcpServerDefinitionProviders": [
+      {
+        "id": "teambrain.mcp",
+        "label": "TeamBrain"
+      }
+    ],
+    "commands": [
+      {
+        "command": "teambrain.showStatus",
+        "title": "Show Status",
+        "category": "TeamBrain"
+      },
+      {
+        "command": "teambrain.installCli",
+        "title": "Install the tb CLI",
+        "category": "TeamBrain"
+      },
+      {
+        "command": "teambrain.writeMcpConfig",
+        "title": "Write MCP Configuration (.vscode/mcp.json)",
+        "category": "TeamBrain"
+      },
+      {
+        "command": "teambrain.openWalkthrough",
+        "title": "Getting Started",
+        "category": "TeamBrain"
+      }
+    ],
+    "configuration": {
+      "title": "TeamBrain",
+      "properties": {
+        "teambrain.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Register the TeamBrain MCP server with agent mode. Turn off to disable the extension without uninstalling it."
+        },
+        "teambrain.cliPath": {
+          "type": "string",
+          "default": "",
+          "description": "Absolute path to the `tb` executable. Leave empty to use a workspace-local `node_modules/.bin/tb`, then `tb` on PATH.",
+          "scope": "machine-overridable"
+        }
+      }
+    },
+    "walkthroughs": [
+      {
+        "id": "teambrain.setup",
+        "title": "Get started with TeamBrain",
+        "description": "Shared, reviewable memory for your coding agents — in three steps.",
+        "steps": [
+          {
+            "id": "install-cli",
+            "title": "Install the tb CLI",
+            "description": "TeamBrain runs as a local CLI; this extension only points agent mode at it.\n[Install the CLI](command:teambrain.installCli)",
+            "media": {
+              "markdown": "walkthroughs/install-cli.md"
+            },
+            "completionEvents": [
+              "onCommand:teambrain.installCli"
+            ]
+          },
+          {
+            "id": "init-brain",
+            "title": "Create a brain",
+            "description": "Run `tb init` in your repo. It imports CLAUDE.md, AGENTS.md, .cursor/rules and ADRs into `.teambrain/` on a branch — main is never touched.",
+            "media": {
+              "markdown": "walkthroughs/init-brain.md"
+            }
+          },
+          {
+            "id": "verify",
+            "title": "Check the server is registered",
+            "description": "The status bar shows whether the MCP server is registered and how many brains it serves.\n[Show status](command:teambrain.showStatus)",
+            "media": {
+              "markdown": "walkthroughs/verify.md"
+            },
+            "completionEvents": [
+              "onCommand:teambrain.showStatus"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "test": "vitest run",
+    "bundle": "node esbuild.mjs --production",
+    "package": "pnpm run bundle && vsce package --no-dependencies --out teambrain-vscode.vsix",
+    "publish:marketplace": "vsce publish --packagePath teambrain-vscode.vsix",
+    "publish:openvsx": "ovsx publish teambrain-vscode.vsix"
+  },
+  "devDependencies": {
+    "@teambrain/hooks": "workspace:*",
+    "@types/vscode": "1.102.0",
+    "esbuild": "^0.28.1",
+    "ovsx": "^1.0.2",
+    "@vscode/vsce": "^3.9.2"
+  }
+}

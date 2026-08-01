@@ -153,22 +153,28 @@ The redaction corpus, the egress scanner, and the privacy negative tests are all
 Serving works with any MCP-capable agent. Capture depth depends on what lifecycle hooks the tool exposes. This matrix is generated from the adapter capabilities declared in code (`packages/hooks`), and a CI test fails the build if the table drifts from them — so it cannot overclaim:
 
 <!-- capture-matrix:start -->
-| Capability | Claude Code | Codex | Cursor | Gemini CLI |
-| --- | --- | --- | --- | --- |
-| Install command | `tb install claude-code` | `tb install codex` | `tb install cursor` | `tb install gemini-cli` |
-| Capture tier | Native hooks | MCP-side inference | MCP-side inference | Native hooks |
-| Session start | Yes (native hook) | Yes (MCP-side inference) | Yes (MCP-side inference) | Yes (native hook) |
-| Session end | Yes (native hook) | Yes (MCP-side inference) | Yes (MCP-side inference) | Yes (native hook) |
-| Tool use (edits / commands / tests / exploration) | Yes (native hook) | No | No | Yes (native hook) |
-| Commit SHAs & outcome | Yes (native hook) | No | No | Yes (native hook) |
-| Plan revisions | No | No | No | No |
-| Memory search / retrieve (MCP tool) | Yes | Yes | Yes | Yes |
-| Propose memory (MCP tool) | Yes | Yes | Yes | Yes |
+| Capability | Claude Code | Codex | Cursor | Gemini CLI | VS Code (Copilot) |
+| --- | --- | --- | --- | --- | --- |
+| Install command | `tb install claude-code` | `tb install codex` | `tb install cursor` | `tb install gemini-cli` | `tb install vscode` |
+| Capture tier | Native hooks | MCP-side inference | MCP-side inference | Native hooks | MCP-side inference |
+| Session start | Yes (native hook) | Yes (MCP-side inference) | Yes (MCP-side inference) | Yes (native hook) | Yes (MCP-side inference) |
+| Session end | Yes (native hook) | Yes (MCP-side inference) | Yes (MCP-side inference) | Yes (native hook) | Yes (MCP-side inference) |
+| Tool use (edits / commands / tests / exploration) | Yes (native hook) | No | No | Yes (native hook) | No |
+| Commit SHAs & outcome | Yes (native hook) | No | No | Yes (native hook) | No |
+| Plan revisions | No | No | No | No | No |
+| Memory search / retrieve (MCP tool) | Yes | Yes | Yes | Yes | Yes |
+| Propose memory (MCP tool) | Yes | Yes | Yes | Yes | Yes |
 <!-- capture-matrix:end -->
 
-*Cursor and Codex lack usable native lifecycle/post-tool hooks, so their sessions carry no `tool_use` events. Session boundaries are inferred from MCP tool calls: a session ends when it proposes a memory or after 30 minutes of inactivity; commit SHAs and outcome are not captured. Any other MCP-capable agent can still read and propose memories (serving) — it just isn't captured.*
+*Cursor, Codex and VS Code lack usable native lifecycle/post-tool hooks, so their sessions carry no `tool_use` events. Session boundaries are inferred from MCP tool calls: a session ends when it proposes a memory or after 30 minutes of inactivity; commit SHAs and outcome are not captured. Any other MCP-capable agent can still read and propose memories (serving) — it just isn't captured.*
 
-`tb install` automates setup for `claude-code`, `codex`, `cursor`, and `gemini-cli`. Other MCP clients work by pointing them at the server manually.
+`tb install` automates setup for `claude-code`, `codex`, `cursor`, `gemini-cli`, and `vscode`. Other MCP clients work by pointing them at the server manually.
+
+### VS Code
+
+VS Code needs no config file at all: the **TeamBrain** extension ([`packages/vscode`](packages/vscode)) registers the MCP server with Copilot agent mode for you, spawning the `tb` CLI you already installed. It publishes to the VS Code Marketplace and Open VSX on a `vscode-v*` tag — **not yet released**; until then, build it with `pnpm --filter teambrain-vscode run package` and install the VSIX. `tb install vscode` writes the equivalent `.vscode/mcp.json` by hand if you'd rather not install an extension.
+
+Two caveats worth knowing before you file a bug: MCP in Copilot is governed by an org policy that is **disabled by default** for enterprises, and the zero-config registration API is VS Code-only — in Cursor, Windsurf and VSCodium the extension detects that it is unavailable and offers to write `.vscode/mcp.json` instead. See `packages/vscode/README.md`.
 
 ## Honest limits
 

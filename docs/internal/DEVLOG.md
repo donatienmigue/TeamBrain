@@ -956,3 +956,27 @@ the manifest, so a missing `repository` is a hard publish failure, not a warning
 Tradeoffs: metadata only — deliberately no changeset, since a bump would open a
 Version Packages PR for 0.5.1 instead of completing 0.5.0; `pnpm -r publish`
 skips the three already-published packages.
+
+## 2026-08-01 — VS Code extension (Stage 1) + the `vscode` capture adapter
+What: `packages/vscode`, a deliberately thin extension whose only job is
+`vscode.lm.registerMcpServerDefinitionProvider` → an `McpStdioServerDefinition`
+launching `tb mcp <repo> --client vscode`. Plus CLI resolution (setting →
+workspace `node_modules/.bin/tb` → PATH), a status bar that names the actual
+blocker, a walkthrough, and a fallback command that writes `.vscode/mcp.json`
+for hosts without the registration API. Also added `vscode` to the adapter
+registry: `tb install vscode` writes VS Code's config shape (`servers` root
+key, not `mcpServers`) plus an owned `.github/instructions/` file, and the
+Tier-B inference wrapper gives session capture with no new code. VSIX publishes
+to Marketplace + Open VSX on a `vscode-v*` tag; CI packages it on every PR.
+Why: MCP went GA in VS Code 1.102, so serving already worked — the friction was
+six manual setup steps. Collapsing that is the whole value; retrieval, storage
+and capture stay in the CLI.
+Tradeoffs: no native modules in the VSIX (Electron ABI ≠ Node ABI), so no
+platform-specific VSIX matrix and no in-process retrieval — enforced by a
+packaging test that bundles and greps. No telemetry at all, same test. The
+zero-config path is VS Code-only: Cursor/Windsurf don't implement the API, so
+the extension probes for it and degrades visibly rather than claiming success.
+Extension versions independently of `@teambrain/*` (private package, outside
+the fixed group). Stage 2 (pending-memories TreeView, QuickDiff review) and
+Stage 3 (Cursor's proprietary API) are scoped in docs/internal/VSCODE_PLAN.md
+and deliberately not built.

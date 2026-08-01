@@ -56,10 +56,11 @@ Two invariants explain most of the design (full list in [CLAUDE.md](../CLAUDE.md
 | `packages/core` | Memory/event schemas (zod), byte-exact parse/serialize, lint + injection patterns, ULIDs, logger, typed errors → exit codes | `src/memory.ts`, `src/events.ts` |
 | `packages/index` | SQLite + FTS5 + sqlite-vec hybrid retrieval behind `RetrievalBackend`; brain-tree + codemap checksum sync; bench | `src/store.ts`, `src/search-pipeline.ts` |
 | `packages/mcp` | MCP server (4 tools), daemon (`tb serve`), session spool → `teambrain/sessions` branch, injection-safe rendering | `src/tools.ts`, `src/daemon.ts`, `src/spool.ts` |
-| `packages/hooks` | Agent payloads → C2 events; the privacy contract (paths + exit codes only, never content); the `CaptureAdapter` registry — one adapter per vendor (claude-code, cursor, codex, gemini-cli), each = mapper + install plan + declared capabilities; the README capture matrix is generated from it | `src/adapter.ts`, `src/registry.ts`, `src/map.ts` |
+| `packages/hooks` | Agent payloads → C2 events; the privacy contract (paths + exit codes only, never content); the `CaptureAdapter` registry — one adapter per vendor (claude-code, cursor, codex, gemini-cli, vscode), each = mapper + install plan + declared capabilities; the README capture matrix is generated from it | `src/adapter.ts`, `src/registry.ts`, `src/map.ts` |
 | `packages/redact` | Secret/entropy/PII detectors, deny-globs, the public release-gating corpus | `src/engine.ts`, `corpus/` |
 | `packages/distill` | Collect → cluster → LLM draft → dedup → gate → PR; the CodeMap generator (`tb distill --codemap`, opt-in); the only package allowed to call an LLM | `src/pipeline.ts`, `src/codemap/generate.ts` |
 | `packages/cli` | Every `tb` command; thin wrappers over the packages above | `src/program.ts` |
+| `packages/vscode` | The VS Code extension (not published to npm; VSIX to Marketplace + Open VSX). Registers `tb mcp` with Copilot agent mode via `vscode.lm.registerMcpServerDefinitionProvider` — no retrieval, no native modules, no telemetry | `src/extension.ts`, `src/server-definition.ts` |
 
 Authoritative docs, in reading order:
 [CLAUDE.md](../CLAUDE.md) (principles — they're tie-breakers, not suggestions) →

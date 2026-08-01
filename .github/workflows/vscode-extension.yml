@@ -1,0 +1,84 @@
+# TeamBrain — VS Code extension release (Marketplace + Open VSX)
+#
+# Fires on a `vscode-v*` tag, kept separate from the `v*` npm release tags
+# because the extension versions independently of the CLI (it is not part of
+# the @teambrain/* fixed version group).
+#
+# Publishes to BOTH registries on purpose: Microsoft's Marketplace terms limit
+# it to Microsoft products, so Cursor, Windsurf and VSCodium install from Open
+# VSX. One VSIX, two registries. Note that the zero-config registration API is
+# VS Code-only — the extension detects that at runtime and degrades to writing
+# .vscode/mcp.json (see packages/vscode/src/host.ts).
+name: vscode-extension
+
+on:
+  push:
+    tags:
+      - 'vscode-v*'
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # attach the VSIX to the GitHub Release
+    steps:
+      - uses: actions/checkout@v4
+
+      - run: corepack enable
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+
+      # A tagged extension release must not publish on red, for the same
+      # reason the npm release re-runs the suite: the tag trigger is
+      # independent of the CI workflow.
+      - run: pnpm test
+      - run: pnpm lint
+
+      # The tag is the single source of truth for what gets published; a
+      # mismatch means the manifest was not bumped, and a wrong version in the
+      # Marketplace cannot be replaced, only superseded.
+      - name: Tag must match the extension manifest version
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          tagged="${GITHUB_REF_NAME#vscode-v}"
+          manifest="$(node -p "require('./packages/vscode/package.json').version")"
+          if [ "$tagged" != "$manifest" ]; then
+            echo "tag ${GITHUB_REF_NAME} does not match manifest version ${manifest}"
+            exit 1
+          fi
+
+      - name: Package the VSIX
+        run: pnpm --filter teambrain-vscode run package
+
+      - name: Publish to the VS Code Marketplace
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: pnpm --filter teambrain-vscode run publish:marketplace
+
+      - name: Publish to Open VSX
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+        run: pnpm --filter teambrain-vscode run publish:openvsx
+
+      - name: Attach the VSIX to the release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: packages/vscode/teambrain-vscode.vsix
+
+      # workflow_dispatch runs stop at the artifact: a dry run that proves the
+      # manifest packages cleanly without touching either registry.
+      - name: Upload the VSIX as a build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: teambrain-vscode-vsix
+          path: packages/vscode/teambrain-vscode.vsix

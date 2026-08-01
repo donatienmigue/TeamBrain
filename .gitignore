@@ -5,3 +5,5 @@ coverage/
 *.tsbuildinfo
 *.tgz
 .cursor/
+packages/vscode/out/
+*.vsix

@@ -58,14 +58,17 @@ Examples:
   $ tb install cursor .
   $ tb install codex
   $ tb install gemini-cli --yes
+  $ tb install vscode
 
 Shows a diff before writing agent config (.claude/settings.json,
-.cursor/, .gemini/settings.json, or ~/.codex/config.toml). Registers the
-MCP server and capture wiring for the tool's tier: native hooks for
-claude-code and gemini-cli (full capture), MCP-side session inference for
-cursor and codex (no edit/command telemetry — see the README capture
-matrix). Idempotent — a second run with no config drift produces zero
-changes.`,
+.cursor/, .gemini/settings.json, .vscode/mcp.json, or
+~/.codex/config.toml). Registers the MCP server and capture wiring for the
+tool's tier: native hooks for claude-code and gemini-cli (full capture),
+MCP-side session inference for cursor, codex and vscode (no edit/command
+telemetry — see the README capture matrix). Idempotent — a second run with
+no config drift produces zero changes. For VS Code the TeamBrain extension
+registers the same server with no config file at all; tb install vscode is
+the fallback.`,
 
   serve: `
 Examples:

@@ -28,3 +28,7 @@ adapters:
     config: ~/.codex/config.toml
     registration: mcpServers+inference
     tier: T2
+  - tool: vscode
+    config: .vscode/mcp.json
+    registration: servers+inference
+    tier: T2

@@ -9,6 +9,7 @@
     { "path": "packages/distill" },
     { "path": "packages/cli" },
     { "path": "packages/inject-bench" },
-    { "path": "packages/spec" }
+    { "path": "packages/spec" },
+    { "path": "packages/vscode" }
   ]
 }

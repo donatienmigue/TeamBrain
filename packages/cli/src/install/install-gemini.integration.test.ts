@@ -72,6 +72,8 @@ describe('tb install gemini-cli (A4 accept)', () => {
     const dir = await tempProject();
     const result = await runInstallCommand('nope', dir, { yes: true });
     expect(result.exitCode).toBe(1);
-    expect(result.output).toContain('claude-code, codex, cursor, gemini-cli');
+    expect(result.output).toContain(
+      'claude-code, codex, cursor, gemini-cli, vscode',
+    );
   });
 });

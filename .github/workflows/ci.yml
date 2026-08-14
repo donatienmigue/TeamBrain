@@ -57,3 +57,24 @@ jobs:
       - run: pnpm lint
 
       - run: pnpm bench
+
+  # R3b (field report 001): the public test count was hand-typed and wrong.
+  # A merged PR that changes the suite and forgets the README fails here.
+  claims:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - run: corepack enable
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm build
+
+      - name: README claims match a real vitest run
+        run: node scripts/claims.mjs --check

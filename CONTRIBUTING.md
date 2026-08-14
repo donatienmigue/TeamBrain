@@ -23,6 +23,26 @@ of every Claude Code turn in this repo, so a turn can't end with failing
 tests. The repo also dogfoods TeamBrain on itself — see
 [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md#dogfooding-this-repo-runs-teambrain-on-itself).
 
+## Generated claims in the README
+
+The test count in `README.md` sits between `<!-- claims:tests:start -->` and
+`<!-- claims:tests:end -->` and is generated, not typed. **If your PR adds or
+removes tests, regenerate it:**
+
+```
+node scripts/claims.mjs      # rewrites the region; --check is the CI gate
+```
+
+The `claims` job re-measures on every PR and fails when the region disagrees
+with the suite, so forgetting this turns `main` red after merge — including
+when two PRs each pass alone but change the count together.
+
+`claims.mjs` only regenerates from a green suite. The integration tests that
+spawn git worktrees and daemons can time out under parallel load on a slow
+filesystem (Windows on a synced folder is the known case), which shows up as a
+different test failing each run. If the suite is green on CI but not locally,
+take the count from the `claims` job log rather than weakening the gate.
+
 ## Releases (Changesets)
 
 Versioning and npm publishing are automated with

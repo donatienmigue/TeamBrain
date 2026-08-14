@@ -51,6 +51,8 @@ tb serve                   # start the local daemon
 tb doctor                  # confirm it's all wired
 ```
 
+> **npm 11 prints an `npm warn install-scripts` warning, and the install still succeeded.** It names `better-sqlite3` and `onnxruntime-node`, whose install scripts npm 11 no longer runs by default. Both ship prebuilt binaries, so those scripts do not need to run — verified on `node:26` / npm 11.19.0: the install exits 0, `better-sqlite3` opens a database and executes SQL, `onnxruntime-node` loads, and `tb init` works end to end. The warning is informational; do not pass `--allow-scripts` to silence it. Confirm with `tb --version`, then `tb doctor` once `tb serve` is running.
+
 **What you'll see next: nothing.** Your next Claude Code session starts with the team's memories already in context — injected silently, with no banner and no output. This is deliberate (a hook that prints breaks some clients), but it means the only way to know it's working is to check:
 
 ```bash

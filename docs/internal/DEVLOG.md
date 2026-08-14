@@ -956,3 +956,24 @@ the manifest, so a missing `repository` is a hard publish failure, not a warning
 Tradeoffs: metadata only — deliberately no changeset, since a bump would open a
 Version Packages PR for 0.5.1 instead of completing 0.5.0; `pnpm -r publish`
 skips the three already-published packages.
+
+## 2026-08-14 — Field report 001: the first defect found by a user
+What: R1 — `tb lint <repo-root>` resolves one level into `.teambrain/` instead of
+reporting `[schema] brain.yaml is missing`; a directory with no brain is now a C6
+user error (exit 1) rather than a lint violation (exit 3). Plus R2 (README
+documents the npm 11 `npm warn install-scripts` warning) and R3b
+(`scripts/claims.mjs` + a `claims` CI job generate the README test count).
+Why: an outside tester on Linux/Node 26/npm 11 hit R1 on a scratch repo and
+concluded the documented path argument was broken. Every previous DEVLOG entry
+here traces to an internal audit or a milestone plan; this one traces to someone
+using the tool. The classification was the real defect — the message was
+misleading because a wrong path was labelled `[schema]`, not merely terse.
+Tradeoffs: resolution is one level only (no upward search to the git root) and
+the default argument stays `.teambrain`, so ci-templates/lint.yml and every
+documented CI invocation are untouched — predictability over convenience.
+claims.mjs runs the full suite, so the `claims` job duplicates the test job's
+work; accepted for now because the alternative is trusting a number nobody
+measured. Two things the report asked for are not done here: the tester's own
+"500+" and no-tagged-release copy lives in the post and launch package, which are
+outside this repo (in-repo grep is zero for both), and the under-a-minute review
+claim remains unvalidated by anyone outside the project (Appendix A, E-series).

@@ -62,4 +62,17 @@ describe('cli help (M8.3)', () => {
     );
     expect(commandHelp('lint')).toContain('Exit 3 on any violation');
   });
+
+  // A7 (R1): the repo-root form is documented, so nobody has to rediscover it.
+  it('documents all four lint invocation forms including the repo root', () => {
+    const help = commandHelp('lint');
+    for (const example of [
+      '$ tb lint                          lints .teambrain',
+      '$ tb lint .                        resolves to ./.teambrain',
+      '$ tb lint .teambrain/memories/decisions/',
+      '$ tb lint .teambrain --require-evidence',
+    ]) {
+      expect(help).toContain(example);
+    }
+  });
 });

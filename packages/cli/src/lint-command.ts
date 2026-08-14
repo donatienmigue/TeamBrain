@@ -1,4 +1,5 @@
 import { existsSync, readFileSync, statSync } from 'node:fs';
+import { join } from 'node:path';
 import {
   lintBrain,
   lintMemoryText,
@@ -27,6 +28,44 @@ function renderViolations(
   return lines.join('\n') + '\n';
 }
 
+/**
+ * Where a directory argument actually points. `tb lint .` from a repo root is
+ * the documented-looking form but the argument is the *brain* directory, so we
+ * resolve one level into `.teambrain/` when that is where the brain lives.
+ *
+ * Resolution is deliberately one level deep — no upward search toward the git
+ * root, no recursion. A brain that has `memories/` but no `brain.yaml` still
+ * resolves to itself so `lintBrain` can report the schema violation: a
+ * malformed brain is a lint failure (exit 3), not a wrong path (exit 1).
+ */
+type BrainResolution =
+  { kind: 'brain'; dir: string; note?: string } | { kind: 'none' };
+
+export function resolveBrainDir(targetPath: string): BrainResolution {
+  if (existsSync(join(targetPath, 'brain.yaml'))) {
+    return { kind: 'brain', dir: targetPath };
+  }
+
+  const nested = join(targetPath, '.teambrain');
+  if (existsSync(join(nested, 'brain.yaml'))) {
+    return {
+      kind: 'brain',
+      dir: nested,
+      note: `tb lint: linting ${nested}`,
+    };
+  }
+
+  // Brain layout present but config deleted — lint it and let the schema rule
+  // fire. Collapsing this into `none` would hide a real violation.
+  for (const layoutRoot of ['memories', 'retired']) {
+    if (existsSync(join(targetPath, layoutRoot))) {
+      return { kind: 'brain', dir: targetPath };
+    }
+  }
+
+  return { kind: 'none' };
+}
+
 export function runLintCommand(
   targetPath: string,
   options: LintOptions = {},
@@ -37,9 +76,22 @@ export function runLintCommand(
 
   let violations: LintViolation[];
   let fileCount: number;
+  let prefix = '';
   if (statSync(targetPath).isDirectory()) {
+    const resolved = resolveBrainDir(targetPath);
+    if (resolved.kind === 'none') {
+      return {
+        exitCode: 1,
+        output:
+          `tb lint: no brain found at ${targetPath} ` +
+          `(looked for brain.yaml and .teambrain/brain.yaml)\n`,
+      };
+    }
+    // Goes to stdout ahead of the result so CI logs record which directory was
+    // actually linted.
+    if (resolved.note !== undefined) prefix = `${resolved.note}\n`;
     ({ violations, memoryFileCount: fileCount } = lintBrain(
-      targetPath,
+      resolved.dir,
       options,
     ));
   } else {
@@ -57,8 +109,13 @@ export function runLintCommand(
   if (violations.length === 0) {
     return {
       exitCode: 0,
-      output: `tb lint: ${fileCount} memory file(s) checked, no violations\n`,
+      output:
+        prefix +
+        `tb lint: ${fileCount} memory file(s) checked, no violations\n`,
     };
   }
-  return { exitCode: 3, output: renderViolations(violations, fileCount) };
+  return {
+    exitCode: 3,
+    output: prefix + renderViolations(violations, fileCount),
+  };
 }

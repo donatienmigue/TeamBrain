@@ -34,7 +34,8 @@ Run \`tb <command> --help\` for examples and options.`;
 export const HELP = {
   lint: `
 Examples:
-  $ tb lint
+  $ tb lint                          lints .teambrain
+  $ tb lint .                        resolves to ./.teambrain
   $ tb lint .teambrain/memories/decisions/
   $ tb lint .teambrain --require-evidence
 
